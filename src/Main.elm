@@ -1,42 +1,56 @@
 module Main exposing (..)
+
 import Browser
-import Element exposing (..)
-import Element.Background as Background
-import Element.Font as Font
-import Element.Border as Border
+import Html exposing (Html, text, div, h1, img)
+import Html.Attributes exposing (src)
 
-main : Program () (Maybe b) msg
-main = Browser.document
-    { init = \_ -> (Nothing, Cmd.none)
-    , view = view
-    , update = \_ _ -> (Nothing, Cmd.none)
-    , subscriptions = \_ -> Sub.none
-    }
 
-view : Maybe a -> Browser.Document msg
-view _ =
-    { title = "Minesweeper - WIP"
-    , body = [body]
-    }
+---- MODEL ----
 
-body = Element.layout []
-               myRowOfStuff
 
-myRowOfStuff : Element msg
-myRowOfStuff =
-    row [ width fill, centerY, spacing 30 ]
-        [ myElement
-        , myElement
-        , el [ alignRight ] myElement
+type alias Model =
+    {}
+
+
+init : ( Model, Cmd Msg )
+init =
+    ( {}, Cmd.none )
+
+
+
+---- UPDATE ----
+
+
+type Msg
+    = NoOp
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    ( model, Cmd.none )
+
+
+
+---- VIEW ----
+
+
+view : Model -> Html Msg
+view model =
+    div []
+        [ img [ src "/logo.svg" ] []
+        , h1 [] [ text "Your Elm App is working!" ]
         ]
 
 
-myElement : Element msg
-myElement =
-    el
-        [ Background.color (rgb255 240 0 245)
-        , Font.color (rgb255 255 255 255)
-        , Border.rounded 3
-        , padding 30
-        ]
-        (text "stylish!")
+
+---- PROGRAM ----
+
+
+main : Program () Model Msg
+main =
+    Browser.element
+        { view = view
+        , init = \_ -> init
+        , update = update
+        , subscriptions = always Sub.none
+        }
