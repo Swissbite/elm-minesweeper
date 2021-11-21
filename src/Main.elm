@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import Browser
 import Framework.Typography exposing (h1)
+import Game exposing (PlayGroundDefinition)
 import Html exposing (Html)
 import Element exposing (Color, Element, alignBottom, alignLeft, alignRight, alignTop, centerX, centerY, clip, column, el, fill, height, image, layout, maximum, minimum, padding, px, rgb, rgb255, row, spacing, text, width)
 import Element.Background as Background
@@ -9,7 +10,12 @@ import Element.Border as Border
 import Element.Font as Font
 
 ---- PROGRAM ----
-
+icons =
+  {
+    markerFlag = "⚑",
+    untouchedBomb = "💣",
+    exploded = "💥"
+  }
 
 main : Program () Model Msg
 main =
@@ -64,8 +70,12 @@ init =
 
 
 type Msg
-    = NoOp
+    = NoOp | ClickCell Position | DefineGame PlayGroundDefinition
 
+type alias Position =
+  { rowIndex: Int
+  , columnIndex: Int
+  }
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
