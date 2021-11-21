@@ -2,12 +2,13 @@ module Main exposing (..)
 
 import Browser
 import Framework.Typography exposing (h1)
-import Game exposing (PlayGroundDefinition)
+import Game exposing (GameStatus(..), PlayGroundDefinition)
 import Html exposing (Html)
 import Element exposing (Color, Element, alignBottom, alignLeft, alignRight, alignTop, centerX, centerY, clip, column, el, fill, height, image, layout, maximum, minimum, padding, px, rgb, rgb255, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Time
 
 ---- PROGRAM ----
 icons =
@@ -23,7 +24,7 @@ main =
         { view = view
         , init = \_ -> init
         , update = update
-        , subscriptions = always Sub.none
+        , subscriptions = subscriptions
         }
 
 view : Model -> Html Msg
@@ -57,12 +58,12 @@ white =
 
 
 type alias Model =
-    {}
+    {gameStatus: GameStatus}
 
 
 init : ( Model, Cmd Msg )
 init =
-  ( {}, Cmd.none )
+  ( {gameStatus = NoGame}, Cmd.none )
 
 
 
@@ -70,7 +71,7 @@ init =
 
 
 type Msg
-    = NoOp | ClickCell Position | DefineGame PlayGroundDefinition
+    = NoOp | ClickCell Position | DefineGame PlayGroundDefinition | Tick Time.Posix
 
 type alias Position =
   { rowIndex: Int
@@ -80,3 +81,9 @@ type alias Position =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     ( model, Cmd.none )
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+  case model.gameStatus of
+    RunningGame _ -> Time.every 1000 Tick
+    _ -> Sub.none

@@ -1,4 +1,4 @@
-module Game exposing (PlayGroundDefinition, GameStatus)
+module Game exposing (PlayGroundDefinition, GameStatus(..))
 {-
   This module is for the game view itself. While the game is running, this module should handle all the state update. This may simplify the code.
   It is "just" responsible for the game view and the right sidebar.
@@ -31,9 +31,11 @@ type alias PlayGroundDefinition =
   , amountOfMines: Int
   }
 
-type GameStatus = InitGame PlayGroundDefinition | RunningGame GameField | FinishedGame FinishStatus GameField | PausedGame GameField
+type GameStatus = NoGame | InitGame PlayGroundDefinition | RunningGame GameField | FinishedGame FinishStatus GameField | PausedGame GameField
 
-type FinishStatus = Won | Lost
+type alias GameDurationInSeconds = Int
+
+type FinishStatus = Won GameDurationInSeconds | Lost GameDurationInSeconds
 
 type alias GameField = {}
 
