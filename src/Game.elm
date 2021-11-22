@@ -1,4 +1,4 @@
-module Game exposing (PlayGroundDefinition, GameStatus(..))
+module Game exposing (PlayGroundDefinition, GameStatus(..), adjustGameDefinition)
 {-
   This module is for the game view itself. While the game is running, this module should handle all the state update. This may simplify the code.
   It is "just" responsible for the game view and the right sidebar.

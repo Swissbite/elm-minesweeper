@@ -1,6 +1,7 @@
 module Tests exposing (..)
 
 import Test exposing (..)
+import GameTests
 import Expect
 
 
@@ -16,7 +17,8 @@ all =
         , test "String.left" <|
             \_ ->
                 Expect.equal "a" (String.left 1 "abcdefg")
-        , test "This test should fail" <|
+        , skip <| test "This test should fail" <|
             \_ ->
                 Expect.fail "failed as expected!"
+        , GameTests.gameLogic
         ]
