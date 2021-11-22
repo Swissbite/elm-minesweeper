@@ -1,4 +1,4 @@
-module Game exposing (PlayGroundDefinition, GameStatus(..), adjustGameDefinition)
+module Game exposing (PlayGroundDefinition, GameStatus(..), adjustGameDefinition, interactWithGame, GameUpdateMsg(..), FinishStatus(..), GameField)
 {-
   This module is for the game view itself. While the game is running, this module should handle all the state update. This may simplify the code.
   It is "just" responsible for the game view and the right sidebar.
@@ -25,6 +25,22 @@ adjustGameDefinition initGameDefinition =
   A game field should be at least 4 x 4, have ad least 1 mine and not more than the size of the fields - 9
 -}
 
+interactWithGame: GameUpdateMsg -> GameStatus -> GameStatus
+interactWithGame updateMsg gameStatus =
+  case updateMsg of
+    TogglePause -> togglePause gameStatus
+    CreateGame definition -> adjustGameDefinition definition |> InitGame
+    _ -> Debug.todo "Handle ClickCell"
+
+togglePause: GameStatus -> GameStatus
+togglePause gameStatus =
+  case gameStatus of
+    RunningGame field -> PausedGame field
+    PausedGame field -> RunningGame field
+    others -> others
+
+type GameUpdateMsg = CreateGame PlayGroundDefinition | ClickCell CellCoordinates | TogglePause
+
 type alias PlayGroundDefinition =
   { dimensionX: Int
   , dimensionY: Int
@@ -38,6 +54,11 @@ type alias GameDurationInSeconds = Int
 type FinishStatus = Won GameDurationInSeconds | Lost GameDurationInSeconds
 
 type alias GameField = {}
+
+type alias CellCoordinates =
+  { rowIndex: Int
+  , columnIndex: Int
+  }
 
 type GameCellType = Mine | EmptyCell | MinesAround Int
 
