@@ -20,5 +20,5 @@ all =
         , skip <| test "This test should fail" <|
             \_ ->
                 Expect.fail "failed as expected!"
-        , GameTests.gameLogic
+        , GameTests.all
         ]
