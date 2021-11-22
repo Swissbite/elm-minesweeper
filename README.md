@@ -4,6 +4,12 @@ This project is just something for me to play around
 with [elm-lang](https://elm-lang.org/), [elm-ui](https://github.com/mdgriffith/elm-ui) 
 and to wrap my head around functional programming at it's purest.
 
+## Table of Content
+- [The goal](#the-goal)
+- [Set up the project](#set-up-the-project)
+- [Basic game flow](#basic-game-flow)
+
+## The goal
 The goal of this **side project** is to have a working minesweeper web application (as a thousand other in the web)
 in a similar behaviour as the [Gnome Mines](https://wiki.gnome.org/Apps/Mines) application.
 
@@ -29,8 +35,24 @@ This project will be an on/off project ;-)
 
 ## Set up the project
 
-1. Install [`elm-app`](https://github.com/halfzebra/create-elm-app), a super-power tool for bootstraping elm applications by `npm install -g create-elm-app`
+1. Install [`elm-app`](https://github.com/halfzebra/create-elm-app), a super-power tool for 
+   bootstraping elm applications by `npm install -g create-elm-app`
 2. Follow [Elm-App Setup](Elm-App%20Setup.md)
 
 ## License
 See [LICENSE](LICENSE)
+
+## Basic game flow
+From initialize a game to finish the game.
+
+In [Game.elm](src/Game.elm) is a type definition `GameStatus` which describes a current state of the 
+game and the game field. The possible states are:
+
+1. `NoGame`: Represents the start of the application. No definition of the playground has been defined
+2. `InitGame PlaygroundDefinition`: The initialisation of the game has been set. We know the dimensions and
+   the amount of mines. But the game has not yet started. The game starts by clicking on any field.
+3. `RunningGame GameField`: The current running game. Fields can either be marked or opened. The time counter is running
+4. `PausedGame GameField`: Still the game field available, but no updates are allowed. 
+   The UI may hide the visual representing of the board to reduce cheating
+5. `FinishedGame FinishStatus GameField`: The end of the game. The won/lost is set by `FinishStatus`, the `GameField` 
+   represents the last state of the field. 
