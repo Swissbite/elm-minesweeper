@@ -30,7 +30,7 @@ interactWithGame updateMsg gameStatus =
   case updateMsg of
     TogglePause -> togglePause gameStatus
     CreateGame definition -> adjustGameDefinition definition |> InitGame
-    _ -> Debug.todo "Handle ClickCell"
+    ClickCell coordinates -> Debug.todo "Handle ClickCell"
 
 togglePause: GameStatus -> GameStatus
 togglePause gameStatus =
@@ -38,6 +38,13 @@ togglePause gameStatus =
     RunningGame field -> PausedGame field
     PausedGame field -> RunningGame field
     others -> others
+
+clickOnCell: GameStatus -> CellCoordinates -> GameStatus
+clickOnCell gameStatus cellCoordinates =
+  case gameStatus of
+    RunningGame field -> Debug.todo "Implement cell handling"
+    InitGame playgroundDefinition -> Debug.todo "Start game"
+    noOp -> noOp
 
 type GameUpdateMsg = CreateGame PlayGroundDefinition | ClickCell CellCoordinates | TogglePause
 
