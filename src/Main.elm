@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Browser
 import Framework.Typography exposing (h1)
-import Game exposing (GameStatus(..), PlayGroundDefinition)
+import Game exposing (GameStatus(..), GameUpdateMsg(..), PlayGroundDefinition)
 import Html exposing (Html)
 import Element exposing (Color, Element, alignBottom, alignLeft, alignRight, alignTop, centerX, centerY, clip, column, el, fill, height, image, layout, maximum, minimum, padding, px, rgb, rgb255, row, spacing, text, width)
 import Element.Background as Background
@@ -70,20 +70,16 @@ init =
 ---- UPDATE ----
 
 
-type Msg
-    = NoOp | ClickCell Position | DefineGame PlayGroundDefinition | Tick Time.Posix
+type Msg = GameMsg GameUpdateMsg
 
-type alias Position =
-  { rowIndex: Int
-  , columnIndex: Int
-  }
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case msg of
+        GameMsg updateMsg -> ({model | gameStatus = Game.interactWithGame updateMsg model.gameStatus}, Cmd.none)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
   case model.gameStatus of
-    RunningGame _ -> Time.every 1000 Tick
+    RunningGame _ ->  Time.every 100 (\posix -> GameMsg (Tick posix))
     _ -> Sub.none

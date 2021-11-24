@@ -2,7 +2,7 @@ module GameTests exposing (fuzzSanitizeGameDefinition, enforceEdgeCaseSanitize, 
 
 import Expect
 import Fuzz exposing (int, tuple3)
-import Game exposing (FinishStatus(..), GameField, GameStatus(..), GameUpdateMsg(..), PlayGroundDefinition, adjustGameDefinition)
+import Game exposing (FinishStatus(..), GameModel, GameStatus(..), GameUpdateMsg(..), PlayGroundDefinition, adjustGameDefinition)
 import Test exposing (Test, describe, fuzzWith, test)
 
 fuzzSanitizeGameDefinition: Test
@@ -57,5 +57,5 @@ interactionTests = describe "Testing the logical interaction with the game"
                               |> Expect.equal (PausedGame gamefield)
                     ]
 
-createGameFieldForInteractionTesting: GameField
+createGameFieldForInteractionTesting: GameModel
 createGameFieldForInteractionTesting = {}
