@@ -2,7 +2,7 @@ module Application exposing (..)
 import Time
 type Msg = GameMsg GameUpdateMsg
 
-type GameUpdateMsg = CreateGame PlayGroundDefinition | ClickCell CellCoordinates | TogglePause | Tick Time.Posix
+type GameUpdateMsg = CreateGame PlayGroundDefinition | CustomGameDefinition | ClickCell CellCoordinates | TogglePause | Tick Time.Posix
 
 
 type alias PlayGroundDefinition =

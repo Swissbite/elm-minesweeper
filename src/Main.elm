@@ -4,7 +4,7 @@ import Browser
 import Application exposing (..)
 import Game exposing (GameStatus(..), PlayGroundDefinition, gameBoardView)
 import Html exposing (Html)
-import Element exposing (Color, Element, alignBottom, alignLeft, alignRight, alignTop, centerX, centerY, column, el, fill, height, layout, padding, px, rgb, row, spacing, text, width)
+import Element exposing (Color, Element, alignBottom, alignLeft, alignRight, alignTop, centerX, centerY, column, el, fill, height, layout, maximum, padding, px, rgb, row, spacing, text, width)
 import Time
 
 ---- PROGRAM ----
@@ -36,9 +36,9 @@ view model = layout [ width fill, height fill ] <|
                           , el [alignRight] <| text "Link 2"
                           ]
                          , row [padding 20, width fill, height fill]
-                           [ el [alignLeft, alignTop] <| text "Left status column"
+                           [ el [width (fill |> maximum 300), alignTop] <| text "Left status column"
                            , gameBoardView model.gameStatus
-                           , el [alignRight, alignTop] <| text "Right status column"
+                           , el [width (fill |> maximum 300), alignTop] <| text "Right status column"
                            ]
 
                          , row [padding 20, width fill, height <| px 100, alignBottom]

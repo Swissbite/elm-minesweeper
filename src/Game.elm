@@ -1,18 +1,21 @@
 module Game exposing (PlayGroundDefinition, GameStatus(..), adjustGameDefinition, interactWithGame, FinishStatus(..), GameModel, gameBoardView)
 
-{-
+{-|
   This module is for the game view itself. While the game is running, this module should handle all the state update. This may simplify the code.
   It is "just" responsible for the game view and the right sidebar.
+  @see gameBoardView
 -}
 
 import Array exposing (Array)
-import Element exposing (Color, Element, alignBottom, alignLeft, alignRight, alignTop, centerX, centerY, column, el, fill, height, layout, padding, paddingXY, px, rgb, row, spacing, text, width)
+import Element exposing (Color, Element, centerX, centerY, column, el, fill, height, padding, row, spacing, text, width)
 import Element.Background as Background
 import Application exposing (..)
 import Element.Input exposing (button)
-import Framework.Color exposing (background, grey, grey_light, grey_lighter, white_ter)
+import Framework.Color exposing (grey_lighter, white_ter)
 import Time
 
+{-|Exposed function to render the main game view depending on the current GameStatus
+-}
 gameBoardView: GameStatus -> Element Msg
 gameBoardView gameStatus = case gameStatus of
     NoGame -> gameBoardViewNoStatus
@@ -22,10 +25,10 @@ gameBoardViewNoStatus: Element Msg
 gameBoardViewNoStatus =
     let
         columnStyled = column [width fill, height fill, spacing 10]
-        buttonStyled = button [height fill, width fill, centerY, centerX, Background.color grey_lighter]
+        buttonStyled = button [height fill, width fill , centerY, centerX, Background.color grey_lighter]
     in row [width fill, height fill, padding 10, spacing 10, Background.color white_ter]
         [ columnStyled
-            [ buttonStyled {onPress = Nothing, label = text "Small Game"}
+            [ buttonStyled {onPress = Just (GameMsg <| CreateGame {amountOfMines = 10, dimensionX = 10, dimensionY = 10}), label = text "Small Game"}
             , buttonStyled {onPress = Nothing, label = text "Large Game"}
             ]
         , columnStyled
@@ -62,6 +65,7 @@ interactWithGame updateMsg gameStatus =
     CreateGame definition -> adjustGameDefinition definition |> InitGame
     ClickCell coordinates -> clickOnCell gameStatus coordinates
     Tick time -> updateTime gameStatus time
+    CustomGameDefinition -> ViewCustomGameDefinitionSetup
 
 togglePause: GameStatus -> GameStatus
 togglePause gameStatus =
@@ -90,7 +94,7 @@ type alias PlayGroundDefinition =
   , amountOfMines: Int
   }
 
-type GameStatus = NoGame | InitGame PlayGroundDefinition | RunningGame GameModel | FinishedGame FinishStatus GameModel | PausedGame GameModel
+type GameStatus = NoGame | ViewCustomGameDefinitionSetup | InitGame PlayGroundDefinition | RunningGame GameModel | FinishedGame FinishStatus GameModel | PausedGame GameModel
 
 type alias GameDurationInSeconds = Int
 
