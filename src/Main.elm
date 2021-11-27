@@ -1,13 +1,10 @@
 module Main exposing (..)
 
 import Browser
-import Framework.Typography exposing (h1)
-import Game exposing (GameStatus(..), GameUpdateMsg(..), PlayGroundDefinition)
+import Application exposing (..)
+import Game exposing (GameStatus(..), PlayGroundDefinition)
 import Html exposing (Html)
-import Element exposing (Color, Element, alignBottom, alignLeft, alignRight, alignTop, centerX, centerY, clip, column, el, fill, height, image, layout, maximum, minimum, padding, px, rgb, rgb255, row, spacing, text, width)
-import Element.Background as Background
-import Element.Border as Border
-import Element.Font as Font
+import Element exposing (Color, Element, alignBottom, alignLeft, alignRight, alignTop, centerX, centerY, column, el, fill, height, layout, padding, px, rgb, row, spacing, text, width)
 import Time
 
 ---- PROGRAM ----
@@ -70,7 +67,6 @@ init =
 ---- UPDATE ----
 
 
-type Msg = GameMsg GameUpdateMsg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )

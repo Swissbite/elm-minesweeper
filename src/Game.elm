@@ -1,4 +1,4 @@
-module Game exposing (PlayGroundDefinition, GameStatus(..), adjustGameDefinition, interactWithGame, GameUpdateMsg(..), FinishStatus(..), GameModel)
+module Game exposing (PlayGroundDefinition, GameStatus(..), adjustGameDefinition, interactWithGame, FinishStatus(..), GameModel)
 
 {-
   This module is for the game view itself. While the game is running, this module should handle all the state update. This may simplify the code.
@@ -6,8 +6,12 @@ module Game exposing (PlayGroundDefinition, GameStatus(..), adjustGameDefinition
 -}
 
 import Array exposing (Array)
+import Html exposing (Html)
+import Application exposing (..)
 import Time
 
+gameBoardView: GameModel -> Html Msg
+gameBoardView gameModel = Debug.todo "Implement view"
 
 adjustGameDefinition: PlayGroundDefinition -> PlayGroundDefinition
 adjustGameDefinition initGameDefinition =
@@ -58,7 +62,6 @@ updateTime gameStatus time =
         RunningGame gameModel -> Debug.todo "Update tick"
         other -> other
 
-type GameUpdateMsg = CreateGame PlayGroundDefinition | ClickCell CellCoordinates | TogglePause | Tick Time.Posix
 
 type alias PlayGroundDefinition =
   { dimensionX: Int
