@@ -1,4 +1,4 @@
-module Game exposing (PlayGroundDefinition, GameStatus(..), adjustGameDefinition, interactWithGame, FinishStatus(..), GameModel)
+module Game exposing (PlayGroundDefinition, GameStatus(..), adjustGameDefinition, interactWithGame, FinishStatus(..), GameModel, gameBoardView)
 
 {-
   This module is for the game view itself. While the game is running, this module should handle all the state update. This may simplify the code.
@@ -6,12 +6,33 @@ module Game exposing (PlayGroundDefinition, GameStatus(..), adjustGameDefinition
 -}
 
 import Array exposing (Array)
-import Html exposing (Html)
+import Element exposing (Color, Element, alignBottom, alignLeft, alignRight, alignTop, centerX, centerY, column, el, fill, height, layout, padding, paddingXY, px, rgb, row, spacing, text, width)
+import Element.Background as Background
 import Application exposing (..)
+import Element.Input exposing (button)
+import Framework.Color exposing (background, grey, grey_light, grey_lighter, white_ter)
 import Time
 
-gameBoardView: GameModel -> Html Msg
-gameBoardView gameModel = Debug.todo "Implement view"
+gameBoardView: GameStatus -> Element Msg
+gameBoardView gameStatus = case gameStatus of
+    NoGame -> gameBoardViewNoStatus
+    _ -> el [centerX, centerY] <| text "Game Area from game"
+
+gameBoardViewNoStatus: Element Msg
+gameBoardViewNoStatus =
+    let
+        columnStyled = column [width fill, height fill, spacing 10]
+        buttonStyled = button [height fill, width fill, centerY, centerX, Background.color grey_lighter]
+    in row [width fill, height fill, padding 10, spacing 10, Background.color white_ter]
+        [ columnStyled
+            [ buttonStyled {onPress = Nothing, label = text "Small Game"}
+            , buttonStyled {onPress = Nothing, label = text "Large Game"}
+            ]
+        , columnStyled
+            [ buttonStyled {onPress = Nothing, label = text "Medium Game"}
+            , buttonStyled {onPress = Nothing, label = text "Custom Game"}
+            ]
+        ]
 
 adjustGameDefinition: PlayGroundDefinition -> PlayGroundDefinition
 adjustGameDefinition initGameDefinition =

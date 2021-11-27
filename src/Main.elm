@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Browser
 import Application exposing (..)
-import Game exposing (GameStatus(..), PlayGroundDefinition)
+import Game exposing (GameStatus(..), PlayGroundDefinition, gameBoardView)
 import Html exposing (Html)
 import Element exposing (Color, Element, alignBottom, alignLeft, alignRight, alignTop, centerX, centerY, column, el, fill, height, layout, padding, px, rgb, row, spacing, text, width)
 import Time
@@ -37,7 +37,7 @@ view model = layout [ width fill, height fill ] <|
                           ]
                          , row [padding 20, width fill, height fill]
                            [ el [alignLeft, alignTop] <| text "Left status column"
-                           , el [centerX, centerY] <| text "Game Area"
+                           , gameBoardView model.gameStatus
                            , el [alignRight, alignTop] <| text "Right status column"
                            ]
 
