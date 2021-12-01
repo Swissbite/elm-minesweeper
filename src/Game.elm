@@ -1,8 +1,18 @@
-module Game exposing (FinishStatus(..), GameModel, GameStatus(..), PlayGroundDefinition, adjustGameDefinition, gameBoardView, interactWithGame)
+module Game exposing (FinishStatus(..), GameModel, GameStatus(..), PlayGroundDefinition, gameBoardView, interactWithGame)
 
-{-| This module is for the game view itself. While the game is running, this module should handle all the state update. This may simplify the code.
-It is "just" responsible for the game view and the right sidebar.
-@see gameBoardView
+{-| The Game module is responsible for handling the game view and exports the view function and the update function to
+handle the all states for a game.
+
+#View
+@docs gameBoardView
+
+
+#Update
+@docs interactWithGame
+
+
+#Type definitions
+@docs FinishStatus, GameModel, GameStatus, PlayGroundDefinition
 -}
 
 import Application exposing (..)
@@ -90,6 +100,13 @@ defaultGameDefinitions =
     }
 
 
+{-| The initial play ground definition, can be set on start a game. The function adjustGameDefinition adjusts the input values to a valid setup.
+A game field should be at least 4 x 4, have ad least 1 mine and not more than the size of the fields - 9
+
+    adjustGameDefinition { dimensionX = 1, dimensionY = 1, amountOfMines = 99 } == { dimensionX = 4, dimensionY = 4, amountOfMines = 7 }
+
+    adjustGameDefinition { dimensionX = 1, dimensionY = 1, amountOfMines = -99 } == { dimensionX = 4, dimensionY = 4, amountOfMines = 1 }
+-}
 adjustGameDefinition : PlayGroundDefinition -> PlayGroundDefinition
 adjustGameDefinition initGameDefinition =
     let
@@ -130,10 +147,6 @@ adjustGameDefinition initGameDefinition =
 
 
 
-{-
-   The initial play ground definition, can be set on start a game. The function adjustGameDefinition adjusts the input values to a valid setup.
-   A game field should be at least 4 x 4, have ad least 1 mine and not more than the size of the fields - 9
--}
 
 
 interactWithGame : GameUpdateMsg -> GameStatus -> GameStatus
@@ -210,7 +223,8 @@ type GameStatus
 type alias GameDurationInSeconds =
     Int
 
-
+{-| Represents if the game has ben won or lost and how long it took to win or loose the game.
+-}
 type FinishStatus
     = Won GameDurationInSeconds
     | Lost GameDurationInSeconds
