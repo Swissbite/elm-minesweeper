@@ -3,6 +3,14 @@ module Application exposing (..)
 import Time
 
 
+icons =
+    { markerFlag = "⚑"
+    , untouchedBomb = "💣"
+    , exploded = "💥"
+    , stopWatch = "⏱️"
+    }
+
+
 type Msg
     = GameMsg GameUpdateMsg
     | ChangeScreen ActiveScreen

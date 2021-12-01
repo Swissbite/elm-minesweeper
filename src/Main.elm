@@ -14,13 +14,6 @@ import Time
 ---- PROGRAM ----
 
 
-icons =
-    { markerFlag = "⚑"
-    , untouchedBomb = "💣"
-    , exploded = "💥"
-    }
-
-
 main : Program () Model Msg
 main =
     Browser.element

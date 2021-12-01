@@ -1,18 +1,24 @@
-module Game exposing (FinishStatus(..), GameModel, GameStatus(..), PlayGroundDefinition, gameBoardView, interactWithGame)
+module Game exposing
+    ( gameBoardView
+    , interactWithGame
+    , FinishStatus(..), GameModel, GameStatus(..), PlayGroundDefinition
+    )
 
 {-| The Game module is responsible for handling the game view and exports the view function and the update function to
 handle the all states for a game.
 
 #View
+
 @docs gameBoardView
 
-
 #Update
+
 @docs interactWithGame
 
-
 #Type definitions
+
 @docs FinishStatus, GameModel, GameStatus, PlayGroundDefinition
+
 -}
 
 import Application exposing (..)
@@ -32,7 +38,13 @@ gameBoardView gameStatus =
     case gameStatus of
         NoGame ->
             gameBoardViewNoStatus
-        ViewCustomGameDefinitionSetup -> Debug.todo "Implement view for custom game definition"
+
+        ViewCustomGameDefinitionSetup ->
+            Debug.todo "Implement view for custom game definition"
+
+        InitGame definition ->
+            row [ Element.width fill, Element.height fill ]
+                [ rightStatusBarView Nothing Nothing definition.amountOfMines ]
 
         _ ->
             el [ centerX, centerY ] <| text "Game Area from game"
@@ -93,11 +105,69 @@ gameBoardViewNoStatus =
         ]
 
 
+defaultGameDefinitions : { smallGame : PlayGroundDefinition, mediumGame : PlayGroundDefinition, largeGame : PlayGroundDefinition }
 defaultGameDefinitions =
     { smallGame = { amountOfMines = 10, dimensionX = 8, dimensionY = 8 }
     , mediumGame = { amountOfMines = 40, dimensionX = 16, dimensionY = 16 }
     , largeGame = { amountOfMines = 99, dimensionX = 30, dimensionY = 16 }
     }
+
+
+rightStatusBarView : Maybe Int -> Maybe Int -> Int -> Element msg
+rightStatusBarView flags elapsedTime amountOfMines =
+    let
+        timeText : String
+        timeText =
+            case elapsedTime of
+                Nothing ->
+                    "--:--"
+
+                Just seconds ->
+                    String.concat [ String.fromInt <| seconds // 60, ":", String.fromInt <| modBy 60 seconds ]
+
+        missingFlags : String
+        missingFlags =
+            case flags of
+                Nothing ->
+                    String.concat <| List.append [ "-" ] <| List.repeat calculatePrefixZeroOfFlags "-"
+
+                Just f ->
+                    String.concat
+                        [ String.concat <| List.repeat calculatePrefixZeroOfFlags "0"
+                        , String.fromInt <| amountOfMines - f
+                        ]
+
+        calculatePrefixZeroOfFlags : Int
+        calculatePrefixZeroOfFlags =
+            let
+                getBase10Truncated : Int -> Int
+                getBase10Truncated =
+                    \n -> truncate <| logBase 10 <| toFloat n
+
+                amountOfMinesLogBase10 : Int
+                amountOfMinesLogBase10 =
+                    getBase10Truncated amountOfMines
+
+                amountOfFlagsLogBase10 : Int
+                amountOfFlagsLogBase10 =
+                    case flags of
+                        Nothing ->
+                            1
+
+                        Just 0 ->
+                            1
+
+                        Just f ->
+                            getBase10Truncated f
+            in
+            amountOfMinesLogBase10 - amountOfFlagsLogBase10
+    in
+    Element.column [ width (Element.maximum 150 fill), Element.padding 10, Element.alignRight, Element.alignTop ]
+        [ Element.el [ Font.bold, Font.size 30, Element.centerX ] <| text Application.icons.stopWatch
+        , Element.el [ Element.centerX, Element.paddingXY 0 10 ] <| text timeText
+        , Element.el [ Font.bold, Element.paddingEach { bottom = 0, top = 30, left = 0, right = 0 }, Font.size 30, Element.centerX ] <| text Application.icons.markerFlag
+        , Element.el [ Element.centerX, Element.paddingXY 0 10 ] <| text missingFlags
+        ]
 
 
 {-| The initial play ground definition, can be set on start a game. The function adjustGameDefinition adjusts the input values to a valid setup.
@@ -106,6 +176,7 @@ A game field should be at least 4 x 4, have ad least 1 mine and not more than th
     adjustGameDefinition { dimensionX = 1, dimensionY = 1, amountOfMines = 99 } == { dimensionX = 4, dimensionY = 4, amountOfMines = 7 }
 
     adjustGameDefinition { dimensionX = 1, dimensionY = 1, amountOfMines = -99 } == { dimensionX = 4, dimensionY = 4, amountOfMines = 1 }
+
 -}
 adjustGameDefinition : PlayGroundDefinition -> PlayGroundDefinition
 adjustGameDefinition initGameDefinition =
@@ -144,9 +215,6 @@ adjustGameDefinition initGameDefinition =
                 initGameDefinition.amountOfMines
     in
     { dimensionX = dimensionX, dimensionY = dimensionY, amountOfMines = amountOfMines }
-
-
-
 
 
 interactWithGame : GameUpdateMsg -> GameStatus -> GameStatus
@@ -222,6 +290,7 @@ type GameStatus
 
 type alias GameDurationInSeconds =
     Int
+
 
 {-| Represents if the game has ben won or lost and how long it took to win or loose the game.
 -}
