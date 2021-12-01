@@ -9,6 +9,7 @@ import Application exposing (..)
 import Array exposing (Array)
 import Element exposing (Color, Element, centerX, centerY, column, el, fill, height, padding, row, spacing, text, width)
 import Element.Background as Background
+import Element.Font as Font
 import Element.Input exposing (button)
 import Framework.Color exposing (grey_lighter, white_ter)
 import Time
@@ -21,6 +22,7 @@ gameBoardView gameStatus =
     case gameStatus of
         NoGame ->
             gameBoardViewNoStatus
+        ViewCustomGameDefinitionSetup -> Debug.todo "Implement view for custom game definition"
 
         _ ->
             el [ centerX, centerY ] <| text "Game Area from game"
@@ -29,22 +31,63 @@ gameBoardView gameStatus =
 gameBoardViewNoStatus : Element Msg
 gameBoardViewNoStatus =
     let
+        columnStyled : List (Element msg) -> Element msg
         columnStyled =
             column [ width fill, height fill, spacing 10 ]
 
+        buttonStyled :
+            { onPress : Maybe msg
+            , label : Element msg
+            }
+            -> Element msg
         buttonStyled =
             button [ height fill, width fill, centerY, centerX, Background.color grey_lighter ]
+
+        createLabel : Maybe PlayGroundDefinition -> Element msg
+        createLabel maybeDefinition =
+            let
+                styledLabelColumn : List (Element msg) -> Element msg
+                styledLabelColumn =
+                    Element.column [ width fill, height fill ]
+
+                styledHeadlineText : String -> Element msg
+                styledHeadlineText =
+                    \t -> Element.el [ Font.bold, centerY, centerX ] <| text t
+
+                styledLowerlineText : String -> Element msg
+                styledLowerlineText =
+                    \t -> Element.el [ centerY, centerX ] <| text t
+            in
+            case maybeDefinition of
+                Just definition ->
+                    styledLabelColumn
+                        [ styledHeadlineText <| String.concat [ String.fromInt definition.dimensionX, " x ", String.fromInt definition.dimensionY ]
+                        , styledLowerlineText <| String.concat [ String.fromInt definition.amountOfMines, "Mines" ]
+                        ]
+
+                Nothing ->
+                    styledLabelColumn
+                        [ styledHeadlineText "?"
+                        , styledLowerlineText "User defined"
+                        ]
     in
     row [ width fill, height fill, padding 10, spacing 10, Background.color white_ter ]
         [ columnStyled
-            [ buttonStyled { onPress = Just (GameMsg <| CreateGame { amountOfMines = 10, dimensionX = 10, dimensionY = 10 }), label = text "Small Game" }
-            , buttonStyled { onPress = Nothing, label = text "Large Game" }
+            [ buttonStyled { onPress = Just (GameMsg <| CreateGame defaultGameDefinitions.smallGame), label = createLabel <| Just defaultGameDefinitions.smallGame }
+            , buttonStyled { onPress = Just (GameMsg <| CreateGame defaultGameDefinitions.largeGame), label = createLabel <| Just defaultGameDefinitions.largeGame }
             ]
         , columnStyled
-            [ buttonStyled { onPress = Nothing, label = text "Medium Game" }
-            , buttonStyled { onPress = Nothing, label = text "Custom Game" }
+            [ buttonStyled { onPress = Just (GameMsg <| CreateGame defaultGameDefinitions.mediumGame), label = createLabel <| Just defaultGameDefinitions.mediumGame }
+            , buttonStyled { onPress = Just <| GameMsg CustomGameDefinition, label = createLabel Nothing }
             ]
         ]
+
+
+defaultGameDefinitions =
+    { smallGame = { amountOfMines = 10, dimensionX = 8, dimensionY = 8 }
+    , mediumGame = { amountOfMines = 40, dimensionX = 16, dimensionY = 16 }
+    , largeGame = { amountOfMines = 99, dimensionX = 30, dimensionY = 16 }
+    }
 
 
 adjustGameDefinition : PlayGroundDefinition -> PlayGroundDefinition
