@@ -1,7 +1,7 @@
 module Game exposing
     ( gameBoardView
     , interactWithGame
-    , FinishStatus(..), GameModel, GameStatus(..), PlayGroundDefinition
+    , PlayGroundDefinition
     )
 
 {-| The Game module is responsible for handling the game view and exports the view function and the update function to
@@ -26,8 +26,11 @@ import Array exposing (Array)
 import Element exposing (Color, Element, centerX, centerY, column, el, fill, height, padding, row, spacing, text, width)
 import Element.Background as Background
 import Element.Font as Font
-import Element.Input exposing (button)
+import Element.Input as Input exposing (button)
 import Framework.Color exposing (grey_lighter, white_ter)
+import Grid exposing (Grid)
+import Random exposing (Generator, Seed)
+import Set exposing (Set)
 import Time
 
 
@@ -100,7 +103,7 @@ gameBoardViewNoStatus =
             ]
         , columnStyled
             [ buttonStyled { onPress = Just (GameMsg <| CreateGame defaultGameDefinitions.mediumGame), label = createLabel <| Just defaultGameDefinitions.mediumGame }
-            , buttonStyled { onPress = Just <| GameMsg CustomGameDefinition, label = createLabel Nothing }
+            , buttonStyled { onPress = Nothing, label = createLabel Nothing }
             ]
         ]
 
@@ -217,6 +220,85 @@ adjustGameDefinition initGameDefinition =
     { dimensionX = dimensionX, dimensionY = dimensionY, amountOfMines = amountOfMines }
 
 
+emptyGameGridToStart : PlayGroundDefinition -> Grid Cell
+emptyGameGridToStart playgroundDefinition =
+    Grid.initialize playgroundDefinition.dimensionX playgroundDefinition.dimensionY (\x y -> { cellType = EmptyCell, status = Closed, coordinate = { rowIndex = x, columnIndex = y } })
+
+
+initialGameClickToStart : Seed -> CellCoordinates -> PlayGroundDefinition -> Grid Cell
+initialGameClickToStart seed clickedCell playGroundDefinition =
+    Debug.todo "Implement"
+
+
+mineIndexGenerator : Seed -> CellCoordinates -> PlayGroundDefinition -> List CellCoordinates
+mineIndexGenerator seed initialCell playgroundDefinition =
+    let
+        randomIntGenerator : Generator Int
+        randomIntGenerator =
+            Random.int 0 (playgroundDefinition.dimensionY * playgroundDefinition.dimensionX - 1)
+
+        disallowedIndexes : Set Int
+        disallowedIndexes =
+            initialClickOpenedFields initialCell playgroundDefinition |> List.map (coordinatesToListIndex playgroundDefinition) |> Set.fromList
+
+        alreadyOccupiedIndices =
+            Set.union disallowedIndexes
+
+        generateMine : Seed -> Set Int -> ( Int, Seed )
+        generateMine currentSeed alreadyAMine =
+            case Random.step randomIntGenerator seed of
+                ( n, s ) ->
+                    if Set.member n <| alreadyOccupiedIndices alreadyAMine then
+                        generateMine s alreadyAMine
+
+                    else
+                        ( n, s )
+
+        generateMines: Seed -> Set Int -> Set Int
+        generateMines currentSeed currentMines =
+          case (playgroundDefinition.amountOfMines - Set.size currentMines) of
+            0 -> currentMines
+            _ -> generateMine currentSeed currentMines |> \(mineIdx, nextSeed) -> Set.insert mineIdx currentMines |> \nextMines -> generateMines nextSeed nextMines
+    in
+      generateMines seed Set.empty |> Set.toList |> List.map (listIndexToCoordinates playgroundDefinition)
+
+
+initialClickOpenedFields : CellCoordinates -> PlayGroundDefinition -> List CellCoordinates
+initialClickOpenedFields initialCell playgroundDefinition =
+    let
+        openCellsMinRowIndex =
+            max 0 (initialCell.rowIndex - 1)
+
+        openCellsMaxRowIndex =
+            min (playgroundDefinition.dimensionY - 1) (initialCell.rowIndex + 1)
+
+        openCellsMinColIndex =
+            max 0 (initialCell.columnIndex - 1)
+
+        openCellsMaxColIndex =
+            min (playgroundDefinition.dimensionX - 1) (initialCell.columnIndex + 1)
+    in
+    List.range openCellsMinRowIndex openCellsMaxRowIndex
+        |> List.concatMap
+            (\rowIndex ->
+                List.range openCellsMinColIndex openCellsMaxColIndex
+                    |> List.map
+                        (\colIndex ->
+                            { rowIndex = rowIndex, columnIndex = colIndex }
+                        )
+            )
+
+
+listIndexToCoordinates : PlayGroundDefinition -> Int -> CellCoordinates
+listIndexToCoordinates definition listIndex =
+    { rowIndex = listIndex // definition.dimensionY - 1, columnIndex = modBy definition.dimensionX listIndex }
+
+
+coordinatesToListIndex : PlayGroundDefinition -> CellCoordinates -> Int
+coordinatesToListIndex definition coordinate =
+    definition.dimensionY * coordinate.rowIndex + coordinate.columnIndex
+
+
 interactWithGame : GameUpdateMsg -> GameStatus -> GameStatus
 interactWithGame updateMsg gameStatus =
     case updateMsg of
@@ -277,54 +359,3 @@ type alias PlayGroundDefinition =
     , dimensionY : Int
     , amountOfMines : Int
     }
-
-
-type GameStatus
-    = NoGame
-    | ViewCustomGameDefinitionSetup
-    | InitGame PlayGroundDefinition
-    | RunningGame GameModel
-    | FinishedGame FinishStatus GameModel
-    | PausedGame GameModel
-
-
-type alias GameDurationInSeconds =
-    Int
-
-
-{-| Represents if the game has ben won or lost and how long it took to win or loose the game.
--}
-type FinishStatus
-    = Won GameDurationInSeconds
-    | Lost GameDurationInSeconds
-
-
-type alias GameModel =
-    { board : Array (Array Cell)
-    , elapsedTime : Int
-    }
-
-
-type alias CellCoordinates =
-    { rowIndex : Int
-    , columnIndex : Int
-    }
-
-
-type alias Cell =
-    { cellType : GameCellType
-    , status : GameCellStatus
-    , coordinate : CellCoordinates
-    }
-
-
-type GameCellType
-    = Mine
-    | EmptyCell
-    | MinesAround Int
-
-
-type GameCellStatus
-    = Closed
-    | Marked
-    | Open

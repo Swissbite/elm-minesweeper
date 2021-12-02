@@ -12,7 +12,8 @@
             "elm/random": "1.0.0",
             "elm/time": "1.0.0",
             "lucamug/style-framework": "1.1.0",
-            "mdgriffith/elm-ui": "1.1.8"
+            "mdgriffith/elm-ui": "1.1.8",
+            "LesleyLai/elm-grid": "1.0.1"
         },
         "indirect": {
             "avh4/elm-color": "1.0.0",

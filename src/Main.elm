@@ -3,10 +3,11 @@ module Main exposing (..)
 import Application exposing (..)
 import Browser
 import Debug
-import Element exposing (Color, Element, alignBottom, alignLeft, alignRight, alignTop, centerX, centerY, column, el, fill, height, image, layout, maximum, padding, paddingXY, px, rgb, row, spacing, text, width)
+import Element exposing (Color, Element, alignBottom, alignLeft, alignRight, centerX, centerY, column, el, fill, height, image, layout, maximum, padding, paddingXY, px, rgb, row, spacing, text, width)
 import Element.Input exposing (button)
-import Game exposing (GameStatus(..), gameBoardView)
+import Game exposing (gameBoardView)
 import Html exposing (Html)
+import Random
 import Time
 
 
@@ -14,11 +15,11 @@ import Time
 ---- PROGRAM ----
 
 
-main : Program () Model Msg
+main : Program Int Model Msg
 main =
     Browser.element
         { view = view
-        , init = \_ -> init
+        , init = init
         , update = update
         , subscriptions = subscriptions
         }
@@ -66,15 +67,9 @@ white =
 ---- MODEL ----
 
 
-type alias Model =
-    { gameStatus : GameStatus
-    , activeSceen : ActiveScreen
-    }
-
-
-init : ( Model, Cmd Msg )
-init =
-    ( { gameStatus = NoGame, activeSceen = GameScreen }, Cmd.none )
+init : Int -> ( Model, Cmd Msg )
+init currentTime =
+    ( { gameStatus = NoGame, activeSceen = GameScreen, initialSeed = Random.initialSeed currentTime }, Cmd.none )
 
 
 
@@ -97,7 +92,7 @@ screenChangeUpdate screen model =
         GameScreen ->
             ( { model | activeSceen = screen, gameStatus = togglePauseToTarget GameIsRunning model.gameStatus }, Cmd.none )
 
-        GameHistroyScreen ->
+        GameHistoryScreen ->
             ( { model | activeSceen = screen, gameStatus = togglePauseToTarget GameIsPaused model.gameStatus }, Cmd.none )
 
         AboutScreen ->
