@@ -14,6 +14,10 @@ module Application exposing (..)
 
 -}
 
+import Element as Element
+import Element.Background as Background
+import Element.Border as Border
+import Framework.Color as Color
 import Grid exposing (Grid)
 import Random exposing (Seed)
 import Time
@@ -27,6 +31,24 @@ icons =
     }
 
 
+basicMineCellStyle : List (Element.Attribute msg)
+basicMineCellStyle =
+    [ Element.width <| Element.px 40
+    , Element.height <| Element.px 40
+    , Background.color Color.grey_lighter
+    , Border.color Color.grey
+    , Border.solid
+    , Border.width 1
+    ]
+
+
+emptyCellStyle : List (Element.Attribute msg)
+emptyCellStyle =
+    basicMineCellStyle ++ [ Background.color Color.white ]
+
+
+{-| Nothing to say
+-}
 type Msg
     = GameMsg GameUpdateMsg
     | ChangeScreen ActiveScreen
@@ -48,6 +70,8 @@ type GameStatus
     | PausedGame GameModel
 
 
+{-| All messages for anything within the game board. Represents messages for cell clicks, creation of games, running a game etc.
+-}
 type GameUpdateMsg
     = CreateGame PlayGroundDefinition
     | CustomGameDefinition
@@ -73,6 +97,7 @@ type alias CellCoordinates =
     { rowIndex : Int
     , columnIndex : Int
     }
+
 
 {-| Represents if the game has ben won or lost and how long it took to win or loose the game.
 -}

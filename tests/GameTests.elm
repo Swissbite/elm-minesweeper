@@ -2,7 +2,8 @@ module GameTests exposing (fuzzSanitizeGameDefinition, enforceEdgeCaseSanitize, 
 
 import Expect
 import Fuzz exposing (int, tuple3)
-import Game exposing (FinishStatus(..), GameModel, GameStatus(..), GameUpdateMsg(..), PlayGroundDefinition, adjustGameDefinition)
+import Game exposing (adjustGameDefinition)
+import Application exposing(FinishStatus(..), GameModel, GameStatus(..), GameUpdateMsg(..), PlayGroundDefinition)
 import Test exposing (Test, describe, fuzzWith, test)
 
 fuzzSanitizeGameDefinition: Test

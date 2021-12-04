@@ -25,6 +25,7 @@ import Application exposing (..)
 import Array exposing (Array)
 import Element exposing (Color, Element, centerX, centerY, column, el, fill, height, padding, row, spacing, text, width)
 import Element.Background as Background
+import Element.Events exposing (onClick)
 import Element.Font as Font
 import Element.Input as Input exposing (button)
 import Framework.Color exposing (grey_lighter, white_ter)
@@ -47,7 +48,9 @@ gameBoardView gameStatus =
 
         InitGame definition ->
             row [ Element.width fill, Element.height fill ]
-                [ rightStatusBarView Nothing Nothing definition.amountOfMines ]
+                [ initGameView definition
+                , rightStatusBarView Nothing Nothing definition.amountOfMines
+                ]
 
         _ ->
             el [ centerX, centerY ] <| text "Game Area from game"
@@ -173,6 +176,22 @@ rightStatusBarView flags elapsedTime amountOfMines =
         ]
 
 
+initGameView : PlayGroundDefinition -> Element Msg
+initGameView definition =
+    let
+        grid : Grid (Element Msg)
+        grid =
+            Grid.initialize definition.dimensionX definition.dimensionY (\x y -> Element.el (Application.basicMineCellStyle ++ [ onClick (GameMsg <| ClickCell { columnIndex = x, rowIndex = y }) ]) <| text "")
+
+        rows : List (Element Msg)
+        rows =
+            Grid.rows grid
+                |> Array.map (\r -> Element.row [] <| Array.toList r)
+                |> Array.toList
+    in
+    Element.column [ centerX, centerY ] rows
+
+
 {-| The initial play ground definition, can be set on start a game. The function adjustGameDefinition adjusts the input values to a valid setup.
 A game field should be at least 4 x 4, have ad least 1 mine and not more than the size of the fields - 9
 
@@ -254,13 +273,16 @@ mineIndexGenerator seed initialCell playgroundDefinition =
                     else
                         ( n, s )
 
-        generateMines: Seed -> Set Int -> Set Int
+        generateMines : Seed -> Set Int -> Set Int
         generateMines currentSeed currentMines =
-          case (playgroundDefinition.amountOfMines - Set.size currentMines) of
-            0 -> currentMines
-            _ -> generateMine currentSeed currentMines |> \(mineIdx, nextSeed) -> Set.insert mineIdx currentMines |> \nextMines -> generateMines nextSeed nextMines
+            case playgroundDefinition.amountOfMines - Set.size currentMines of
+                0 ->
+                    currentMines
+
+                _ ->
+                    generateMine currentSeed currentMines |> (\( mineIdx, nextSeed ) -> Set.insert mineIdx currentMines |> (\nextMines -> generateMines nextSeed nextMines))
     in
-      generateMines seed Set.empty |> Set.toList |> List.map (listIndexToCoordinates playgroundDefinition)
+    generateMines seed Set.empty |> Set.toList |> List.map (listIndexToCoordinates playgroundDefinition)
 
 
 initialClickOpenedFields : CellCoordinates -> PlayGroundDefinition -> List CellCoordinates
