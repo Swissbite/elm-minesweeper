@@ -30,6 +30,7 @@ main =
         , subscriptions = subscriptions
         }
 
+--- VIEW ---
 
 view : Model -> Html Msg
 view model =
@@ -52,90 +53,6 @@ view model =
                 , el [ alignRight ] <| text "right footer"
                 ]
             ]
-
-
-activeScreenView : Model -> Element Msg
-activeScreenView model =
-    case model.activeSceen of
-        GameScreen ->
-            gameBoardView model.gameStatus
-
-        _ ->
-            Debug.todo "Implement other screens"
-
-
-white : Color
-white =
-    rgb 1 1 1
-
-
-
----- MODEL ----
-
-
-init : Int -> ( Model, Cmd Msg )
-init currentTime =
-    ( { gameStatus = NoGame, activeSceen = GameScreen, seed = Random.initialSeed currentTime }, Cmd.none )
-
-
-
----- UPDATE ----
-
-
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        GameMsg updateMsg ->
-            ( { model | gameStatus = interactWithGame updateMsg model }, Cmd.none )
-
-        ChangeScreen screen ->
-            screenChangeUpdate screen model
-        UpdateSeed value ->  ({model | seed = Random.initialSeed value }, Cmd.none)
-        NextTick posix -> (model, Cmd.none)
-
-
-screenChangeUpdate : ActiveScreen -> Model -> ( Model, Cmd Msg )
-screenChangeUpdate screen model =
-    case screen of
-        GameScreen ->
-            ( { model | activeSceen = screen, gameStatus = togglePauseToTarget GameIsRunning model }, Cmd.none )
-
-        GameHistoryScreen ->
-            ( { model | activeSceen = screen, gameStatus = togglePauseToTarget GameIsPaused model }, Cmd.none )
-
-        AboutScreen ->
-            ( { model | activeSceen = screen, gameStatus = togglePauseToTarget GameIsPaused model }, Cmd.none )
-
-
-type TargetGameStatus
-    = GameIsPaused
-    | GameIsRunning
-
-
-togglePauseToTarget : TargetGameStatus -> Model -> GameStatus
-togglePauseToTarget targetStatus model =
-    case ( targetStatus, model.gameStatus ) of
-        ( GameIsPaused, RunningGame _ ) ->
-            interactWithGame TogglePause model
-
-        ( GameIsRunning, PausedGame _ ) ->
-            interactWithGame TogglePause model
-
-        _ ->
-            model.gameStatus
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    case model.gameStatus of
-        RunningGame _ -> Time.every 100 (\posix -> NextTick posix)
-        _ ->
-            Sub.none
-
-
-
-
-
 {-| Exposed function to render the main game view depending on the current GameStatus
 -}
 gameBoardView : GameStatus -> Element Msg
@@ -210,6 +127,90 @@ gameBoardViewNoStatus =
             , buttonStyled { onPress = Nothing, label = createLabel Nothing }
             ]
         ]
+
+
+
+activeScreenView : Model -> Element Msg
+activeScreenView model =
+    case model.activeSceen of
+        GameScreen ->
+            gameBoardView model.gameStatus
+
+        _ ->
+            Debug.todo "Implement other screens"
+
+--- DEFINITONS ---
+white : Color
+white =
+    rgb 1 1 1
+
+
+
+---- MODEL ----
+
+
+init : Int -> ( Model, Cmd Msg )
+init currentTime =
+    ( { gameStatus = NoGame, activeSceen = GameScreen, seed = Random.initialSeed currentTime }, Cmd.none )
+
+
+
+---- UPDATE ----
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        GameMsg updateMsg ->
+            ( { model | gameStatus = interactWithGame updateMsg model }, Cmd.none )
+
+        ChangeScreen screen ->
+            screenChangeUpdate screen model
+        UpdateSeed value ->  ({model | seed = Random.initialSeed value }, Cmd.none)
+        NextTick posix -> (model, Cmd.none)
+
+
+screenChangeUpdate : ActiveScreen -> Model -> ( Model, Cmd Msg )
+screenChangeUpdate screen model =
+    case screen of
+        GameScreen ->
+            ( { model | activeSceen = screen, gameStatus = togglePauseToTarget GameIsRunning model }, Cmd.none )
+
+        GameHistoryScreen ->
+            ( { model | activeSceen = screen, gameStatus = togglePauseToTarget GameIsPaused model }, Cmd.none )
+
+        AboutScreen ->
+            ( { model | activeSceen = screen, gameStatus = togglePauseToTarget GameIsPaused model }, Cmd.none )
+
+
+type TargetGameStatus
+    = GameIsPaused
+    | GameIsRunning
+
+
+togglePauseToTarget : TargetGameStatus -> Model -> GameStatus
+togglePauseToTarget targetStatus model =
+    case ( targetStatus, model.gameStatus ) of
+        ( GameIsPaused, RunningGame _ ) ->
+            interactWithGame TogglePause model
+
+        ( GameIsRunning, PausedGame _ ) ->
+            interactWithGame TogglePause model
+
+        _ ->
+            model.gameStatus
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    case model.gameStatus of
+        RunningGame _ -> Time.every 100 (\posix -> NextTick posix)
+        _ ->
+            Sub.none
+
+
+
+
 
 
 defaultGameDefinitions : { smallGame : PlayGroundDefinition, mediumGame : PlayGroundDefinition, largeGame : PlayGroundDefinition }
