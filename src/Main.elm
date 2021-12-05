@@ -9,7 +9,7 @@ import Html exposing (Html)
 import Html.Attributes exposing (coords)
 import Random exposing (Generator)
 import Set exposing (Set)
-import Styles exposing (..)
+import Styles
 import Types exposing (..)
 
 
@@ -38,10 +38,18 @@ update msg model =
             ( model, Cmd.none )
 
         ClickedOnInitGameCell initGame coords ->
-            ( model, Random.generate StartGame <| generatePlayGameGrid initGame coords )
+            ( model, generatePlayGameGrid initGame coords |> Random.generate StartGame )
 
         StartGame playGrid ->
             ( { model | gameBoardStatus = RunningGame playGrid }, Cmd.none )
+
+        ClickOnGameCell coords ->
+            case model.gameBoardStatus of
+                RunningGame playGrid ->
+                    ( { model | gameBoardStatus = RunningGame (openCell coords playGrid) }, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
 
 
 init : Int -> ( Model, Cmd Msg )
@@ -81,8 +89,11 @@ selectBoardView status =
         WaitOnStart initGameGrid ->
             initGameGridView initGameGrid
 
+        RunningGame playGrid ->
+            runningGameView playGrid
+
         _ ->
-            Maybe.withDefault (Element.text "Hubsi") Nothing
+            Maybe.withDefault (Element.text "Upsi") Nothing
 
 
 initGameGridView : InitGameGrid -> Element Msg
@@ -108,6 +119,36 @@ initGameCellToElement initGameGrid =
                 Coordinates x y
         in
         Element.el (Styles.untouchedCellStyle ++ [ Events.onClick <| ClickedOnInitGameCell initGameGrid coords ]) <| Element.text ""
+
+
+runningGameView : PlayGameGrid -> Element Msg
+runningGameView playGameGrid =
+    playGameGrid
+        |> Grid.indexedMap runningGameCellToElement
+        |> Grid.rows
+        |> Array.map Array.toList
+        |> Array.map (\l -> Element.row [] l)
+        |> Array.toList
+        |> Element.column [ Element.centerX, Element.centerY ]
+
+
+runningGameCellToElement : Int -> Int -> GameCell -> Element Msg
+runningGameCellToElement x y cell =
+    case cell of
+        GameCell _ Flagged ->
+            Element.el Styles.untouchedCellStyle <| Element.text Styles.icons.markerFlag
+
+        GameCell _ Untouched ->
+            Element.el (Styles.untouchedCellStyle ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) <| Element.text ""
+
+        GameCell EmptyCell Opened ->
+            Element.el Styles.openedCellStyle <| Element.text ""
+
+        GameCell MineCell Opened ->
+            Element.el Styles.openedCellStyle <| Element.text Styles.icons.exploded
+
+        GameCell (MineNeighbourCell neighbours) Opened ->
+            Element.el (Styles.openedMineNeighbourCellStyle neighbours) <| Element.text (String.fromInt neighbours)
 
 
 
@@ -260,10 +301,10 @@ openCell coords playGrid =
 
                 ( MineNeighbourCell neighbhours, _ ) ->
                     Grid.set coordinateAsPair (GameCell (MineNeighbourCell neighbhours) Opened) playGrid
-                        |> (\g -> List.foldl (\coord grid -> openCell coord grid) g surroundingCoordinatesAsPair)
 
                 ( EmptyCell, _ ) ->
                     Grid.set coordinateAsPair (GameCell EmptyCell Opened) playGrid
+                        |> (\g -> List.foldl (\coord grid -> openCell coord grid) g surroundingCoordinatesAsPair)
 
                 ( MineCell, _ ) ->
                     Grid.set coordinateAsPair (GameCell MineCell Opened) playGrid

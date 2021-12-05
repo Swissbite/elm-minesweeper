@@ -10,6 +10,7 @@ type Msg
     = Msg
     | ClickedOnInitGameCell InitGameGrid Coordinates
     | StartGame PlayGameGrid
+    | ClickOnGameCell Coordinates
 
 
 type alias Model =
