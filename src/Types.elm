@@ -8,7 +8,7 @@ import Set exposing (Set)
 -}
 type Msg
     = Msg
-    | ClickedOnInitGameCell PlayGroundDefinition Coordinates
+    | ClickedOnInitGameCell InitGameGrid Coordinates
     | StartGame PlayGameGrid
 
 
@@ -57,7 +57,7 @@ type InitGameCell
 type CellType
     = EmptyCell
     | MineCell
-    | MineNeighbourCell AmountOfNeighbours
+    | MineNeighbourCell Int
 
 
 type CellStatus
@@ -66,19 +66,8 @@ type CellStatus
     | Flagged
 
 
-type AmountOfNeighbours
-    = OneMine
-    | TwoMines
-    | ThreeMines
-    | FourMines
-    | FiveMines
-    | SixMines
-    | SevenMines
-    | EightMines
-
-
 type GameCell
-    = CellType CellStatus
+    = GameCell CellType CellStatus
 
 
 type CellClickMode

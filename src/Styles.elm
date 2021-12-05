@@ -25,8 +25,6 @@ cellWidth =
     Element.px 50
 
 
-
-
 basicCellStyle : List (Element.Attribute msg)
 basicCellStyle =
     [ Element.width cellWidth
@@ -34,13 +32,17 @@ basicCellStyle =
     , Element.Border.color cellBorderColor
     , Element.Border.width 1
     ]
+
+
 untouchedCellStyle : List (Element.Attribute msg)
 untouchedCellStyle =
-    basicCellStyle ++
-    [ Background.color untouchedCellGray
-    ]
+    basicCellStyle
+        ++ [ Background.color untouchedCellGray
+           ]
+
+
 openedCellStyle : List (Element.Attribute msg)
 openedCellStyle =
-    basicCellStyle ++
-    [ Background.color openedCellGray
-    ]
+    basicCellStyle
+        ++ [ Background.color openedCellGray
+           ]
