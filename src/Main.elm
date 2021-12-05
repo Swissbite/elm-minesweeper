@@ -46,7 +46,7 @@ update msg model =
         ClickOnGameCell coords ->
             case model.gameBoardStatus of
                 RunningGame playGrid ->
-                    ( { model | gameBoardStatus = RunningGame (openCell coords playGrid) }, Cmd.none )
+                    ( { model | gameBoardStatus = gameBoardStatus (openCell coords playGrid) }, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -308,6 +308,56 @@ openCell coords playGrid =
 
                 ( MineCell, _ ) ->
                     Grid.set coordinateAsPair (GameCell MineCell Opened) playGrid
+
+
+gameBoardStatus : PlayGameGrid -> GameBoardStatus
+gameBoardStatus playGrid =
+    let
+        isExplodedMine : GameCell -> Bool -> Bool
+        isExplodedMine cell exploded =
+            case cell of
+                GameCell MineCell Opened ->
+                    True
+
+                _ ->
+                    exploded
+
+        hasAnExplodedMine =
+            Grid.foldl isExplodedMine False playGrid
+
+        isMissingFildToOpen : GameCell -> Bool -> Bool
+        isMissingFildToOpen cell anotherfound =
+            case cell of
+                GameCell EmptyCell state ->
+                    case state of
+                        Opened ->
+                            anotherfound
+
+                        _ ->
+                            True
+
+                GameCell (MineNeighbourCell _) state ->
+                    case state of
+                        Opened ->
+                            anotherfound
+
+                        _ ->
+                            True
+
+                _ ->
+                    anotherfound
+
+        hasRemainingFields =
+            Grid.foldl isMissingFildToOpen False playGrid
+    in
+    if hasAnExplodedMine then
+        FinishedGame playGrid Lost
+
+    else if not hasRemainingFields then
+        FinishedGame playGrid Won
+
+    else
+        RunningGame playGrid
 
 
 generateListOfPossibleIndizes : Grid InitGameCell -> Coordinates -> List Int
