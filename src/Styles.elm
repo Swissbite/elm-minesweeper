@@ -81,6 +81,7 @@ basicCellStyle =
     , Element.height cellWidth
     , Element.Border.color cellBorderColor
     , Element.Border.width 1
+    
     ]
 
 
@@ -94,7 +95,7 @@ untouchedCellStyle =
 openedCellStyle : List (Element.Attribute msg)
 openedCellStyle =
     basicCellStyle
-        ++ [ Background.color openedCellGray
+        ++ [ Background.color openedCellGray            
            ]
 
 
@@ -132,4 +133,7 @@ openedMineNeighbourCellStyle number =
     in
     openedCellStyle
         ++ [ Font.color color
+           , Font.family [Font.monospace]
+           , Font.extraBold
+           , Font.glow color 0.2
            ]

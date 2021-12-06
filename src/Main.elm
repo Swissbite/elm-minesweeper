@@ -136,7 +136,7 @@ runningGameCellToElement : Int -> Int -> GameCell -> Element Msg
 runningGameCellToElement x y cell =
     case cell of
         GameCell _ Flagged ->
-            Element.el Styles.untouchedCellStyle <| Element.text Styles.icons.markerFlag
+            Element.el Styles.untouchedCellStyle <| Element.el [Element.centerX, Element.centerY] <| Element.text Styles.icons.markerFlag
 
         GameCell _ Untouched ->
             Element.el (Styles.untouchedCellStyle ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) <| Element.text ""
@@ -145,10 +145,10 @@ runningGameCellToElement x y cell =
             Element.el Styles.openedCellStyle <| Element.text ""
 
         GameCell MineCell Opened ->
-            Element.el Styles.openedCellStyle <| Element.text Styles.icons.exploded
+            Element.el Styles.openedCellStyle <| Element.el [Element.centerX, Element.centerY] <| Element.text Styles.icons.exploded
 
         GameCell (MineNeighbourCell neighbours) Opened ->
-            Element.el (Styles.openedMineNeighbourCellStyle neighbours) <| Element.text (String.fromInt neighbours)
+            Element.el (Styles.openedMineNeighbourCellStyle neighbours) <| Element.el [Element.centerX, Element.centerY] <| Element.text (String.fromInt neighbours)
 
 
 
