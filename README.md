@@ -22,9 +22,9 @@ Features it should have:
 - Multiple difficulties
 - A current high score
 - Able to pause and resume the game
-- Able to switch between click or mark fields
+- Able to switch between click or mark fields ✔
 - Click on a number, where are enough marks to open all remaining items should work
-- Open a blank field should open all other blank fields and the neighbour number fields
+- Open a blank field should open all other blank fields and the neighbour number fields ✔
 - Have some game information like
   - how many mines are still missing
   - how many have been marked
