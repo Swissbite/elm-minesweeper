@@ -1,17 +1,18 @@
 module Styles exposing (..)
 
-import Element as Element
+import Element as Element exposing (..)
 import Element.Background as Background
-import Element.Border
+import Element.Border as Border
 import Element.Font as Font
+import Html.Attributes as HA
 
 
-icons : { markerFlag : String, untouchedBomb : String, exploded : String, stopWatch : String }
+icons : { markerFlag : Char, untouchedBomb : Char, exploded : Char, stopWatch : Char }
 icons =
-    { markerFlag = "⚑"
-    , untouchedBomb = "💣"
-    , exploded = "💥"
-    , stopWatch = "⏱️"
+    { markerFlag = '⚑'
+    , untouchedBomb = '💣'
+    , exploded = '💥'
+    , stopWatch = '⏱'
     }
 
 
@@ -70,6 +71,21 @@ cellBorderColor =
     Element.rgba 100 100 100 1
 
 
+lightGrey : Color
+lightGrey =
+    rgb255 187 187 187
+
+
+green : Color
+green =
+    rgb255 39 203 139
+
+
+white : Color
+white =
+    rgb255 255 255 255
+
+
 cellWidth : Element.Length
 cellWidth =
     Element.px 50
@@ -79,9 +95,9 @@ basicCellStyle : List (Element.Attribute msg)
 basicCellStyle =
     [ Element.width cellWidth
     , Element.height cellWidth
-    , Element.Border.color cellBorderColor
-    , Element.Border.width 1
-    
+    , Border.color cellBorderColor
+    , Border.width 1
+    , Element.pointer
     ]
 
 
@@ -95,7 +111,7 @@ untouchedCellStyle =
 openedCellStyle : List (Element.Attribute msg)
 openedCellStyle =
     basicCellStyle
-        ++ [ Background.color openedCellGray            
+        ++ [ Background.color openedCellGray
            ]
 
 
@@ -133,7 +149,63 @@ openedMineNeighbourCellStyle number =
     in
     openedCellStyle
         ++ [ Font.color color
-           , Font.family [Font.monospace]
+           , Font.family [ Font.monospace ]
            , Font.extraBold
            , Font.glow color 0.2
            ]
+
+
+{-| Credits to <https://ellie-app.com/85HbWTjCGWha1>
+-}
+toggleCheckboxWidget : { offColor : Color, onColor : Color, sliderColor : Color, toggleWidth : Int, toggleHeight : Int, offSymbol : Maybe Char, onSymbol : Maybe Char } -> Bool -> Element msg
+toggleCheckboxWidget { offColor, onColor, sliderColor, toggleWidth, toggleHeight, offSymbol, onSymbol } checked =
+    let
+        pad =
+            3
+
+        sliderSize =
+            toggleHeight - 2 * pad
+
+        translation =
+            (toggleWidth - sliderSize - pad)
+                |> String.fromInt
+    in
+    Element.el
+        [ Background.color <|
+            if checked then
+                onColor
+
+            else
+                offColor
+        , width <| px <| toggleWidth
+        , height <| px <| toggleHeight
+        , Border.rounded <| toggleHeight // 2
+        , inFront <|
+            el [ height fill ] <|
+                el
+                    [ Background.color sliderColor
+                    , Border.rounded <| sliderSize // 2
+                    , width <| px <| sliderSize
+                    , height <| px <| sliderSize
+                    , centerY
+                    , moveRight pad
+                    , htmlAttribute <|
+                        HA.style "transition" ".3s"
+                    , htmlAttribute <|
+                        if checked then
+                            HA.style "transform" <| "translateX(" ++ translation ++ "px)"
+
+                        else
+                            HA.class ""
+                    ]
+                <|
+                    el [ centerX, centerY, Font.size <| toggleHeight // 2, Font.color <| rgb255 150 150 150 ] <|
+                        text <|
+                            if checked then
+                                Maybe.withDefault "" <| Maybe.map String.fromChar offSymbol
+
+                            else
+                                Maybe.withDefault "" <| Maybe.map String.fromChar onSymbol
+        ]
+    <|
+        Element.none

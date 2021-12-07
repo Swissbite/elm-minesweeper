@@ -11,10 +11,12 @@ type Msg
     | ClickedOnInitGameCell InitGameGrid Coordinates
     | StartGame PlayGameGrid
     | ClickOnGameCell Coordinates
+    | ToogleGameCellInteractionMode
 
 
 type alias Model =
     { gameBoardStatus : GameBoardStatus
+    , gameInteractionMode : CellClickMode
     }
 
 

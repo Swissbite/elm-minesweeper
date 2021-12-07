@@ -4,6 +4,7 @@ import Array
 import Browser
 import Element exposing (Element, fill)
 import Element.Events as Events
+import Element.Input as Input
 import Grid exposing (Grid)
 import Html exposing (Html)
 import Html.Attributes exposing (coords)
@@ -44,17 +45,32 @@ update msg model =
             ( { model | gameBoardStatus = RunningGame playGrid }, Cmd.none )
 
         ClickOnGameCell coords ->
-            case model.gameBoardStatus of
-                RunningGame playGrid ->
+            case ( model.gameInteractionMode, model.gameBoardStatus ) of
+                ( Reveal, RunningGame playGrid ) ->
                     ( { model | gameBoardStatus = gameBoardStatus (openCell coords playGrid) }, Cmd.none )
+
+                ( Flag, RunningGame playGrid ) ->
+                    ( { model | gameBoardStatus = gameBoardStatus (flagCell coords playGrid) }, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
 
+        ToogleGameCellInteractionMode ->
+            let
+                nextMode =
+                    case model.gameInteractionMode of
+                        Reveal ->
+                            Flag
+
+                        Flag ->
+                            Reveal
+            in
+            ( { model | gameInteractionMode = nextMode }, Cmd.none )
+
 
 init : Int -> ( Model, Cmd Msg )
 init _ =
-    ( { gameBoardStatus = WaitOnStart <| createInitGameGrid smallPlayground }, Cmd.none )
+    ( { gameBoardStatus = WaitOnStart <| createInitGameGrid smallPlayground, gameInteractionMode = Reveal }, Cmd.none )
 
 
 smallPlayground : PlayGroundDefinition
@@ -79,18 +95,43 @@ view m =
     Element.layout [ Element.width Element.fill, Element.height Element.fill ] <|
         Element.column [ Element.width fill, Element.height fill, Element.centerX ]
             [ Element.el [ Element.centerX ] <| Element.text "Minesweeper"
-            , selectBoardView m.gameBoardStatus
+            , selectBoardView m.gameBoardStatus m.gameInteractionMode
             ]
 
 
-selectBoardView : GameBoardStatus -> Element Msg
-selectBoardView status =
+selectBoardView : GameBoardStatus -> CellClickMode -> Element Msg
+selectBoardView status gameInteractionMode =
     case status of
         WaitOnStart initGameGrid ->
             initGameGridView initGameGrid
 
         RunningGame playGrid ->
-            runningGameView playGrid
+            Element.row [ Element.width fill, Element.height fill ]
+                [ runningGameView playGrid
+                , Element.column []
+                    [ Input.checkbox [ Element.centerX, Element.centerY ] <|
+                        { onChange = always ToogleGameCellInteractionMode
+                        , label = Input.labelHidden "Activer/Désactiver le partage"
+                        , checked =
+                            case gameInteractionMode of
+                                Reveal ->
+                                    False
+
+                                Flag ->
+                                    True
+                        , icon =
+                            Styles.toggleCheckboxWidget
+                                { offColor = Styles.lightGrey
+                                , onColor = Styles.green
+                                , sliderColor = Styles.white
+                                , toggleWidth = 60
+                                , toggleHeight = 28
+                                , onSymbol = Just Styles.icons.untouchedBomb
+                                , offSymbol = Just Styles.icons.markerFlag
+                                }
+                        }
+                    ]
+                ]
 
         _ ->
             Maybe.withDefault (Element.text "Upsi") Nothing
@@ -136,19 +177,19 @@ runningGameCellToElement : Int -> Int -> GameCell -> Element Msg
 runningGameCellToElement x y cell =
     case cell of
         GameCell _ Flagged ->
-            Element.el Styles.untouchedCellStyle <| Element.el [Element.centerX, Element.centerY] <| Element.text Styles.icons.markerFlag
+            Element.el (Styles.untouchedCellStyle ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.markerFlag
 
         GameCell _ Untouched ->
-            Element.el (Styles.untouchedCellStyle ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) <| Element.text ""
+            Element.el (Styles.untouchedCellStyle ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) Element.none
 
         GameCell EmptyCell Opened ->
-            Element.el Styles.openedCellStyle <| Element.text ""
+            Element.el Styles.openedCellStyle Element.none
 
         GameCell MineCell Opened ->
-            Element.el Styles.openedCellStyle <| Element.el [Element.centerX, Element.centerY] <| Element.text Styles.icons.exploded
+            Element.el Styles.openedCellStyle <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.exploded
 
         GameCell (MineNeighbourCell neighbours) Opened ->
-            Element.el (Styles.openedMineNeighbourCellStyle neighbours) <| Element.el [Element.centerX, Element.centerY] <| Element.text (String.fromInt neighbours)
+            Element.el (Styles.openedMineNeighbourCellStyle neighbours) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text (String.fromInt neighbours)
 
 
 
@@ -267,11 +308,30 @@ createPlayGameGrid widht height mineCoordinates =
         |> (\minedGrid -> Grid.indexedMap (indexedMapFn minedGrid) minedGrid)
 
 
+flagCell : Coordinates -> PlayGameGrid -> PlayGameGrid
+flagCell coords playGrid =
+    coordinatesToPair coords
+        |> (\c ->
+                Grid.get c playGrid
+                    |> (\cell ->
+                            case cell of
+                                Just (GameCell gameCell Flagged) ->
+                                    Grid.set c (GameCell gameCell Untouched) playGrid
+
+                                Just (GameCell gameCell Untouched) ->
+                                    Grid.set c (GameCell gameCell Flagged) playGrid
+
+                                _ ->
+                                    playGrid
+                       )
+           )
+
+
 openCell : Coordinates -> PlayGameGrid -> PlayGameGrid
 openCell coords playGrid =
     let
         coordinateAsPair =
-            ( coords.x, coords.y )
+            coordinatesToPair coords
 
         cell =
             Grid.get coordinateAsPair playGrid
