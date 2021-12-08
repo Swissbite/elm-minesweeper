@@ -204,15 +204,45 @@ runningGameCellToElement x y cell =
 
 finishedGameView: PlayGameGrid -> GameResult -> Element Msg
 finishedGameView playGameGrid gameResult =
-    Element.el [ Element.centerX, Element.centerY ] <|
+    Element.column [ Element.centerX, Element.centerY ] [
         case gameResult of
             Won ->
                 Element.text "You won!"
 
             Lost ->
                 Element.text "You lost!"
+        , finishedGridToView playGameGrid
+        ]
+    
 
-            
+finishedGridToView: PlayGameGrid -> Element Msg
+finishedGridToView playGameGrid =
+    playGameGrid
+        |> Grid.map finishedGameCellToElement
+        |> Grid.rows
+        |> Array.map Array.toList
+        |> Array.map (\l -> Element.row [] l)
+        |> Array.toList
+        |> Element.column [ Element.centerX, Element.centerY ]
+finishedGameCellToElement: GameCell -> Element Msg
+finishedGameCellToElement cell =
+    case cell of
+        GameCell MineCell Opened ->
+            Element.el Styles.openedCellStyle <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.exploded
+
+        GameCell MineCell _ ->
+            Element.el Styles.openedCellStyle <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.untouchedBomb
+
+        GameCell (MineNeighbourCell neighbours) Opened ->
+            Element.el (Styles.openedMineNeighbourCellStyle neighbours) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text (String.fromInt neighbours)
+        
+        GameCell EmptyCell Opened ->
+            Element.el Styles.openedCellStyle Element.none
+        GameCell _ Flagged ->
+            Element.el Styles.untouchedCellStyle <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.markerFlag
+        
+        _ -> Element.el Styles.untouchedCellStyle Element.none
+
 --- HELPER ---
 
 
