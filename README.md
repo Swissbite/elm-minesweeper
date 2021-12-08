@@ -17,12 +17,17 @@ I also like the way the android game
 [Minesweeper - The Clean One](https://play.google.com/store/apps/details?id=ee.dustland.android.minesweeper) 
 solved some issues for touch devices.
 
-Features it should have:
+Features it should have (in no particular order):
 
 - Multiple difficulties
 - A current high score
 - Able to pause and resume the game
 - Able to switch between click or mark fields ✔
+- See the result board after finished the game
+  - If the game has been won or lost ✔
+  - The mines should be revealed on the board ✔
+  - The end state of the board ✔
+  - Time it took for the game
 - Click on a number, where are enough marks to open all remaining items should work
 - Open a blank field should open all other blank fields and the neighbour number fields ✔
 - Have some game information like
