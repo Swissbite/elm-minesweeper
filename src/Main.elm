@@ -103,38 +103,48 @@ selectBoardView : GameBoardStatus -> CellClickMode -> Element Msg
 selectBoardView status gameInteractionMode =
     case status of
         WaitOnStart initGameGrid ->
-            initGameGridView initGameGrid
+            Element.column [ Element.width fill, Element.height fill ]
+                [ dummyToogleElement
+                , initGameGridView initGameGrid
+                ]
 
         RunningGame playGrid ->
-            Element.row [ Element.width fill, Element.height fill ]
-                [ runningGameView playGrid
-                , Element.column []
-                    [ Input.checkbox [ Element.centerX, Element.centerY ] <|
-                        { onChange = always ToogleGameCellInteractionMode
-                        , label = Input.labelHidden "Activer/Désactiver le partage"
-                        , checked =
-                            case gameInteractionMode of
-                                Reveal ->
-                                    False
-
-                                Flag ->
-                                    True
-                        , icon =
-                            Styles.toggleCheckboxWidget
-                                { offColor = Styles.lightGrey
-                                , onColor = Styles.green
-                                , sliderColor = Styles.white
-                                , toggleWidth = 60
-                                , toggleHeight = 28
-                                , onSymbol = Just Styles.icons.untouchedBomb
-                                , offSymbol = Just Styles.icons.markerFlag
-                                }
-                        }
-                    ]
+            Element.column [ Element.width fill, Element.height fill ]
+                [ mineToggleElement gameInteractionMode
+                , runningGameView playGrid
                 ]
 
         _ ->
             Maybe.withDefault (Element.text "Upsi") Nothing
+
+dummyToogleElement: Element Msg
+dummyToogleElement = Element.el [ Element.centerX, Element.centerY, Element.paddingXY 0 10 ] <| styledToogleElement False
+
+styledToogleElement: Bool -> Element Msg
+styledToogleElement = Styles.toggleCheckboxWidget
+                    { offColor = Styles.lightGrey
+                    , onColor = Styles.green
+                    , sliderColor = Styles.white
+                    , toggleWidth = 60
+                    , toggleHeight = 28
+                    , onSymbol = Just Styles.icons.untouchedBomb
+                    , offSymbol = Just Styles.icons.markerFlag
+                    }
+mineToggleElement : CellClickMode -> Element Msg
+mineToggleElement gameInteractionMode =
+    Element.el [ Element.centerX, Element.centerY, Element.paddingXY 0 10 ] <|
+        Input.checkbox [ Element.centerX, Element.centerY] <|
+            { onChange = always ToogleGameCellInteractionMode
+            , label = Input.labelHidden "Activate/deactivate mine flag mode"
+            , checked =
+                case gameInteractionMode of
+                    Reveal ->
+                        False
+
+                    Flag ->
+                        True
+            , icon = styledToogleElement
+            }
 
 
 initGameGridView : InitGameGrid -> Element Msg
