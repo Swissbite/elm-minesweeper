@@ -113,9 +113,9 @@ selectBoardView status gameInteractionMode =
                 [ mineToggleElement gameInteractionMode
                 , runningGameView playGrid
                 ]
+        FinishedGame playGrid finishedStatus ->
+            finishedGameView playGrid finishedStatus
 
-        _ ->
-            Maybe.withDefault (Element.text "Upsi") Nothing
 
 dummyToogleElement: Element Msg
 dummyToogleElement = Element.el [ Element.centerX, Element.centerY, Element.paddingXY 0 10 ] <| styledToogleElement False
@@ -202,7 +202,17 @@ runningGameCellToElement x y cell =
             Element.el (Styles.openedMineNeighbourCellStyle neighbours) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text (String.fromInt neighbours)
 
 
+finishedGameView: PlayGameGrid -> GameResult -> Element Msg
+finishedGameView playGameGrid gameResult =
+    Element.el [ Element.centerX, Element.centerY ] <|
+        case gameResult of
+            Won ->
+                Element.text "You won!"
 
+            Lost ->
+                Element.text "You lost!"
+
+            
 --- HELPER ---
 
 
