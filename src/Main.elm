@@ -5,6 +5,8 @@ import Browser
 import Element exposing (Element, fill)
 import Element.Events as Events
 import Element.Input as Input
+import Element.Background as Background
+import Element.Border as Border
 import Grid exposing (Grid)
 import Html exposing (Html)
 import Html.Attributes exposing (coords)
@@ -35,9 +37,6 @@ main =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Msg ->
-            ( model, Cmd.none )
-
         ClickedOnInitGameCell initGame coords ->
             ( model, generatePlayGameGrid initGame coords |> Random.generate StartGame )
 
@@ -66,6 +65,8 @@ update msg model =
                             Reveal
             in
             ( { model | gameInteractionMode = nextMode }, Cmd.none )
+        CreateNewGame playgroundDefinition ->
+            ({ gameBoardStatus = WaitOnStart <| createInitGameGrid playgroundDefinition, gameInteractionMode = Reveal }, Cmd.none)
 
 
 init : Int -> ( Model, Cmd Msg )
@@ -205,12 +206,24 @@ runningGameCellToElement x y cell =
 finishedGameView: PlayGameGrid -> GameResult -> Element Msg
 finishedGameView playGameGrid gameResult =
     Element.column [ Element.centerX, Element.centerY ] [
+        Element.el [Element.centerX, Element.centerY, Element.paddingXY 0 10] <|
         case gameResult of
             Won ->
                 Element.text "You won!"
 
             Lost ->
                 Element.text "You lost!"
+        , Element.row [Element.centerX, Element.centerY, Element.spacing 20, Border.solid, Border.rounded 25, Element.paddingXY 0 10] 
+            [ Input.button [Background.color Styles.asparagus, Border.solid, Element.padding 10, Border.rounded 10] {
+                onPress  = Just (CreateNewGame <| playGameGridToPlaygroundDefinition playGameGrid)
+                , label = Element.text "Start new game"
+                }
+            , Input.button [Background.color Styles.saffron, Border.solid, Element.padding 10, Border.rounded 10] {
+                onPress  = Nothing
+                , label = Element.text "Back to overview"
+                }
+            
+        ]
         , finishedGridToView playGameGrid
         ]
     
@@ -248,11 +261,49 @@ finishedGameCellToElement cell =
 
 createInitGameGrid : PlayGroundDefinition -> InitGameGrid
 createInitGameGrid definition =
-    { grid = Grid.repeat definition.cols definition.rows InitGameCell
-    , mines = definition.mines
+    let 
+        sanitized = sanitizePlaygroundDefinition definition
+    in 
+    { grid = Grid.repeat sanitized.cols sanitized.rows InitGameCell
+    , mines = sanitized.mines
     }
 
+playGameGridToPlaygroundDefinition: PlayGameGrid -> PlayGroundDefinition
+playGameGridToPlaygroundDefinition grid =
+    let
+        foldLFn: GameCell -> Int -> Int
+        foldLFn cell count =
+            case cell of
+                GameCell MineCell _ ->
+                    count + 1
 
+                
+                _ ->
+                    count
+    in 
+        { cols = Grid.width grid
+        , rows = Grid.height grid
+        , mines = Grid.foldl foldLFn 0 grid
+        }
+
+sanitizePlaygroundDefinition: PlayGroundDefinition -> PlayGroundDefinition
+sanitizePlaygroundDefinition definition =
+    let
+        cols =
+            max 4 definition.cols
+
+        rows =
+            max 4 definition.rows
+
+        mines =
+            definition.mines
+            |> max 1
+            |> min (cols * rows - 1)
+    in
+    { cols = cols
+    , rows = rows
+    , mines = mines
+    }
 {-| Takes the initGame and the clicked coordinates and generates a new play game grid.
 The clicked cell is opened and the surrounding cells - if the clicked cell is an empty cell - are opened as well.
 -}

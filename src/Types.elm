@@ -7,11 +7,11 @@ import Set exposing (Set)
 {-| Export of all Types and Type definitions in this file helps to group Typings and asdf
 -}
 type Msg
-    = Msg
-    | ClickedOnInitGameCell InitGameGrid Coordinates
+    = ClickedOnInitGameCell InitGameGrid Coordinates
     | StartGame PlayGameGrid
     | ClickOnGameCell Coordinates
     | ToogleGameCellInteractionMode
+    | CreateNewGame PlayGroundDefinition
 
 
 type alias Model =

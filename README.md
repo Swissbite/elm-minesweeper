@@ -28,6 +28,9 @@ Features it should have (in no particular order):
   - The mines should be revealed on the board ✔
   - The end state of the board ✔
   - Time it took for the game
+- After game finish:
+   - Able to start a new game with the same difficulty ✔
+   - Back to overview to create a new game
 - Click on a number, where are enough marks to open all remaining items should work
 - Open a blank field should open all other blank fields and the neighbour number fields ✔
 - Have some game information like
