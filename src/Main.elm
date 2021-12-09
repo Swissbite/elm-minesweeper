@@ -39,7 +39,8 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GoToStartPage ->
-            ({model | gameBoardStatus = NoGame PreSelect}, Cmd.none)
+            ( { model | gameBoardStatus = NoGame PreSelect }, Cmd.none )
+
         ClickedOnInitGameCell initGame coords ->
             ( model, generatePlayGameGrid initGame coords |> Random.generate StartGame )
 
@@ -129,7 +130,7 @@ selectBoardView : GameBoardStatus -> CellClickMode -> Element Msg
 selectBoardView status gameInteractionMode =
     case status of
         NoGame _ ->
-            Element.column [ Element.width fill, Element.height fill,  Element.spacing 10]
+            Element.column [ Element.width fill, Element.height fill, Element.spacing 10 ]
                 [ Element.row
                     [ Element.centerX, Element.centerY, Element.spacing 10 ]
                     [ Styles.styledGameCelectionButton
@@ -142,13 +143,13 @@ selectBoardView status gameInteractionMode =
                         }
                     ]
                 , Element.row
-                    [  Element.centerX, Element.centerY, Element.spacing 10 ]
+                    [ Element.centerX, Element.centerY, Element.spacing 10 ]
                     [ Styles.styledGameCelectionButton
                         { onPress = Just (CreateNewGame advancePlayground)
                         , label = Element.text "advanced"
                         }
                     , Styles.styledGameCelectionButton
-                        { onPress = Just (CreateNewGame xxlPlayground )
+                        { onPress = Just (CreateNewGame xxlPlayground)
                         , label = Element.text "xxl"
                         }
                     ]
