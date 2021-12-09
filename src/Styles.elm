@@ -4,6 +4,7 @@ import Element as Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
 import Html.Attributes as HA
 
 
@@ -153,6 +154,25 @@ openedMineNeighbourCellStyle number =
            , Font.extraBold
            , Font.glow color 0.2
            ]
+
+
+styledGameCelectionButton : { onPress : Maybe msg, label : Element msg } -> Element msg
+styledGameCelectionButton =
+    Input.button
+        [ Element.width
+            (fill
+                |> Element.maximum 400
+                |> Element.minimum 300
+            )
+        , Element.height
+            (fill
+                |> Element.maximum 400
+                |> Element.minimum 300
+            )
+        , Background.color lightGrey
+        , Element.centerX
+        , Element.centerY
+        ]
 
 
 {-| Credits to <https://ellie-app.com/85HbWTjCGWha1>

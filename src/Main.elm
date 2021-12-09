@@ -38,6 +38,8 @@ main =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GoToStartPage ->
+            ({model | gameBoardStatus = NoGame PreSelect}, Cmd.none)
         ClickedOnInitGameCell initGame coords ->
             ( model, generatePlayGameGrid initGame coords |> Random.generate StartGame )
 
@@ -73,7 +75,7 @@ update msg model =
 
 init : Int -> ( Model, Cmd Msg )
 init _ =
-    ( { gameBoardStatus = WaitOnStart <| createInitGameGrid smallPlayground, gameInteractionMode = Reveal }, Cmd.none )
+    ( { gameBoardStatus = NoGame PreSelect, gameInteractionMode = Reveal }, Cmd.none )
 
 
 smallPlayground : PlayGroundDefinition
@@ -81,6 +83,27 @@ smallPlayground =
     { cols = 8
     , rows = 8
     , mines = 10
+    }
+
+
+mediumPlayground =
+    { cols = 16
+    , rows = 16
+    , mines = 40
+    }
+
+
+advancePlayground =
+    { cols = 30
+    , rows = 16
+    , mines = 99
+    }
+
+
+xxlPlayground =
+    { cols = 50
+    , rows = 50
+    , mines = 150
     }
 
 
@@ -105,6 +128,32 @@ view m =
 selectBoardView : GameBoardStatus -> CellClickMode -> Element Msg
 selectBoardView status gameInteractionMode =
     case status of
+        NoGame _ ->
+            Element.column [ Element.width fill, Element.height fill,  Element.spacing 10]
+                [ Element.row
+                    [ Element.centerX, Element.centerY, Element.spacing 10 ]
+                    [ Styles.styledGameCelectionButton
+                        { onPress = Just (CreateNewGame smallPlayground)
+                        , label = Element.text "small"
+                        }
+                    , Styles.styledGameCelectionButton
+                        { onPress = Just (CreateNewGame mediumPlayground)
+                        , label = Element.text "medium"
+                        }
+                    ]
+                , Element.row
+                    [  Element.centerX, Element.centerY, Element.spacing 10 ]
+                    [ Styles.styledGameCelectionButton
+                        { onPress = Just (CreateNewGame advancePlayground)
+                        , label = Element.text "advanced"
+                        }
+                    , Styles.styledGameCelectionButton
+                        { onPress = Just (CreateNewGame xxlPlayground )
+                        , label = Element.text "xxl"
+                        }
+                    ]
+                ]
+
         WaitOnStart initGameGrid ->
             Element.column [ Element.width fill, Element.height fill ]
                 [ dummyToogleElement
@@ -227,7 +276,7 @@ finishedGameView playGameGrid gameResult =
                 , label = Element.text "Start new game"
                 }
             , Input.button [ Background.color Styles.saffron, Border.solid, Element.padding 10, Border.rounded 10 ]
-                { onPress = Nothing
+                { onPress = Just GoToStartPage
                 , label = Element.text "Back to overview"
                 }
             ]

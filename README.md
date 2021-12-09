@@ -19,7 +19,7 @@ solved some issues for touch devices.
 
 Features it should have (in no particular order):
 
-- Multiple difficulties
+- Multiple difficulties ✔
 - A current high score
 - Able to pause and resume the game
 - Able to switch between click or mark fields ✔
@@ -30,7 +30,7 @@ Features it should have (in no particular order):
   - Time it took for the game
 - After game finish:
    - Able to start a new game with the same difficulty ✔
-   - Back to overview to create a new game
+   - Back to overview to create a new game ✔
 - Click on a number, where are enough marks to open all remaining items should work ✔
 - Open a blank field should open all other blank fields and the neighbour number fields ✔
 - Have some game information like

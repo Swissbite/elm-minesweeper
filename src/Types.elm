@@ -1,7 +1,6 @@
 module Types exposing (..)
 
 import Grid exposing (Grid)
-import Set exposing (Set)
 
 
 {-| Export of all Types and Type definitions in this file helps to group Typings and asdf
@@ -12,6 +11,7 @@ type Msg
     | ClickOnGameCell Coordinates
     | ToogleGameCellInteractionMode
     | CreateNewGame PlayGroundDefinition
+    | GoToStartPage
 
 
 type alias Model =
@@ -37,6 +37,12 @@ type GameBoardStatus
     = WaitOnStart InitGameGrid
     | RunningGame PlayGameGrid
     | FinishedGame PlayGameGrid GameResult
+    | NoGame NoGameMode
+
+
+type NoGameMode
+    = PreSelect
+    | Custom
 
 
 type alias InitGameGrid =
