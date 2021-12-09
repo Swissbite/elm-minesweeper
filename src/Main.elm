@@ -3,18 +3,18 @@ module Main exposing (..)
 import Array
 import Browser
 import Element exposing (Element, fill)
-import Element.Events as Events
-import Element.Input as Input
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
+import Element.Input as Input
 import Grid exposing (Grid)
 import Html exposing (Html)
 import Html.Attributes exposing (coords)
 import Random exposing (Generator)
 import Set exposing (Set)
 import Styles
-import Types exposing (..)
 import Time exposing (Month(..))
+import Types exposing (..)
 
 
 
@@ -66,8 +66,9 @@ update msg model =
                             Reveal
             in
             ( { model | gameInteractionMode = nextMode }, Cmd.none )
+
         CreateNewGame playgroundDefinition ->
-            ({ gameBoardStatus = WaitOnStart <| createInitGameGrid playgroundDefinition, gameInteractionMode = Reveal }, Cmd.none)
+            ( { gameBoardStatus = WaitOnStart <| createInitGameGrid playgroundDefinition, gameInteractionMode = Reveal }, Cmd.none )
 
 
 init : Int -> ( Model, Cmd Msg )
@@ -115,27 +116,33 @@ selectBoardView status gameInteractionMode =
                 [ mineToggleElement gameInteractionMode
                 , runningGameView playGrid
                 ]
+
         FinishedGame playGrid finishedStatus ->
             finishedGameView playGrid finishedStatus
 
 
-dummyToogleElement: Element Msg
-dummyToogleElement = Element.el [ Element.centerX, Element.centerY, Element.paddingXY 0 10 ] <| styledToogleElement False
+dummyToogleElement : Element Msg
+dummyToogleElement =
+    Element.el [ Element.centerX, Element.centerY, Element.paddingXY 0 10 ] <| styledToogleElement False
 
-styledToogleElement: Bool -> Element Msg
-styledToogleElement = Styles.toggleCheckboxWidget
-                    { offColor = Styles.lightGrey
-                    , onColor = Styles.green
-                    , sliderColor = Styles.white
-                    , toggleWidth = 60
-                    , toggleHeight = 28
-                    , onSymbol = Just Styles.icons.untouchedBomb
-                    , offSymbol = Just Styles.icons.markerFlag
-                    }
+
+styledToogleElement : Bool -> Element Msg
+styledToogleElement =
+    Styles.toggleCheckboxWidget
+        { offColor = Styles.lightGrey
+        , onColor = Styles.green
+        , sliderColor = Styles.white
+        , toggleWidth = 60
+        , toggleHeight = 28
+        , onSymbol = Just Styles.icons.untouchedBomb
+        , offSymbol = Just Styles.icons.markerFlag
+        }
+
+
 mineToggleElement : CellClickMode -> Element Msg
 mineToggleElement gameInteractionMode =
     Element.el [ Element.centerX, Element.centerY, Element.paddingXY 0 10 ] <|
-        Input.checkbox [ Element.centerX, Element.centerY] <|
+        Input.checkbox [ Element.centerX, Element.centerY ] <|
             { onChange = always ToogleGameCellInteractionMode
             , label = Input.labelHidden "Activate/deactivate mine flag mode"
             , checked =
@@ -201,35 +208,34 @@ runningGameCellToElement x y cell =
             Element.el Styles.openedCellStyle <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.exploded
 
         GameCell (MineNeighbourCell neighbours) Opened ->
-            Element.el (Styles.openedMineNeighbourCellStyle neighbours  ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text (String.fromInt neighbours)
+            Element.el (Styles.openedMineNeighbourCellStyle neighbours ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text (String.fromInt neighbours)
 
 
-finishedGameView: PlayGameGrid -> GameResult -> Element Msg
+finishedGameView : PlayGameGrid -> GameResult -> Element Msg
 finishedGameView playGameGrid gameResult =
-    Element.column [ Element.centerX, Element.centerY ] [
-        Element.el [Element.centerX, Element.centerY, Element.paddingXY 0 10] <|
-        case gameResult of
-            Won ->
-                Element.text "You won!"
+    Element.column [ Element.centerX, Element.centerY ]
+        [ Element.el [ Element.centerX, Element.centerY, Element.paddingXY 0 10 ] <|
+            case gameResult of
+                Won ->
+                    Element.text "You won!"
 
-            Lost ->
-                Element.text "You lost!"
-        , Element.row [Element.centerX, Element.centerY, Element.spacing 20, Border.solid, Border.rounded 25, Element.paddingXY 0 10] 
-            [ Input.button [Background.color Styles.asparagus, Border.solid, Element.padding 10, Border.rounded 10] {
-                onPress  = Just (CreateNewGame <| playGameGridToPlaygroundDefinition playGameGrid)
+                Lost ->
+                    Element.text "You lost!"
+        , Element.row [ Element.centerX, Element.centerY, Element.spacing 20, Border.solid, Border.rounded 25, Element.paddingXY 0 10 ]
+            [ Input.button [ Background.color Styles.asparagus, Border.solid, Element.padding 10, Border.rounded 10 ]
+                { onPress = Just (CreateNewGame <| playGameGridToPlaygroundDefinition playGameGrid)
                 , label = Element.text "Start new game"
                 }
-            , Input.button [Background.color Styles.saffron, Border.solid, Element.padding 10, Border.rounded 10] {
-                onPress  = Nothing
+            , Input.button [ Background.color Styles.saffron, Border.solid, Element.padding 10, Border.rounded 10 ]
+                { onPress = Nothing
                 , label = Element.text "Back to overview"
                 }
-            
-        ]
+            ]
         , finishedGridToView playGameGrid
         ]
-    
 
-finishedGridToView: PlayGameGrid -> Element Msg
+
+finishedGridToView : PlayGameGrid -> Element Msg
 finishedGridToView playGameGrid =
     playGameGrid
         |> Grid.map finishedGameCellToElement
@@ -238,7 +244,9 @@ finishedGridToView playGameGrid =
         |> Array.map (\l -> Element.row [] l)
         |> Array.toList
         |> Element.column [ Element.centerX, Element.centerY ]
-finishedGameCellToElement: GameCell -> Element Msg
+
+
+finishedGameCellToElement : GameCell -> Element Msg
 finishedGameCellToElement cell =
     case cell of
         GameCell MineCell Opened ->
@@ -249,45 +257,51 @@ finishedGameCellToElement cell =
 
         GameCell (MineNeighbourCell neighbours) Opened ->
             Element.el (Styles.openedMineNeighbourCellStyle neighbours) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text (String.fromInt neighbours)
-        
+
         GameCell EmptyCell Opened ->
             Element.el Styles.openedCellStyle Element.none
+
         GameCell _ Flagged ->
             Element.el Styles.untouchedCellStyle <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.markerFlag
-        
-        _ -> Element.el Styles.untouchedCellStyle Element.none
+
+        _ ->
+            Element.el Styles.untouchedCellStyle Element.none
+
+
 
 --- HELPER ---
 
 
 createInitGameGrid : PlayGroundDefinition -> InitGameGrid
 createInitGameGrid definition =
-    let 
-        sanitized = sanitizePlaygroundDefinition definition
-    in 
+    let
+        sanitized =
+            sanitizePlaygroundDefinition definition
+    in
     { grid = Grid.repeat sanitized.cols sanitized.rows InitGameCell
     , mines = sanitized.mines
     }
 
-playGameGridToPlaygroundDefinition: PlayGameGrid -> PlayGroundDefinition
+
+playGameGridToPlaygroundDefinition : PlayGameGrid -> PlayGroundDefinition
 playGameGridToPlaygroundDefinition grid =
     let
-        foldLFn: GameCell -> Int -> Int
+        foldLFn : GameCell -> Int -> Int
         foldLFn cell count =
             case cell of
                 GameCell MineCell _ ->
                     count + 1
 
-                
                 _ ->
                     count
-    in 
-        { cols = Grid.width grid
-        , rows = Grid.height grid
-        , mines = Grid.foldl foldLFn 0 grid
-        }
+    in
+    { cols = Grid.width grid
+    , rows = Grid.height grid
+    , mines = Grid.foldl foldLFn 0 grid
+    }
 
-sanitizePlaygroundDefinition: PlayGroundDefinition -> PlayGroundDefinition
+
+sanitizePlaygroundDefinition : PlayGroundDefinition -> PlayGroundDefinition
 sanitizePlaygroundDefinition definition =
     let
         cols =
@@ -298,13 +312,15 @@ sanitizePlaygroundDefinition definition =
 
         mines =
             definition.mines
-            |> max 1
-            |> min (cols * rows - 1)
+                |> max 1
+                |> min (cols * rows - 1)
     in
     { cols = cols
     , rows = rows
     , mines = mines
     }
+
+
 {-| Takes the initGame and the clicked coordinates and generates a new play game grid.
 The clicked cell is opened and the surrounding cells - if the clicked cell is an empty cell - are opened as well.
 -}
@@ -437,18 +453,23 @@ openCell coords playGrid =
 
         cell =
             Grid.get coordinateAsPair playGrid
-
     in
     case cell of
         Nothing ->
             playGrid
+
         Just (GameCell (MineNeighbourCell neighbhours) Opened) ->
-            if neighbhours == (calculateFlaggedCellsArroundCoordinate coords playGrid) then openSurroundingCells coords playGrid else playGrid
+            if neighbhours == calculateFlaggedCellsArroundCoordinate coords playGrid then
+                openSurroundingCells coords playGrid
+
+            else
+                playGrid
+
         Just (GameCell cellType cellStatus) ->
             case ( cellType, cellStatus ) of
                 ( _, Opened ) ->
                     playGrid
-                
+
                 ( _, Flagged ) ->
                     playGrid
 
@@ -457,54 +478,65 @@ openCell coords playGrid =
 
                 ( EmptyCell, _ ) ->
                     Grid.set coordinateAsPair (GameCell EmptyCell Opened) playGrid
-                        |> \nextGrid -> calculateNeighbourCoordinates coords
-                        |> (\surroundingCoordinatesAsPair -> List.foldl (\coord grid -> openCell coord grid) nextGrid surroundingCoordinatesAsPair)
+                        |> (\nextGrid ->
+                                calculateNeighbourCoordinates coords
+                                    |> (\surroundingCoordinatesAsPair -> List.foldl (\coord grid -> openCell coord grid) nextGrid surroundingCoordinatesAsPair)
+                           )
 
                 ( MineCell, _ ) ->
                     Grid.set coordinateAsPair (GameCell MineCell Opened) playGrid
-openSurroundingCells: Coordinates -> PlayGameGrid -> PlayGameGrid
+
+
+openSurroundingCells : Coordinates -> PlayGameGrid -> PlayGameGrid
 openSurroundingCells coords playGrid =
     let
-        mapCoordstoCoordsAndMaybeCellPair: Coordinates -> (Coordinates, Maybe GameCell)
-        mapCoordstoCoordsAndMaybeCellPair neighbourCoords  =
-            (neighbourCoords, Grid.get (coordinatesToPair neighbourCoords) playGrid)
-        foldCoordsCellPair: (Coordinates, Maybe GameCell) -> PlayGameGrid -> PlayGameGrid
-        foldCoordsCellPair (coord, maybeCell) grid =
+        mapCoordstoCoordsAndMaybeCellPair : Coordinates -> ( Coordinates, Maybe GameCell )
+        mapCoordstoCoordsAndMaybeCellPair neighbourCoords =
+            ( neighbourCoords, Grid.get (coordinatesToPair neighbourCoords) playGrid )
+
+        foldCoordsCellPair : ( Coordinates, Maybe GameCell ) -> PlayGameGrid -> PlayGameGrid
+        foldCoordsCellPair ( coord, maybeCell ) grid =
             case maybeCell of
                 Just (GameCell _ Untouched) ->
                     openCell coord grid
-                _ -> grid
-                
+
+                _ ->
+                    grid
     in
-        calculateNeighbourCoordinates coords
+    calculateNeighbourCoordinates coords
         |> List.map mapCoordstoCoordsAndMaybeCellPair
         |> List.foldl foldCoordsCellPair playGrid
 
 
-
-
-calculateFlaggedCellsArroundCoordinate: Coordinates -> PlayGameGrid -> Int
+calculateFlaggedCellsArroundCoordinate : Coordinates -> PlayGameGrid -> Int
 calculateFlaggedCellsArroundCoordinate coords grid =
     calculateNeighbourCoordinates coords
-                    |> List.map coordinatesToPair
-                    |> List.map (\coordPair -> Grid.get coordPair grid)
-                    |> List.map (\maybeCell ->
-                            case maybeCell of
-                                Just (GameCell _ Flagged) -> 1
-                                _ -> 0
-                        )
-                    |> List.sum
+        |> List.map coordinatesToPair
+        |> List.map (\coordPair -> Grid.get coordPair grid)
+        |> List.map
+            (\maybeCell ->
+                case maybeCell of
+                    Just (GameCell _ Flagged) ->
+                        1
 
-calculateNeighbourCoordinates: Coordinates -> List Coordinates
-calculateNeighbourCoordinates coords = [ { x = coords.x - 1, y = coords.y - 1 }
-            , { x = coords.x - 1, y = coords.y }
-            , { x = coords.x - 1, y = coords.y + 1 }
-            , { x = coords.x, y = coords.y - 1 }
-            , { x = coords.x, y = coords.y + 1 }
-            , { x = coords.x + 1, y = coords.y - 1 }
-            , { x = coords.x + 1, y = coords.y }
-            , { x = coords.x + 1, y = coords.y + 1 }
-            ]
+                    _ ->
+                        0
+            )
+        |> List.sum
+
+
+calculateNeighbourCoordinates : Coordinates -> List Coordinates
+calculateNeighbourCoordinates coords =
+    [ { x = coords.x - 1, y = coords.y - 1 }
+    , { x = coords.x - 1, y = coords.y }
+    , { x = coords.x - 1, y = coords.y + 1 }
+    , { x = coords.x, y = coords.y - 1 }
+    , { x = coords.x, y = coords.y + 1 }
+    , { x = coords.x + 1, y = coords.y - 1 }
+    , { x = coords.x + 1, y = coords.y }
+    , { x = coords.x + 1, y = coords.y + 1 }
+    ]
+
 
 gameBoardStatus : PlayGameGrid -> GameBoardStatus
 gameBoardStatus playGrid =
