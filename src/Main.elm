@@ -14,6 +14,7 @@ import Random exposing (Generator)
 import Set exposing (Set)
 import Styles
 import Types exposing (..)
+import Time exposing (Month(..))
 
 
 
@@ -200,7 +201,7 @@ runningGameCellToElement x y cell =
             Element.el Styles.openedCellStyle <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.exploded
 
         GameCell (MineNeighbourCell neighbours) Opened ->
-            Element.el (Styles.openedMineNeighbourCellStyle neighbours) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text (String.fromInt neighbours)
+            Element.el (Styles.openedMineNeighbourCellStyle neighbours  ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text (String.fromInt neighbours)
 
 
 finishedGameView: PlayGameGrid -> GameResult -> Element Msg
@@ -437,26 +438,17 @@ openCell coords playGrid =
         cell =
             Grid.get coordinateAsPair playGrid
 
-        surroundingCoordinatesAsPair =
-            [ { x = coords.x - 1, y = coords.y - 1 }
-            , { x = coords.x - 1, y = coords.y }
-            , { x = coords.x - 1, y = coords.y + 1 }
-            , { x = coords.x, y = coords.y - 1 }
-            , { x = coords.x, y = coords.y + 1 }
-            , { x = coords.x + 1, y = coords.y - 1 }
-            , { x = coords.x + 1, y = coords.y }
-            , { x = coords.x + 1, y = coords.y + 1 }
-            ]
     in
     case cell of
         Nothing ->
             playGrid
-
+        Just (GameCell (MineNeighbourCell neighbhours) Opened) ->
+            if neighbhours == (calculateFlaggedCellsArroundCoordinate coords playGrid) then openSurroundingCells coords playGrid else playGrid
         Just (GameCell cellType cellStatus) ->
             case ( cellType, cellStatus ) of
                 ( _, Opened ) ->
                     playGrid
-
+                
                 ( _, Flagged ) ->
                     playGrid
 
@@ -465,11 +457,54 @@ openCell coords playGrid =
 
                 ( EmptyCell, _ ) ->
                     Grid.set coordinateAsPair (GameCell EmptyCell Opened) playGrid
-                        |> (\g -> List.foldl (\coord grid -> openCell coord grid) g surroundingCoordinatesAsPair)
+                        |> \nextGrid -> calculateNeighbourCoordinates coords
+                        |> (\surroundingCoordinatesAsPair -> List.foldl (\coord grid -> openCell coord grid) nextGrid surroundingCoordinatesAsPair)
 
                 ( MineCell, _ ) ->
                     Grid.set coordinateAsPair (GameCell MineCell Opened) playGrid
+openSurroundingCells: Coordinates -> PlayGameGrid -> PlayGameGrid
+openSurroundingCells coords playGrid =
+    let
+        mapCoordstoCoordsAndMaybeCellPair: Coordinates -> (Coordinates, Maybe GameCell)
+        mapCoordstoCoordsAndMaybeCellPair neighbourCoords  =
+            (neighbourCoords, Grid.get (coordinatesToPair neighbourCoords) playGrid)
+        foldCoordsCellPair: (Coordinates, Maybe GameCell) -> PlayGameGrid -> PlayGameGrid
+        foldCoordsCellPair (coord, maybeCell) grid =
+            case maybeCell of
+                Just (GameCell _ Untouched) ->
+                    openCell coord grid
+                _ -> grid
+                
+    in
+        calculateNeighbourCoordinates coords
+        |> List.map mapCoordstoCoordsAndMaybeCellPair
+        |> List.foldl foldCoordsCellPair playGrid
 
+
+
+
+calculateFlaggedCellsArroundCoordinate: Coordinates -> PlayGameGrid -> Int
+calculateFlaggedCellsArroundCoordinate coords grid =
+    calculateNeighbourCoordinates coords
+                    |> List.map coordinatesToPair
+                    |> List.map (\coordPair -> Grid.get coordPair grid)
+                    |> List.map (\maybeCell ->
+                            case maybeCell of
+                                Just (GameCell _ Flagged) -> 1
+                                _ -> 0
+                        )
+                    |> List.sum
+
+calculateNeighbourCoordinates: Coordinates -> List Coordinates
+calculateNeighbourCoordinates coords = [ { x = coords.x - 1, y = coords.y - 1 }
+            , { x = coords.x - 1, y = coords.y }
+            , { x = coords.x - 1, y = coords.y + 1 }
+            , { x = coords.x, y = coords.y - 1 }
+            , { x = coords.x, y = coords.y + 1 }
+            , { x = coords.x + 1, y = coords.y - 1 }
+            , { x = coords.x + 1, y = coords.y }
+            , { x = coords.x + 1, y = coords.y + 1 }
+            ]
 
 gameBoardStatus : PlayGameGrid -> GameBoardStatus
 gameBoardStatus playGrid =

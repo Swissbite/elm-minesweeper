@@ -31,7 +31,7 @@ Features it should have (in no particular order):
 - After game finish:
    - Able to start a new game with the same difficulty ✔
    - Back to overview to create a new game
-- Click on a number, where are enough marks to open all remaining items should work
+- Click on a number, where are enough marks to open all remaining items should work ✔
 - Open a blank field should open all other blank fields and the neighbour number fields ✔
 - Have some game information like
   - how many mines are still missing
