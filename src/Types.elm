@@ -1,6 +1,7 @@
 module Types exposing (..)
 
 import Grid exposing (Grid)
+import Time
 
 
 {-| Export of all Types and Type definitions in this file helps to group Typings and asdf
@@ -12,12 +13,21 @@ type Msg
     | ToogleGameCellInteractionMode
     | CreateNewGame PlayGroundDefinition
     | GoToStartPage
+    | ClockTick Time.Posix
+    | ToogleGamePause
 
 
 type alias Model =
     { gameBoardStatus : GameBoardStatus
     , gameInteractionMode : CellClickMode
+    , gameRunningTimes : List ( Time.Posix, Time.Posix )
+    , gamePauseResumeState : PauseResumeState
     }
+
+
+type PauseResumeState
+    = Paused
+    | Resumed Int
 
 
 type alias PlayGroundDefinition =
@@ -32,11 +42,11 @@ type alias Coordinates =
     , y : Int
     }
 
-
+type FinishedGameHistoryEntry = FinishedGameHistoryEntry PlayGameGrid GameResult Int
 type GameBoardStatus
     = WaitOnStart InitGameGrid
     | RunningGame PlayGameGrid
-    | FinishedGame PlayGameGrid GameResult
+    | FinishedGame PlayGameGrid GameResult Int
     | NoGame NoGameMode
 
 
