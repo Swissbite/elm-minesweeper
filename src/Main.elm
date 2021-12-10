@@ -82,8 +82,8 @@ update msg model =
 
 updateModelByClickOnGameCell : Coordinates -> Model -> ( Model, Cmd Msg )
 updateModelByClickOnGameCell coords model =
-    case model.gameBoardStatus of
-        RunningGame playGrid ->
+    case ( model.gamePauseResumeState, model.gameBoardStatus ) of
+        ( Resumed _, RunningGame playGrid ) ->
             let
                 updatedPlayGrid : PlayGameGrid
                 updatedPlayGrid =
