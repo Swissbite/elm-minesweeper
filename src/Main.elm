@@ -7,7 +7,6 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
 import Element.Input as Input
-import Framework.Color exposing (pre_background)
 import Grid exposing (Grid)
 import Html exposing (Html)
 import Html.Attributes exposing (coords)
@@ -49,15 +48,7 @@ update msg model =
             ( { model | gameBoardStatus = RunningGame playGrid, gameRunningTimes = [], gamePauseResumeState = Resumed 1 }, Cmd.none )
 
         ClickOnGameCell coords ->
-            case ( model.gameInteractionMode, model.gameBoardStatus ) of
-                ( Reveal, RunningGame playGrid ) ->
-                    ( { model | gameBoardStatus = gameBoardStatus (openCell coords playGrid) model.gameRunningTimes}, Cmd.none )
-
-                ( Flag, RunningGame playGrid ) ->
-                    ( { model | gameBoardStatus = gameBoardStatus (flagCell coords playGrid) model.gameRunningTimes}, Cmd.none )
-
-                _ ->
-                    ( model, Cmd.none )
+            updateModelByClickOnGameCell coords model
 
         ToogleGameCellInteractionMode ->
             let
@@ -73,16 +64,61 @@ update msg model =
 
         CreateNewGame playgroundDefinition ->
             ( { model | gameBoardStatus = WaitOnStart <| createInitGameGrid playgroundDefinition, gameInteractionMode = Reveal }, Cmd.none )
+
         ToogleGamePause ->
-            case (model.gameBoardStatus, model.gamePauseResumeState) of
-                (RunningGame _, Paused) -> ({model | gamePauseResumeState = Resumed (List.length model.gameRunningTimes + 1)}, Cmd.none)
-                (RunningGame _, Resumed _) -> ({model | gamePauseResumeState = Paused}, Cmd.none)
-                _ -> (model, Cmd.none)
-        ClockTick posix -> updateTimePlayGame model posix
+            case ( model.gameBoardStatus, model.gamePauseResumeState ) of
+                ( RunningGame _, Paused ) ->
+                    ( { model | gamePauseResumeState = Resumed (List.length model.gameRunningTimes + 1) }, Cmd.none )
+
+                ( RunningGame _, Resumed _ ) ->
+                    ( { model | gamePauseResumeState = Paused }, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        ClockTick posix ->
+            updateTimePlayGame model posix
+
+
+updateModelByClickOnGameCell : Coordinates -> Model -> ( Model, Cmd Msg )
+updateModelByClickOnGameCell coords model =
+    case model.gameBoardStatus of
+        RunningGame playGrid ->
+            let
+                updatedPlayGrid : PlayGameGrid
+                updatedPlayGrid =
+                    case model.gameInteractionMode of
+                        Reveal ->
+                            openCell coords playGrid
+
+                        Flag ->
+                            flagCell coords playGrid
+
+                aMineIsExploded =
+                    isAMineExploded updatedPlayGrid
+
+                allFieldsRevealed =
+                    areAllNoMineFieldsRevealed updatedPlayGrid
+
+                nextGameBoardStatus =
+                    if aMineIsExploded then
+                        calculateElapsedTimeMilis model.gameRunningTimes |> FinishedGame updatedPlayGrid Lost
+
+                    else if allFieldsRevealed then
+                        calculateElapsedTimeMilis model.gameRunningTimes |> FinishedGame updatedPlayGrid Won
+
+                    else
+                        RunningGame updatedPlayGrid
+            in
+            ( { model | gameBoardStatus = nextGameBoardStatus }, Cmd.none )
+
+        _ ->
+            ( model, Cmd.none )
+
 
 init : Int -> ( Model, Cmd Msg )
 init _ =
-    ( { gameBoardStatus = NoGame PreSelect, gameInteractionMode = Reveal,  gameRunningTimes = [], gamePauseResumeState = Paused}, Cmd.none )
+    ( { gameBoardStatus = NoGame PreSelect, gameInteractionMode = Reveal, gameRunningTimes = [], gamePauseResumeState = Paused }, Cmd.none )
 
 
 smallPlayground : PlayGroundDefinition
@@ -130,7 +166,8 @@ updateTimePlayGame model time =
 
                             ( start, _ ) :: xs ->
                                 ( start, time ) :: xs
-                    else 
+
+                    else
                         ( time, time ) :: model.gameRunningTimes
             in
             ( { model | gameRunningTimes = newList }, Cmd.none )
@@ -198,7 +235,7 @@ selectBoardView model =
                 , runningGameView playGrid
                 ]
 
-        FinishedGame playGrid finishedStatus durationInSeconds ->
+        FinishedGame playGrid finishedStatus _ ->
             finishedGameView playGrid finishedStatus
 
 
@@ -619,8 +656,8 @@ calculateNeighbourCoordinates coords =
     ]
 
 
-gameBoardStatus : PlayGameGrid -> List(Time.Posix, Time.Posix) -> GameBoardStatus
-gameBoardStatus playGrid times=
+isAMineExploded : PlayGameGrid -> Bool
+isAMineExploded =
     let
         isExplodedMine : GameCell -> Bool -> Bool
         isExplodedMine cell exploded =
@@ -630,44 +667,36 @@ gameBoardStatus playGrid times=
 
                 _ ->
                     exploded
+    in
+    Grid.foldl isExplodedMine False
 
-        hasAnExplodedMine =
-            Grid.foldl isExplodedMine False playGrid
 
-        isMissingFildToOpen : GameCell -> Bool -> Bool
-        isMissingFildToOpen cell anotherfound =
+areAllNoMineFieldsRevealed : PlayGameGrid -> Bool
+areAllNoMineFieldsRevealed =
+    let
+        isMissingFieldOpen : GameCell -> Bool -> Bool
+        isMissingFieldOpen cell allRevealed =
             case cell of
                 GameCell EmptyCell state ->
                     case state of
                         Opened ->
-                            anotherfound
+                            allRevealed
 
                         _ ->
-                            True
+                            False
 
                 GameCell (MineNeighbourCell _) state ->
                     case state of
                         Opened ->
-                            anotherfound
+                            allRevealed
 
                         _ ->
-                            True
+                            False
 
                 _ ->
-                    anotherfound
-
-        hasRemainingFields =
-            Grid.foldl isMissingFildToOpen False playGrid
-        gamePlayDuration = calculateElapsedTimeMilis times // 1000
+                    allRevealed
     in
-    if hasAnExplodedMine then
-        FinishedGame playGrid Lost gamePlayDuration
-
-    else if not hasRemainingFields then
-        FinishedGame playGrid Won gamePlayDuration
-
-    else
-        RunningGame playGrid
+    Grid.foldl isMissingFieldOpen True
 
 
 generateListOfPossibleIndizes : Grid InitGameCell -> Coordinates -> List Int
@@ -728,8 +757,12 @@ minesIndexGenerator remainingMines remainingPossibilities alreadyGenerated =
                                 minesIndexGenerator newRemainingMines newRemainingPossibilities (Random.constant set)
                             )
 
-calculateElapsedTimeMilis: List (Time.Posix, Time.Posix) -> Int
-calculateElapsedTimeMilis = List.foldl (\(from, to) summedUp -> ((Time.posixToMillis to) - (Time.posixToMillis from))  + summedUp) 0
+
+calculateElapsedTimeMilis : List ( Time.Posix, Time.Posix ) -> Int
+calculateElapsedTimeMilis =
+    List.foldl (\( from, to ) summedUp -> (Time.posixToMillis to - Time.posixToMillis from) + summedUp) 0
+
+
 appendGenerator : Generator (Set Int) -> Generator Int -> Generator (Set Int)
 appendGenerator list single =
     Random.map2 (\toAdd set -> Set.insert toAdd set) single list
