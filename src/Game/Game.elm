@@ -223,9 +223,9 @@ advancePlayground =
 
 
 xxlPlayground =
-    { cols = 50
-    , rows = 50
-    , mines = 150
+    { cols = 30
+    , rows = 30
+    , mines = 250
     }
 
 
