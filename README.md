@@ -48,20 +48,15 @@ This project will be an on/off project ;-)
    bootstraping elm applications by `npm install -g create-elm-app`
 2. Follow [Elm-App Setup](Elm-App%20Setup.md)
 
+## Project structure
+
+Currently, I'm following [Structuring Web Apps](https://guide.elm-lang.org/webapps/structure.html) and the [Live of a file](https://youtu.be/XpDsk374LDE)
+
+To simplify lookups as a developer, I split it in three main files:
+- [Types.elm](./src/Types.elm): All types and type aliases. ***No*** functions, no helpers, no transformers.
+- [Styles.elm](./src/Styles.elm): Make styles reusable. Define colors, icons, predefined elements (like the toogle element). But does not hold any model related code. Styles is has zero dependencies to [Types.elm](./src/Types.elm)
+- [Main.elm](./src/Main.elm): The main startup application. At the write of this line, it holds everything. This may be splited up into different files per screen. But still following the advises of the links above.
+
 ## License
 See [LICENSE](LICENSE)
 
-## Basic game flow
-From initialize a game to finish the game.
-
-In [Game.elm](src/Game.elm) is a type definition `GameStatus` which describes a current state of the 
-game and the game field. The possible states are:
-
-1. `NoGame`: Represents the start of the application. No definition of the playground has been defined
-2. `InitGame PlaygroundDefinition`: The initialisation of the game has been set. We know the dimensions and
-   the amount of mines. But the game has not yet started. The game starts by clicking on any field.
-3. `RunningGame GameField`: The current running game. Fields can either be marked or opened. The time counter is running
-4. `PausedGame GameField`: Still the game field available, but no updates are allowed. 
-   The UI may hide the visual representing of the board to reduce cheating
-5. `FinishedGame FinishStatus GameField`: The end of the game. The won/lost is set by `FinishStatus`, the `GameField` 
-   represents the last state of the field. 
