@@ -37,6 +37,7 @@ Features it should have (in no particular order):
   - how many mines are still missing
   - how many have been marked
   - how much time it took for the game
+- Have the game automated build and published to github.io
 
 This project will be an on/off project ;-)
 
