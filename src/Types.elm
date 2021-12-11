@@ -22,6 +22,7 @@ type alias Model =
     , gameInteractionMode : CellClickMode
     , gameRunningTimes : List ( Time.Posix, Time.Posix )
     , gamePauseResumeState : PauseResumeState
+    , playedGameHistory : List FinishedGameHistoryEntry
     }
 
 
@@ -42,7 +43,11 @@ type alias Coordinates =
     , y : Int
     }
 
-type FinishedGameHistoryEntry = FinishedGameHistoryEntry PlayGameGrid GameResult Int
+
+type FinishedGameHistoryEntry
+    = FinishedGameHistoryEntry PlayGameGrid GameResult Int
+
+
 type GameBoardStatus
     = WaitOnStart InitGameGrid
     | RunningGame PlayGameGrid

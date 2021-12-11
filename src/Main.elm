@@ -7,6 +7,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
 import Element.Input as Input
+import Element.Lazy as Lazy
 import Grid exposing (Grid)
 import Html exposing (Html)
 import Html.Attributes exposing (coords)
@@ -109,8 +110,16 @@ updateModelByClickOnGameCell coords model =
 
                     else
                         RunningGame updatedPlayGrid
+
+                nextHistoryList =
+                    case nextGameBoardStatus of
+                        FinishedGame grid result time ->
+                            FinishedGameHistoryEntry grid result time :: model.playedGameHistory
+
+                        _ ->
+                            model.playedGameHistory
             in
-            ( { model | gameBoardStatus = nextGameBoardStatus }, Cmd.none )
+            ( { model | gameBoardStatus = nextGameBoardStatus, playedGameHistory = nextHistoryList }, Cmd.none )
 
         _ ->
             ( model, Cmd.none )
@@ -118,7 +127,7 @@ updateModelByClickOnGameCell coords model =
 
 init : Int -> ( Model, Cmd Msg )
 init _ =
-    ( { gameBoardStatus = NoGame PreSelect, gameInteractionMode = Reveal, gameRunningTimes = [], gamePauseResumeState = Paused }, Cmd.none )
+    ( { gameBoardStatus = NoGame PreSelect, gameInteractionMode = Reveal, gameRunningTimes = [], gamePauseResumeState = Paused, playedGameHistory = [] }, Cmd.none )
 
 
 smallPlayground : PlayGroundDefinition
@@ -189,8 +198,8 @@ view : Model -> Html Msg
 view m =
     Element.layout [ Element.width Element.fill, Element.height Element.fill ] <|
         Element.column [ Element.width fill, Element.height fill, Element.centerX ]
-            [ Element.el [ Element.centerX ] <| Element.text "Minesweeper"
-            , selectBoardView m
+            [ Lazy.lazy (\t -> Element.el [ Element.centerX ] <| Element.text t) "Minesweeper"
+            , Lazy.lazy selectBoardView m
             ]
 
 
@@ -224,19 +233,23 @@ selectBoardView model =
                 ]
 
         WaitOnStart initGameGrid ->
-            Element.column [ Element.width fill, Element.height fill ]
-                [ dummyToogleElement
-                , initGameGridView initGameGrid
-                ]
+            Lazy.lazy
+                (\initGrid ->
+                    Element.column [ Element.width fill, Element.height fill ]
+                        [ dummyToogleElement
+                        , initGameGridView initGrid
+                        ]
+                )
+                initGameGrid
 
         RunningGame playGrid ->
             Element.column [ Element.width fill, Element.height fill ]
-                [ mineToggleElement model.gameInteractionMode
-                , runningGameView playGrid
+                [ Lazy.lazy mineToggleElement model.gameInteractionMode
+                , Lazy.lazy runningGameView playGrid
                 ]
 
         FinishedGame playGrid finishedStatus _ ->
-            finishedGameView playGrid finishedStatus
+            Lazy.lazy2 finishedGameView playGrid finishedStatus
 
 
 dummyToogleElement : Element Msg
