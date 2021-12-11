@@ -1,12 +1,12 @@
 module Main exposing (..)
 
 import Browser
-import Game.Game as Game
 import Element exposing (Element, fill)
 import Element.Lazy as Lazy
+import Game.Game as Game
 import Html exposing (Html)
-import Types exposing (..)
 import Tuple
+import Types exposing (..)
 
 
 
@@ -32,18 +32,19 @@ update msg model =
     case msg of
         GameView gameMsg ->
             Game.update gameMsg model
-            |> Tuple.mapSecond (Cmd.map GameView)
+                |> Tuple.mapSecond (Cmd.map GameView)
 
 
 init : Int -> ( Model, Cmd Msg )
 init _ =
     ( { currentView = Game, gameBoardStatus = NoGame PreSelect, gameInteractionMode = Reveal, gameRunningTimes = [], gamePauseResumeState = Paused, playedGameHistory = [] }, Cmd.none )
 
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch [
-        Sub.map GameView (Game.subscriptions model)
-    ]
+    Sub.batch
+        [ Sub.map GameView (Game.subscriptions model)
+        ]
 
 
 
@@ -62,5 +63,6 @@ view m =
 selectBoardView : Model -> Element Msg
 selectBoardView model =
     case model.currentView of
-            Game -> Game.view model
-                    |> Element.map GameView
+        Game ->
+            Game.view model
+                |> Element.map GameView

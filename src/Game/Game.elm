@@ -18,12 +18,20 @@ import Styles exposing (..)
 import Time
 import Types exposing (..)
 
+
+
 ----- Subscription -----
+
+
 subscriptions : Model -> Sub GameMsg
 subscriptions _ =
     Time.every 500 (\posix -> ClockTick posix)
 
+
+
 ----- UPDATE -----
+
+
 update : GameMsg -> Model -> ( Model, Cmd GameMsg )
 update gameMsg model =
     case gameMsg of
@@ -137,8 +145,6 @@ updateModelByClickOnGameCell coords model =
 
         _ ->
             ( model, Cmd.none )
-
-
 
 
 

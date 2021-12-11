@@ -9,6 +9,7 @@ import Time
 type Msg
     = GameView GameMsg
 
+
 type GameMsg
     = ClickedOnInitGameCell InitGameGrid Coordinates
     | StartGame PlayGameGrid
@@ -19,17 +20,21 @@ type GameMsg
     | ClockTick Time.Posix
     | ToogleGamePause
 
+
 type alias Model =
     { gameBoardStatus : GameBoardStatus
     , gameInteractionMode : CellClickMode
     , gameRunningTimes : List ( Time.Posix, Time.Posix )
     , gamePauseResumeState : PauseResumeState
     , playedGameHistory : List FinishedGameHistoryEntry
-    , currentView: View
+    , currentView : View
     }
+
 
 type View
     = Game
+
+
 type PauseResumeState
     = Paused
     | Resumed Int
