@@ -28,6 +28,9 @@ jobs:
       # Setup nvm and use .nvmrc
       - name: Setup node with nvm
         uses: dcodeIO/setup-node-nvm@v4
+        with:
+          node-version:
+
       
       - name: Echo node version / npm version
         run: |
