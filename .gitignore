@@ -15,3 +15,6 @@ node_modules
 # idea stuff
 .idea
 *.iml
+
+#Node stuff
+node_modules

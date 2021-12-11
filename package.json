@@ -1,0 +1,28 @@
+{
+  "name": "elm-minesweeper",
+  "version": "0.0.1",
+  "description": "A web minesweeper game, build in elm. package.json only exists for helper tools like create-elm-app, elm-format, ...",
+  "directories": {
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Swissbite/elm-minesweeper.git"
+  },
+  "keywords": [
+    "elm",
+    "minesweeper",
+    "game"
+  ],
+  "author": "David Däster <david@daester.net>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Swissbite/elm-minesweeper/issues"
+  },
+  "homepage": "https://github.com/Swissbite/elm-minesweeper#readme",
+  "dependencies": {
+    "create-elm-app": "^5.22.0",
+    "elm-format": "^0.8.5",
+    "elm-test": "^0.19.1-revision7"
+  }
+}
