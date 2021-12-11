@@ -25,11 +25,11 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-      # Setup nvm and use .nvmrc
-      - name: Setup node with nvm
-        uses: dcodeIO/setup-node-nvm@v4
+      # Setup node
+      - name: Setup node
+        uses: actions/setup-node@v2
         with:
-          node-version: ""
+          node-version-file: '.nvmrc'
       
       - name: Echo node version / npm version
         run: |
@@ -41,7 +41,8 @@ jobs:
       - name: Lint source
         uses: sparksp/elm-format-action@v1.0.3
         with:
-          elm-files: |
+          # elm_format: ./node-modules/bin/elm-format
+          elm_files: |
             src/
             tests/
       # Runs a single command using the runners shell
