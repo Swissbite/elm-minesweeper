@@ -55,7 +55,8 @@ Currently, I'm following [Structuring Web Apps](https://guide.elm-lang.org/webap
 To simplify lookups as a developer, I split it in three main files:
 - [Types.elm](./src/Types.elm): All types and type aliases. ***No*** functions, no helpers, no transformers.
 - [Styles.elm](./src/Styles.elm): Make styles reusable. Define colors, icons, predefined elements (like the toogle element). But does not hold any model related code. Styles is has zero dependencies to [Types.elm](./src/Types.elm)
-- [Main.elm](./src/Main.elm): The main startup application. At the write of this line, it holds everything. This may be splited up into different files per screen. But still following the advises of the links above.
+- [Main.elm](./src/Main.elm): The main startup application. Responsible for initialize the application. Coordinates update subscription and view between the different elements.
+- [Game/Game.elm](./src/Game/Game.elm): By updating this readme, the only view. Has its own Msg, GameMsg. Responsible for the complite minesweeper game flow. Extracted into own module to be able to add additional views like an About view or other stuff.
 
 ## License
 See [LICENSE](LICENSE)

@@ -4,9 +4,12 @@ import Grid exposing (Grid)
 import Time
 
 
-{-| Export of all Types and Type definitions in this file helps to group Typings and asdf
+{-| Export of all Types and Type definitions in this file helps to group Typings
 -}
 type Msg
+    = GameView GameMsg
+
+type GameMsg
     = ClickedOnInitGameCell InitGameGrid Coordinates
     | StartGame PlayGameGrid
     | ClickOnGameCell Coordinates
@@ -16,16 +19,17 @@ type Msg
     | ClockTick Time.Posix
     | ToogleGamePause
 
-
 type alias Model =
     { gameBoardStatus : GameBoardStatus
     , gameInteractionMode : CellClickMode
     , gameRunningTimes : List ( Time.Posix, Time.Posix )
     , gamePauseResumeState : PauseResumeState
     , playedGameHistory : List FinishedGameHistoryEntry
+    , currentView: View
     }
 
-
+type View
+    = Game
 type PauseResumeState
     = Paused
     | Resumed Int
