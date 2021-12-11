@@ -30,7 +30,7 @@ jobs:
         uses: dcodeIO/setup-node-nvm@v4
         with:
           node-version:
-
+        run: nvm install
       
       - name: Echo node version / npm version
         run: |
