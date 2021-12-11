@@ -35,13 +35,15 @@ jobs:
         run: |
           node --version
           npm --version
-      - name: Install dependencies
-        run: npm install
+      - name: Install build tools
+        run: |
+          npm install -g create-elm-app
+          npm install -g elm-format
+          npm install -g elm-test
 
       - name: Lint source
         uses: sparksp/elm-format-action@v1.0.3
         with:
-          # elm_format: ./node-modules/bin/elm-format
           elm_files: |
             src/
             tests/
