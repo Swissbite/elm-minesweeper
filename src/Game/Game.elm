@@ -159,7 +159,7 @@ view model =
             Element.row [ Element.width Element.fill, Element.height Element.fill ]
                 [ Element.column [ Element.alignLeft, Element.alignTop ]
                     [ Element.text "Game History"
-                    , finishedGameHistoryList model.playedGameHistory
+                    , Lazy.lazy finishedGameHistoryList model.playedGameHistory
                     ]
                 , Element.column [ Element.width Element.fill, Element.height Element.fill, Element.spacing 10 ]
                     [ Element.row
