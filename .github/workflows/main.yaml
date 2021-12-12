@@ -37,14 +37,11 @@ jobs:
           path: './node_modules'
           key: ${{ runner.os }}-modules-${{ hashFiles('./package-lock.json') }}-${{hashFiles('./elm-tooling.json')}}
 
-      - name: Install elm, elm-format and cache the ELM_HOME directory
-        uses: mpizenberg/elm-tooling-action@v1.2
-        with:
-          cache-key: elm-home-${{ hashFiles('elm-tooling.json', 'elm.json') }}
-          
       - name: Install node dependencies
-        run: npm install
-        
+        run: |
+          NO_ELM_TOOLING_INSTALL=true 
+          npm install
+          npx --no-install elm-tooling install
 
       - name: Making sure the installation worked
         run: elm --version
