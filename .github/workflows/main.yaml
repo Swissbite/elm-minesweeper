@@ -47,6 +47,8 @@ jobs:
           elm_files: |
             src/
             tests/
+      - name: Run tests
+        run: npx elm-test
       # Runs a single command using the runners shell
       - name: Build elm application
         run: PUBLIC_URL=./ elm-app build

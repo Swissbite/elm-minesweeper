@@ -9,6 +9,9 @@ import Time
 type Msg
     = GameView GameMsg
 
+{-| Type definition of all Messages for playing minesweeper itself. Moved from Msg to own type to simplify the update function in Main.elm
+Prefixed in Msg by GameView, so that the update function in Main.elm can make an simple case match and call the update function in Game.elm
+-}
 
 type GameMsg
     = ClickedOnInitGameCell InitGameGrid Coordinates

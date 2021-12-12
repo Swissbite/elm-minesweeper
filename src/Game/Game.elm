@@ -12,6 +12,7 @@ import Element.Events as Events
 import Element.Input as Input
 import Element.Lazy as Lazy
 import Grid exposing (Grid)
+import Game.Internal exposing (..)
 import Random as Random exposing (Generator)
 import Set exposing (Set)
 import Styles exposing (..)
@@ -688,32 +689,6 @@ areAllNoMineFieldsRevealed =
     in
     Grid.foldl isMissingFieldOpen True
 
-
-generateListOfPossibleIndizes : Grid InitGameCell -> Coordinates -> List Int
-generateListOfPossibleIndizes initGrid clickedOn =
-    let
-        gridHeight =
-            Grid.height initGrid
-
-        foldFn : Maybe Int -> List Int -> List Int
-        foldFn x acc =
-            case x of
-                Nothing ->
-                    acc
-
-                Just idx ->
-                    idx :: acc
-    in
-    Grid.indexedMap
-        (\x y _ ->
-            if x == clickedOn.x && y == clickedOn.y then
-                Nothing
-
-            else
-                Just (x + gridHeight * y)
-        )
-        initGrid
-        |> Grid.foldr foldFn []
 
 
 minesIndexGenerator : Int -> List Int -> Generator (Set Int) -> Generator (Set Int)
