@@ -289,6 +289,11 @@ finishedGameHistoryList finishedGameHistory =
                       , view =
                             \entry -> Element.text <| String.fromInt entry.gridHeight
                       }
+                    , { header = Element.text <| String.fromChar Styles.icons.untouchedBomb
+                      , width = Element.fillPortion 2
+                      , view =
+                            \entry -> Element.text <| String.fromInt entry.mines
+                      }
                     , { header = Element.text <| String.fromChar Styles.icons.stopWatch
                       , width = Element.fillPortion 4
                       , view =
