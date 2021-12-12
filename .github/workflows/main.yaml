@@ -17,7 +17,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
-  build:
+  check-test-build:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -30,28 +30,37 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version-file: '.nvmrc'
-      
+
+      - name: using cache
+        uses: actions/cache@v2
+        with:
+          path: './node_modules'
+          key: ${{ runner.os }}-modules-${{ hashFiles('./package-lock.json') }}-${{hashFiles('./elm-tooling.json')}}
+
+      - name: Install node dependencies
+        run: npm install
+        
+      - name: Install elm, elm-format and cache the ELM_HOME directory
+        uses: mpizenberg/elm-tooling-action@v1.2
+        with:
+          cache-key: elm-home-${{ hashFiles('elm-tooling.json', 'elm.json') }}
+
+      - name: Making sure the installation worked
+        run: elm --version
+
       - name: Echo node version / npm version
         run: |
           node --version
           npm --version
-      - name: Install build tools
-        run: |
-          npm install -g create-elm-app
-          npm install -g elm-format
-          npm install -g elm-test
 
       - name: Lint source
-        uses: sparksp/elm-format-action@v1.0.3
-        with:
-          elm_files: |
-            src/
-            tests/
+        run: npm run format-validate
+
       - name: Run tests
-        run: npx elm-test
-      # Runs a single command using the runners shell
+        run: npm run test
+        
       - name: Build elm application
-        run: PUBLIC_URL=./ elm-app build
+        run: PUBLIC_URL=./ npm run build
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3

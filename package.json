@@ -1,0 +1,34 @@
+{
+  "name": "elm-minesweeper",
+  "version": "1.0.0",
+  "description": "A minesweeper, inspired by gnome minesweeper, build in elm-lang",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "elm-test",
+    "format": "elm-format",
+    "format-validate": "elm-format ./src ./tests --validate",
+    "build": "elm-app build",
+    "postinstall": "elm-tooling install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Swissbite/elm-minesweeper.git"
+  },
+  "keywords": [
+    "elm",
+    "minesweeper",
+    "game"
+  ],
+  "author": "David Däster <david@daester.net>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Swissbite/elm-minesweeper/issues"
+  },
+  "homepage": "https://github.com/Swissbite/elm-minesweeper#readme",
+  "devDependencies": {
+    "create-elm-app": "^5.22.0",
+    "elm-tooling": "^1.7.0"
+  }
+}
