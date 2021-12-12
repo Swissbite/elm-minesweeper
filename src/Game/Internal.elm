@@ -1,11 +1,14 @@
 module Game.Internal exposing (..)
+
 import Grid exposing (Grid)
 import Types exposing (..)
+
 
 generateListOfPossibleIndizes : Grid InitGameCell -> Coordinates -> List Int
 generateListOfPossibleIndizes initGrid clickedOn =
     let
-        gridWidth = Grid.width initGrid
+        gridWidth =
+            Grid.width initGrid
 
         foldFn : Maybe Int -> List Int -> List Int
         foldFn x acc =
@@ -26,4 +29,3 @@ generateListOfPossibleIndizes initGrid clickedOn =
         )
         initGrid
         |> Grid.foldr foldFn []
-

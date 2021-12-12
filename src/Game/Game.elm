@@ -11,8 +11,8 @@ import Element.Border as Border
 import Element.Events as Events
 import Element.Input as Input
 import Element.Lazy as Lazy
-import Grid exposing (Grid)
 import Game.Internal exposing (..)
+import Grid exposing (Grid)
 import Random as Random exposing (Generator)
 import Set exposing (Set)
 import Styles exposing (..)
@@ -688,7 +688,6 @@ areAllNoMineFieldsRevealed =
                     allRevealed
     in
     Grid.foldl isMissingFieldOpen True
-
 
 
 minesIndexGenerator : Int -> List Int -> Generator (Set Int) -> Generator (Set Int)
