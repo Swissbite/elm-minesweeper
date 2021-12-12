@@ -44,15 +44,13 @@ jobs:
           npx --no-install elm-tooling install
 
       - name: Making sure the installation worked
-        run: elm --version
-
-      - name: Echo node version / npm version
         run: |
+          npx elm --version
           node --version
           npm --version
 
       - name: Lint source
-        run: npm run format-validate
+        run: npx elm-format ./src ./test --validate
 
       - name: Run tests
         run: npm run test
