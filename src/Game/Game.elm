@@ -12,7 +12,7 @@ import Element.Events as Events
 import Element.Input as Input
 import Element.Lazy as Lazy
 import Game.Internal exposing (..)
-import Grid exposing (Grid)
+import Grid
 import Random as Random exposing (Generator)
 import Set exposing (Set)
 import Styles exposing (..)
@@ -156,28 +156,34 @@ view : Model -> Element GameMsg
 view model =
     case model.gameBoardStatus of
         NoGame _ ->
-            Element.column [ Element.width Element.fill, Element.height Element.fill, Element.spacing 10 ]
-                [ Element.row
-                    [ Element.centerX, Element.centerY, Element.spacing 10 ]
-                    [ Styles.styledGameCelectionButton
-                        { onPress = Just (CreateNewGame smallPlayground)
-                        , label = Element.text "small"
-                        }
-                    , Styles.styledGameCelectionButton
-                        { onPress = Just (CreateNewGame mediumPlayground)
-                        , label = Element.text "medium"
-                        }
+            Element.row [ Element.width Element.fill, Element.height Element.fill ]
+                [ Element.column [ Element.alignLeft, Element.alignTop ]
+                    [ Element.text "Game History"
+                    , finishedGameHistoryList model.playedGameHistory
                     ]
-                , Element.row
-                    [ Element.centerX, Element.centerY, Element.spacing 10 ]
-                    [ Styles.styledGameCelectionButton
-                        { onPress = Just (CreateNewGame advancePlayground)
-                        , label = Element.text "advanced"
-                        }
-                    , Styles.styledGameCelectionButton
-                        { onPress = Just (CreateNewGame xxlPlayground)
-                        , label = Element.text "xxl"
-                        }
+                , Element.column [ Element.width Element.fill, Element.height Element.fill, Element.spacing 10 ]
+                    [ Element.row
+                        [ Element.centerX, Element.centerY, Element.spacing 10 ]
+                        [ Styles.styledGameCelectionButton
+                            { onPress = Just (CreateNewGame smallPlayground)
+                            , label = Element.text "small"
+                            }
+                        , Styles.styledGameCelectionButton
+                            { onPress = Just (CreateNewGame mediumPlayground)
+                            , label = Element.text "medium"
+                            }
+                        ]
+                    , Element.row
+                        [ Element.centerX, Element.centerY, Element.spacing 10 ]
+                        [ Styles.styledGameCelectionButton
+                            { onPress = Just (CreateNewGame advancePlayground)
+                            , label = Element.text "advanced"
+                            }
+                        , Styles.styledGameCelectionButton
+                            { onPress = Just (CreateNewGame xxlPlayground)
+                            , label = Element.text "xxl"
+                            }
+                        ]
                     ]
                 ]
 
@@ -199,6 +205,98 @@ view model =
 
         FinishedGame playGrid finishedStatus _ ->
             Lazy.lazy2 finishedGameView playGrid finishedStatus
+
+
+finishedGameHistoryList : List FinishedGameHistoryEntry -> Element GameMsg
+finishedGameHistoryList finishedGameHistory =
+    let
+        gameStatistics : FinishedGameHistoryEntry -> { result : GameResult, playedSeconds : String, playedMinutes : String, gridHeight : Int, gridWidth : Int, mines : Int }
+        gameStatistics entry =
+            { result =
+                case entry of
+                    FinishedGameHistoryEntry _ res _ ->
+                        res
+            , playedSeconds =
+                case entry of
+                    FinishedGameHistoryEntry _ _ time ->
+                        time
+                            // 1000
+                            |> modBy 60
+                            |> (\s ->
+                                    if s < 10 then
+                                        String.concat [ "0", String.fromInt s ]
+
+                                    else
+                                        String.fromInt s
+                               )
+            , playedMinutes =
+                case entry of
+                    FinishedGameHistoryEntry _ _ time ->
+                        time
+                            // 1000
+                            // 60
+                            |> String.fromInt
+            , gridHeight =
+                case entry of
+                    FinishedGameHistoryEntry grid _ _ ->
+                        Grid.height grid
+            , gridWidth =
+                case entry of
+                    FinishedGameHistoryEntry grid _ _ ->
+                        Grid.width grid
+            , mines =
+                case entry of
+                    FinishedGameHistoryEntry grid _ _ ->
+                        Grid.foldl
+                            (\cell count ->
+                                case cell of
+                                    GameCell MineCell _ ->
+                                        count + 1
+
+                                    _ ->
+                                        count
+                            )
+                            0
+                            grid
+            }
+    in
+    case finishedGameHistory of
+        [] ->
+            Element.el [ Element.paddingXY 0 30 ] <| Element.text "No games played yet"
+
+        _ ->
+            Element.table [ Element.spacing 10, Element.paddingXY 0 30 ]
+                { data = List.map gameStatistics finishedGameHistory
+                , columns =
+                    [ { header = Element.text <| String.fromList [ Styles.icons.victory, '/', Styles.icons.exploded ]
+                      , width = Element.fillPortion 1
+                      , view =
+                            \entry ->
+                                case entry.result of
+                                    Won ->
+                                        Element.text <| String.fromChar Styles.icons.victory
+
+                                    Lost ->
+                                        Element.text <| String.fromChar Styles.icons.exploded
+                      }
+                    , { header = Element.text "↔️"
+                      , width = Element.fillPortion 2
+                      , view =
+                            \entry -> Element.text <| String.fromInt entry.gridWidth
+                      }
+                    , { header = Element.text "↕️"
+                      , width = Element.fillPortion 2
+                      , view =
+                            \entry -> Element.text <| String.fromInt entry.gridWidth
+                      }
+                    , { header = Element.text <| String.fromChar Styles.icons.stopWatch
+                      , width = Element.fillPortion 4
+                      , view =
+                            \entry ->
+                                Element.text <| String.concat [ entry.playedMinutes, ":", entry.playedSeconds ]
+                      }
+                    ]
+                }
 
 
 smallPlayground : PlayGroundDefinition
