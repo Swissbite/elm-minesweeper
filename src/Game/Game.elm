@@ -287,7 +287,7 @@ finishedGameHistoryList finishedGameHistory =
                     , { header = Element.text "↕️"
                       , width = Element.fillPortion 2
                       , view =
-                            \entry -> Element.text <| String.fromInt entry.gridWidth
+                            \entry -> Element.text <| String.fromInt entry.gridHeight
                       }
                     , { header = Element.text <| String.fromChar Styles.icons.stopWatch
                       , width = Element.fillPortion 4
