@@ -651,6 +651,13 @@ flagCell coords playGrid =
                                 Just (GameCell gameCell Untouched) ->
                                     Grid.set c (GameCell gameCell Flagged) playGrid
 
+                                Just (GameCell (MineNeighbourCell neighbhours) Opened) ->
+                                    if neighbhours == calculateFlaggedCellsArroundCoordinate coords playGrid then
+                                        openSurroundingCells coords playGrid
+
+                                    else
+                                        playGrid
+
                                 _ ->
                                     playGrid
                        )
