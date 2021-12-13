@@ -20,7 +20,7 @@ solved some issues for touch devices.
 Features it should have (in no particular order):
 
 - Multiple difficulties ✔
-- A current high score
+- A current high score (partial: ✔, deleted on refresh)
 - Able to pause and resume the game
 - Able to switch between click or mark fields ✔
 - See the result board after finished the game
