@@ -31,12 +31,16 @@ jobs:
         with:
           node-version-file: '.nvmrc'
 
-      - name: using cache
+      - name: using cache for node_modules
         uses: actions/cache@v2
         with:
           path: './node_modules'
           key: ${{ runner.os }}-modules-${{ hashFiles('./package-lock.json') }}-${{hashFiles('./elm-tooling.json')}}
-
+      - name: using cache for .elm
+        uses: actions/cache@v2
+        with:
+          path: '.elm'
+          key: ${{ runner.os }}-elm-${{ hashFiles('./elm-tooling.json') }}
       - name: Install node dependencies
         run: |
           NO_ELM_TOOLING_INSTALL=true 
