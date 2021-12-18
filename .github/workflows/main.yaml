@@ -16,55 +16,36 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  check-test-build:
-    # The type of runner that the job will run on
+  define-artifact-name:
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
+    outputs:
+      artifact-name: ${{ steps.echo-artifact-name.outputs.artifact-name }}
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
-      # Setup node
-      - name: Setup node
-        uses: actions/setup-node@v2
+      - id: echo-artifact-name
+        name: echo-artifact-name
+        run: echo "::set-output name=artifact-name::production-build"
+  
+  call-test-and-build-workflow:
+    needs: define-artifact-name
+    runs-on: ubuntu-latest
+    steps:
+  
+      - uses: ./test-and-build-workflow.yaml
         with:
-          node-version-file: '.nvmrc'
+          artefact-name: ${{ needs.define-artifact-name.outputs.artifact-name }}
 
-      - name: using cache for node_modules
-        uses: actions/cache@v2
+  publish-build:
+    needs: 
+      - call-test-and-build-workflow
+      - define-artifact-name
+    runs-on: ubuntu-latest
+    steps:
+      - name: download artefacts
+        uses: actions/download-artifact@v2
         with:
-          path: './node_modules'
-          key: ${{ runner.os }}-modules-${{ hashFiles('./package-lock.json') }}-${{hashFiles('./elm-tooling.json')}}
-      - name: using cache for .elm
-        uses: actions/cache@v2
-        with:
-          path: '.elm'
-          key: ${{ runner.os }}-elm-${{ hashFiles('./elm-tooling.json') }}
-      - name: Install node dependencies
-        run: |
-          NO_ELM_TOOLING_INSTALL=true 
-          npm install
-          npx --no-install elm-tooling install
-
-      - name: Making sure the installation worked
-        run: |
-          npx elm --version
-          node --version
-          npm --version
-
-      - name: Lint source
-        run: npx elm-format ./src ./tests --validate
-
-      - name: Run tests
-        run: npm run test
-        
-      - name: Build elm application
-        run: PUBLIC_URL=./ npm run build
-
+          artefact-name: ${{ needs.define-artifact-name.outputs.artifact-name }}
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
-        if: ${{ github.ref == 'refs/heads/main' }}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build
