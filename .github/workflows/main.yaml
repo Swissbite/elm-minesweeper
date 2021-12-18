@@ -29,7 +29,9 @@ jobs:
     needs: define-artifact-name
     runs-on: ubuntu-latest
     steps:
-  
+# Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
       - uses: ./.github/workflows/test-and-build-workflow.yaml
         with:
           artefact-name: ${{ needs.define-artifact-name.outputs.artifact-name }}
