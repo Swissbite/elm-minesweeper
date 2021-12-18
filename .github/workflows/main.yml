@@ -20,11 +20,17 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       artifact-name: ${{ steps.echo-artifact-name.outputs.artifact-name }}
+      current-sha: ${{ steps.echo-repo-informations.outputs.current-sha }}
+      current-repo: ${{ steps.echo-repo-informations.outputs.current-repo }}
     steps:
       - id: echo-artifact-name
         name: echo-artifact-name
         run: echo "::set-output name=artifact-name::production-build"
-  
+      - id: echo-repo-informations
+        name: echo-repo-informations
+        run: |
+          echo "::set-output name=current-sha::$GITHUB_SHA"
+          echo "::set-output name=current-repo::$GITHUB_REPOSITORY"
   call-test-and-build-workflow:
     needs: define-artifact-name
     runs-on: ubuntu-latest
@@ -32,7 +38,7 @@ jobs:
 # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
-      - uses: ./.github/workflows/test-and-build-workflow.yaml
+      - uses: ${{ needs.define-artifact-name.outputs.current-repo }}/.github/workflows/test-and-build-workflow.yml@${{ needs.define-artifact-name.outputs.current-sha }}
         with:
           artefact-name: ${{ needs.define-artifact-name.outputs.artifact-name }}
 
