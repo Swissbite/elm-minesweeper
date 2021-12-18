@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
   
-      - uses: ./test-and-build-workflow.yaml
+      - uses: ${{ github.repository }}/.github/workflows/test-and-build-workflow.yaml@${{ github.sha }}
         with:
           artefact-name: ${{ needs.define-artifact-name.outputs.artifact-name }}
 
