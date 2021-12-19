@@ -18,8 +18,8 @@ import Set exposing (Set)
 import Styles exposing (..)
 import Time
 import Types exposing (..)
-
-
+import Ports
+import Json.Encode as Encode
 
 ----- Subscription -----
 
@@ -142,12 +142,60 @@ updateModelByClickOnGameCell coords model =
                         _ ->
                             model.playedGameHistory
             in
-            ( { model | gameBoardStatus = nextGameBoardStatus, playedGameHistory = nextHistoryList }, Cmd.none )
+            ( { model | gameBoardStatus = nextGameBoardStatus, playedGameHistory = nextHistoryList }, saveFinishedGameHistory nextHistoryList)
 
         _ ->
             ( model, Cmd.none )
 
 
+saveFinishedGameHistory: List FinishedGameHistoryEntry -> Cmd msg
+saveFinishedGameHistory finishedGameHistory = 
+    Encode.list finishedGameHistoryEntryEncoder finishedGameHistory 
+    |> Encode.encode 0
+    |> Ports.storeFinishedGameHistory
+
+gameCellEncoder: GameCell -> Encode.Value
+gameCellEncoder (GameCell cellType cellStatus) =
+    let
+        encodedType = 
+            (case cellType of
+               MineCell -> "mine"
+               MineNeighbourCell _ -> "mineNeighbourCell"
+               EmptyCell -> "emptyCell")
+            |> Encode.string
+
+        encodedMinesOnNeighbourCell =
+            case cellType of
+               MineNeighbourCell i -> Encode.int i
+               _ -> Encode.null
+        
+        encodedCellStatus =
+            case cellStatus of
+                Untouched -> Encode.string "untouched"
+                Flagged -> Encode.string "flagged"
+                Opened -> Encode.string "opened"
+        
+    in Encode.object [("cellType", encodedType), ("minesOnNeighbourCell", encodedMinesOnNeighbourCell), ("cellStatus", encodedCellStatus)]
+    
+finishedGameHistoryEntryEncoder : FinishedGameHistoryEntry -> Encode.Value
+finishedGameHistoryEntryEncoder (FinishedGameHistoryEntry grid result time) =
+    let
+        gridJson =
+            Grid.rows grid
+            |> Encode.array (Encode.array gameCellEncoder)
+
+        resultJson =
+            case result of
+                Won ->
+                    Encode.string "won"
+
+                Lost ->
+                    Encode.string "lost"
+
+        timeJson =
+            Encode.int time
+    in
+    Encode.object [("grid", gridJson), ("result", resultJson), ("time", timeJson)]
 
 ----- VIEW for Game -----
 
