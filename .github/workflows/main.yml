@@ -38,7 +38,7 @@ jobs:
       - name: download artifact from test-and-build
         uses: actions/download-artifact@v2
         with:
-          artefact-name: production-build
+          name: production-build
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
