@@ -17,7 +17,6 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   test-and-build:
-    needs: define-artifact-name
     runs-on: ubuntu-latest
     steps:
 
@@ -32,8 +31,7 @@ jobs:
 
   publish-build:
     needs: 
-      - call-test-and-build-workflow
-      - define-artifact-name
+      - test-and-build
     runs-on: ubuntu-latest
     steps:
       - name: download artefacts
