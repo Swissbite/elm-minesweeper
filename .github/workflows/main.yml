@@ -16,31 +16,19 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  define-artifact-name:
-    runs-on: ubuntu-latest
-    outputs:
-      artifact-name: ${{ steps.echo-artifact-name.outputs.artifact-name }}
-      current-sha: ${{ steps.echo-repo-informations.outputs.current-sha }}
-      current-repo: ${{ steps.echo-repo-informations.outputs.current-repo }}
-    steps:
-      - id: echo-artifact-name
-        name: echo-artifact-name
-        run: echo "::set-output name=artifact-name::production-build"
-      - id: echo-repo-informations
-        name: echo-repo-informations
-        run: |
-          echo "::set-output name=current-sha::$GITHUB_SHA"
-          echo "::set-output name=current-repo::$GITHUB_REPOSITORY"
-  call-test-and-build-workflow:
+  test-and-build:
     needs: define-artifact-name
     runs-on: ubuntu-latest
     steps:
-# Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+
       - uses: actions/checkout@v2
 
-      - uses: test-and-build-workflow.yml
+      - uses: ./.github/actions/setup-lint-test-build
+
+      - uses: actions/upload-artifact@v2
         with:
-          artefact-name: ${{ needs.define-artifact-name.outputs.artifact-name }}
+          name: production-build
+          path: ./build/
 
   publish-build:
     needs: 
@@ -51,7 +39,7 @@ jobs:
       - name: download artefacts
         uses: actions/download-artifact@v2
         with:
-          artefact-name: ${{ needs.define-artifact-name.outputs.artifact-name }}
+          artefact-name: production-build
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
