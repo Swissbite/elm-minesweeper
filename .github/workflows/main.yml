@@ -8,8 +8,6 @@ on:
   push:
     branches: 
       - main
-  pull_request:
-    branches: [ main ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -21,10 +19,13 @@ jobs:
     steps:
 
       - uses: actions/checkout@v2
+        name: Checkout sources
 
       - uses: ./.github/actions/setup-lint-test-build
+        name: Setup env, lint, test and build elm-minesweeper
 
       - uses: actions/upload-artifact@v2
+        name: "Upload artifact"
         with:
           name: production-build
           path: ./build/
@@ -34,7 +35,7 @@ jobs:
       - test-and-build
     runs-on: ubuntu-latest
     steps:
-      - name: download artefacts
+      - name: download artifact from test-and-build
         uses: actions/download-artifact@v2
         with:
           artefact-name: production-build
