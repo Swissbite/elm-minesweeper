@@ -13,13 +13,15 @@ import Element.Input as Input
 import Element.Lazy as Lazy
 import Game.Internal exposing (..)
 import Grid
+import Json.Encode as Encode
+import Ports
 import Random as Random exposing (Generator)
 import Set exposing (Set)
 import Styles exposing (..)
 import Time
 import Types exposing (..)
-import Ports
-import Json.Encode as Encode
+
+
 
 ----- Subscription -----
 
@@ -142,47 +144,63 @@ updateModelByClickOnGameCell coords model =
                         _ ->
                             model.playedGameHistory
             in
-            ( { model | gameBoardStatus = nextGameBoardStatus, playedGameHistory = nextHistoryList }, saveFinishedGameHistory nextHistoryList)
+            ( { model | gameBoardStatus = nextGameBoardStatus, playedGameHistory = nextHistoryList }, saveFinishedGameHistory nextHistoryList )
 
         _ ->
             ( model, Cmd.none )
 
 
-saveFinishedGameHistory: List FinishedGameHistoryEntry -> Cmd msg
-saveFinishedGameHistory finishedGameHistory = 
-    Encode.list finishedGameHistoryEntryEncoder finishedGameHistory 
-    |> Encode.encode 0
-    |> Ports.storeFinishedGameHistory
+saveFinishedGameHistory : List FinishedGameHistoryEntry -> Cmd msg
+saveFinishedGameHistory finishedGameHistory =
+    Encode.list finishedGameHistoryEntryEncoder finishedGameHistory
+        |> Encode.encode 0
+        |> Ports.storeFinishedGameHistory
 
-gameCellEncoder: GameCell -> Encode.Value
+
+gameCellEncoder : GameCell -> Encode.Value
 gameCellEncoder (GameCell cellType cellStatus) =
     let
-        encodedType = 
+        encodedType =
             (case cellType of
-               MineCell -> "mine"
-               MineNeighbourCell _ -> "mineNeighbourCell"
-               EmptyCell -> "emptyCell")
-            |> Encode.string
+                MineCell ->
+                    "mine"
+
+                MineNeighbourCell _ ->
+                    "mineNeighbourCell"
+
+                EmptyCell ->
+                    "emptyCell"
+            )
+                |> Encode.string
 
         encodedMinesOnNeighbourCell =
             case cellType of
-               MineNeighbourCell i -> Encode.int i
-               _ -> Encode.null
-        
+                MineNeighbourCell i ->
+                    Encode.int i
+
+                _ ->
+                    Encode.null
+
         encodedCellStatus =
             case cellStatus of
-                Untouched -> Encode.string "untouched"
-                Flagged -> Encode.string "flagged"
-                Opened -> Encode.string "opened"
-        
-    in Encode.object [("cellType", encodedType), ("minesOnNeighbourCell", encodedMinesOnNeighbourCell), ("cellStatus", encodedCellStatus)]
-    
+                Untouched ->
+                    Encode.string "untouched"
+
+                Flagged ->
+                    Encode.string "flagged"
+
+                Opened ->
+                    Encode.string "opened"
+    in
+    Encode.object [ ( "cellType", encodedType ), ( "minesOnNeighbourCell", encodedMinesOnNeighbourCell ), ( "cellStatus", encodedCellStatus ) ]
+
+
 finishedGameHistoryEntryEncoder : FinishedGameHistoryEntry -> Encode.Value
 finishedGameHistoryEntryEncoder (FinishedGameHistoryEntry grid result time) =
     let
         gridJson =
             Grid.rows grid
-            |> Encode.array (Encode.array gameCellEncoder)
+                |> Encode.array (Encode.array gameCellEncoder)
 
         resultJson =
             case result of
@@ -195,7 +213,9 @@ finishedGameHistoryEntryEncoder (FinishedGameHistoryEntry grid result time) =
         timeJson =
             Encode.int time
     in
-    Encode.object [("grid", gridJson), ("result", resultJson), ("time", timeJson)]
+    Encode.object [ ( "grid", gridJson ), ( "result", resultJson ), ( "time", timeJson ) ]
+
+
 
 ----- VIEW for Game -----
 
