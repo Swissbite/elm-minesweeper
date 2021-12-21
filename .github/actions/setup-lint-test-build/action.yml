@@ -18,7 +18,7 @@ runs:
   - name: using cache for .elm
     uses: actions/cache@v2
     with:
-      path: '.elm'
+      path: '~/.elm'
       key: ${{ runner.os }}-elm-${{ hashFiles('./elm-tooling.json') }}
 
   - name: Install node dependencies

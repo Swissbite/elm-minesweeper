@@ -13,7 +13,7 @@ import Types exposing (..)
 --- PROGRAM ---
 
 
-main : Program Int Model Msg
+main : Program String Model Msg
 main =
     Browser.element
         { view = view
@@ -35,9 +35,9 @@ update msg model =
                 |> Tuple.mapSecond (Cmd.map GameView)
 
 
-init : Int -> ( Model, Cmd Msg )
-init _ =
-    ( { currentView = Game, gameBoardStatus = NoGame PreSelect, gameInteractionMode = Reveal, gameRunningTimes = [], gamePauseResumeState = Paused, playedGameHistory = [] }, Cmd.none )
+init : String -> ( Model, Cmd Msg )
+init storedFinishedGameHistory =
+    ( { currentView = Game, gameBoardStatus = NoGame PreSelect, gameInteractionMode = Reveal, gameRunningTimes = [], gamePauseResumeState = Paused, playedGameHistory = Game.decodeStoredFinishedGameHistory storedFinishedGameHistory }, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg

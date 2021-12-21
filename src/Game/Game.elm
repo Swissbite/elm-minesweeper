@@ -1,4 +1,4 @@
-module Game.Game exposing (subscriptions, update, view)
+module Game.Game exposing (decodeStoredFinishedGameHistory, subscriptions, update, view)
 
 {-| Game module for rendering the complete game, as long as the currentView in the model is set to Game.
 Exposes the basic update / view / subscription functions, so that Main.elm can use them.
@@ -13,6 +13,9 @@ import Element.Input as Input
 import Element.Lazy as Lazy
 import Game.Internal exposing (..)
 import Grid
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode
+import Ports
 import Random as Random exposing (Generator)
 import Set exposing (Set)
 import Styles exposing (..)
@@ -22,6 +25,12 @@ import Types exposing (..)
 
 
 ----- Subscription -----
+
+
+decodeStoredFinishedGameHistory : String -> List FinishedGameHistoryEntry
+decodeStoredFinishedGameHistory string =
+    Decode.decodeString deocdeFinishedGameHistory string
+        |> Result.withDefault []
 
 
 subscriptions : Model -> Sub GameMsg
@@ -142,10 +151,182 @@ updateModelByClickOnGameCell coords model =
                         _ ->
                             model.playedGameHistory
             in
-            ( { model | gameBoardStatus = nextGameBoardStatus, playedGameHistory = nextHistoryList }, Cmd.none )
+            ( { model | gameBoardStatus = nextGameBoardStatus, playedGameHistory = nextHistoryList }, saveFinishedGameHistory nextHistoryList )
 
         _ ->
             ( model, Cmd.none )
+
+
+deocdeFinishedGameHistory : Decoder (List FinishedGameHistoryEntry)
+deocdeFinishedGameHistory =
+    Decode.list decodeFinishedGameHistoryEntry
+
+
+decodeFinishedGameHistoryEntry : Decoder FinishedGameHistoryEntry
+decodeFinishedGameHistoryEntry =
+    Decode.map3
+        (\grid result time -> FinishedGameHistoryEntry grid result time)
+        (Decode.field "grid" decodeGrid)
+        (Decode.field "result" decodeResult)
+        (Decode.field "time" Decode.int)
+
+
+decodeGrid : Decoder PlayGameGrid
+decodeGrid =
+    Decode.list (Decode.list gameCellDecoder)
+        |> Decode.andThen
+            (\gridAsList ->
+                case Grid.fromList gridAsList of
+                    Just grid ->
+                        Decode.succeed grid
+
+                    Nothing ->
+                        Decode.fail "Could not decode grid"
+            )
+
+
+decodeResult : Decoder GameResult
+decodeResult =
+    Decode.string
+        |> Decode.andThen
+            (\resultAsString ->
+                String.toLower resultAsString
+                    |> (\lowerResult ->
+                            case lowerResult of
+                                "won" ->
+                                    Decode.succeed Won
+
+                                "lost" ->
+                                    Decode.succeed Lost
+
+                                _ ->
+                                    Decode.fail "Unknown game result string"
+                       )
+            )
+
+
+saveFinishedGameHistory : List FinishedGameHistoryEntry -> Cmd msg
+saveFinishedGameHistory finishedGameHistory =
+    Encode.list finishedGameHistoryEntryEncoder finishedGameHistory
+        |> Encode.encode 0
+        |> Ports.storeFinishedGameHistory
+
+
+finishedGameHistoryEntryEncoder : FinishedGameHistoryEntry -> Encode.Value
+finishedGameHistoryEntryEncoder (FinishedGameHistoryEntry grid result time) =
+    let
+        gridJson =
+            Grid.rows grid
+                |> Encode.array (Encode.array gameCellEncoder)
+
+        resultJson =
+            case result of
+                Won ->
+                    Encode.string "won"
+
+                Lost ->
+                    Encode.string "lost"
+
+        timeJson =
+            Encode.int time
+    in
+    Encode.object [ ( "grid", gridJson ), ( "result", resultJson ), ( "time", timeJson ) ]
+
+
+gameCellDecoder : Decoder GameCell
+gameCellDecoder =
+    let
+        singleFieldsToCell : CellType -> Maybe Int -> CellStatus -> GameCell
+        singleFieldsToCell cellType maybeMineCount cellStatus =
+            case ( cellType, maybeMineCount ) of
+                _ ->
+                    GameCell MineCell cellStatus
+    in
+    Decode.map3 singleFieldsToCell
+        (Decode.field "cellType" decodeCellType)
+        (Decode.field "minesOnNeighbourCell" <| Decode.oneOf [ Decode.null Nothing, Decode.map Just Decode.int ])
+        (Decode.field "cellStatus" decodeCellStatus)
+
+
+decodeCellType : Decoder CellType
+decodeCellType =
+    Decode.string
+        |> Decode.andThen
+            (\cellTypeAsString ->
+                case cellTypeAsString of
+                    "mine" ->
+                        Decode.succeed MineCell
+
+                    "mineCell" ->
+                        Decode.succeed MineCell
+
+                    "emptyCell" ->
+                        Decode.succeed EmptyCell
+
+                    "mineNeighbourCell" ->
+                        Decode.succeed (MineNeighbourCell -1)
+
+                    _ ->
+                        Decode.fail "Invalid cell type"
+            )
+
+
+decodeCellStatus : Decoder CellStatus
+decodeCellStatus =
+    Decode.string
+        |> Decode.andThen
+            (\cellStatusAsString ->
+                case String.toLower cellStatusAsString of
+                    "untouched" ->
+                        Decode.succeed Untouched
+
+                    "flagged" ->
+                        Decode.succeed Flagged
+
+                    "opened" ->
+                        Decode.succeed Opened
+
+                    _ ->
+                        Decode.fail "Invalid cell status"
+            )
+
+
+gameCellEncoder : GameCell -> Encode.Value
+gameCellEncoder (GameCell cellType cellStatus) =
+    let
+        encodedType =
+            (case cellType of
+                MineCell ->
+                    "mineCell"
+
+                MineNeighbourCell _ ->
+                    "mineNeighbourCell"
+
+                EmptyCell ->
+                    "emptyCell"
+            )
+                |> Encode.string
+
+        encodedMinesOnNeighbourCell =
+            case cellType of
+                MineNeighbourCell i ->
+                    Encode.int i
+
+                _ ->
+                    Encode.null
+
+        encodedCellStatus =
+            case cellStatus of
+                Untouched ->
+                    Encode.string "untouched"
+
+                Flagged ->
+                    Encode.string "flagged"
+
+                Opened ->
+                    Encode.string "opened"
+    in
+    Encode.object [ ( "cellType", encodedType ), ( "minesOnNeighbourCell", encodedMinesOnNeighbourCell ), ( "cellStatus", encodedCellStatus ) ]
 
 
 
