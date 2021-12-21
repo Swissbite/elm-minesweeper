@@ -5,7 +5,7 @@ import * as serviceWorker from './serviceWorker';
 const localStoreFinishedGameHistoryKey = 'finishedGameHistory';
 
 const storedFinishedGameHistory = localStorage.getItem(localStoreFinishedGameHistoryKey);
-const finishedGameHistory = storedFinishedGameHistory ? JSON.parse(storedFinishedGameHistory) : [];
+const finishedGameHistory = storedFinishedGameHistory ? JSON.parse(storedFinishedGameHistory) : "[]";
 
 const app = Elm.Main.init({
   node: document.getElementById('root'),
