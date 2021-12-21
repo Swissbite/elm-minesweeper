@@ -239,25 +239,32 @@ gameCellDecoder =
         singleFieldsToCell : CellType -> Maybe Int -> CellStatus -> Maybe GameCell
         singleFieldsToCell cellType maybeMineCount cellStatus =
             case ( cellType, maybeMineCount ) of
-                (MineCell, _) ->
+                ( MineCell, _ ) ->
                     Just (GameCell MineCell cellStatus)
-                (EmptyCell, _) ->
+
+                ( EmptyCell, _ ) ->
                     Just (GameCell EmptyCell cellStatus)
-                (MineNeighbourCell _, Just count) ->
+
+                ( MineNeighbourCell _, Just count ) ->
                     Just (GameCell (MineNeighbourCell count) cellStatus)
-                _ -> Nothing
+
+                _ ->
+                    Nothing
     in
     Decode.map3 singleFieldsToCell
         (Decode.field "cellType" decodeCellType)
         (Decode.field "minesOnNeighbourCell" <| Decode.oneOf [ Decode.null Nothing, Decode.map Just Decode.int ])
         (Decode.field "cellStatus" decodeCellStatus)
-    |> Decode.andThen (\maybeGameCell -> 
-        case maybeGameCell of
-            Just gameCell ->
-                Decode.succeed gameCell
-            Nothing ->
-                Decode.fail "Could not decode game cell"
+        |> Decode.andThen
+            (\maybeGameCell ->
+                case maybeGameCell of
+                    Just gameCell ->
+                        Decode.succeed gameCell
+
+                    Nothing ->
+                        Decode.fail "Could not decode game cell"
             )
+
 
 decodeCellType : Decoder CellType
 decodeCellType =
