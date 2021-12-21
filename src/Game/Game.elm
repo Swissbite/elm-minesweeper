@@ -236,17 +236,28 @@ finishedGameHistoryEntryEncoder (FinishedGameHistoryEntry grid result time) =
 gameCellDecoder : Decoder GameCell
 gameCellDecoder =
     let
-        singleFieldsToCell : CellType -> Maybe Int -> CellStatus -> GameCell
+        singleFieldsToCell : CellType -> Maybe Int -> CellStatus -> Maybe GameCell
         singleFieldsToCell cellType maybeMineCount cellStatus =
             case ( cellType, maybeMineCount ) of
-                _ ->
-                    GameCell MineCell cellStatus
+                (MineCell, _) ->
+                    Just (GameCell MineCell cellStatus)
+                (EmptyCell, _) ->
+                    Just (GameCell EmptyCell cellStatus)
+                (MineNeighbourCell _, Just count) ->
+                    Just (GameCell (MineNeighbourCell count) cellStatus)
+                _ -> Nothing
     in
     Decode.map3 singleFieldsToCell
         (Decode.field "cellType" decodeCellType)
         (Decode.field "minesOnNeighbourCell" <| Decode.oneOf [ Decode.null Nothing, Decode.map Just Decode.int ])
         (Decode.field "cellStatus" decodeCellStatus)
-
+    |> Decode.andThen (\maybeGameCell -> 
+        case maybeGameCell of
+            Just gameCell ->
+                Decode.succeed gameCell
+            Nothing ->
+                Decode.fail "Could not decode game cell"
+            )
 
 decodeCellType : Decoder CellType
 decodeCellType =
