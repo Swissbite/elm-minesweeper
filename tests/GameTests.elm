@@ -55,15 +55,9 @@ extendedGridValue =
         |> String.replace "\t" ""
         |> String.replace "\n" ""
         |> String.replace " " ""
-    , case
+    , Maybe.map (\grid -> [ FinishedGameHistoryEntry grid Lost 1000 ]) <|
         Grid.fromList
             [ [ GameCell (MineNeighbourCell 1) Opened, GameCell (MineNeighbourCell 1) Flagged ]
             , [ GameCell (MineNeighbourCell 1) Untouched, GameCell MineCell Opened ]
             ]
-      of
-        Nothing ->
-            Nothing
-
-        Just grid ->
-            Just [ FinishedGameHistoryEntry grid Lost 1000 ]
     )
