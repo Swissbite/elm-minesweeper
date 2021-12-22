@@ -10,7 +10,7 @@ updates:
     schedule:
       interval: "daily"
   
-  - package-ecosystem: "elm-package" # See documentation for possible values
+  - package-ecosystem: "elm" # See documentation for possible values
     directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
