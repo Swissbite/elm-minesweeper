@@ -42,11 +42,24 @@ Features it should have (in no particular order):
 This project will be an on/off project ;-)
 
 
-## Set up the project
+## Setup the project
 
-1. Install [`elm-app`](https://github.com/halfzebra/create-elm-app), a super-power tool for 
-   bootstraping elm applications by `npm install -g create-elm-app`
-2. Follow [Elm-App Setup](Elm-App%20Setup.md)
+Use [nvm](https://github.com/nvm-sh/nvm) or [nvm-windows](https://github.com/coreybutler/nvm-windows) to have the correct node version installed.
+On Microsoft Windows, you may consider to use the dev environments on Docker for Desktop.
+
+1. `nvm use`
+2. `npm install`
+
+### Local development
+
+- Run `npm run start` to start a local development server with auto-reload and all other features
+
+### Run tests
+- `npm run test`
+
+### Validate format
+ - `npm run format-validate`
+
 
 ## Project structure
 
