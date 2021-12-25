@@ -1,5 +1,6 @@
 module Types exposing (..)
 
+import Element exposing (Device)
 import Grid exposing (Grid)
 import Time
 
@@ -8,6 +9,20 @@ import Time
 -}
 type Msg
     = GameView GameMsg
+    | Navigation NavigationMsg
+    | SetScreenSize Int Int
+
+
+type NavigationMsg
+    = Noop
+    | NotFound
+
+
+type alias Flags =
+    { height : Int
+    , width : Int
+    , history : String
+    }
 
 
 {-| Type definition of all Messages for playing minesweeper itself. Moved from Msg to own type to simplify the update function in Main.elm
@@ -31,11 +46,13 @@ type alias Model =
     , gamePauseResumeState : PauseResumeState
     , playedGameHistory : List FinishedGameHistoryEntry
     , currentView : View
+    , device : Device
     }
 
 
 type View
     = Game
+    | Error404
 
 
 type PauseResumeState

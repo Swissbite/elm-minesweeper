@@ -5,6 +5,7 @@ Exposes the basic update / view / subscription functions, so that Main.elm can u
 -}
 
 import Array as Array
+import Colors
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
@@ -511,6 +512,7 @@ smallPlayground =
     }
 
 
+mediumPlayground : PlayGroundDefinition
 mediumPlayground =
     { cols = 16
     , rows = 16
@@ -518,6 +520,7 @@ mediumPlayground =
     }
 
 
+advancePlayground : PlayGroundDefinition
 advancePlayground =
     { cols = 30
     , rows = 16
@@ -525,6 +528,7 @@ advancePlayground =
     }
 
 
+xxlPlayground : PlayGroundDefinition
 xxlPlayground =
     { cols = 30
     , rows = 30
@@ -540,9 +544,9 @@ dummyToogleElement =
 styledToogleElement : Bool -> Element GameMsg
 styledToogleElement =
     Styles.toggleCheckboxWidget
-        { offColor = Styles.lightGrey
-        , onColor = Styles.green
-        , sliderColor = Styles.white
+        { offColor = Colors.lightGrey
+        , onColor = Colors.green
+        , sliderColor = Colors.white
         , toggleWidth = 60
         , toggleHeight = 28
         , onSymbol = Just Styles.icons.untouchedBomb
@@ -633,11 +637,11 @@ finishedGameView playGameGrid gameResult =
                 Lost ->
                     Element.text "You lost!"
         , Element.row [ Element.centerX, Element.centerY, Element.spacing 20, Border.solid, Border.rounded 25, Element.paddingXY 0 10 ]
-            [ Input.button [ Background.color Styles.asparagus, Border.solid, Element.padding 10, Border.rounded 10 ]
+            [ Input.button [ Background.color Colors.asparagus, Border.solid, Element.padding 10, Border.rounded 10 ]
                 { onPress = Just (CreateNewGame <| playGameGridToPlaygroundDefinition playGameGrid)
                 , label = Element.text "Start new game"
                 }
-            , Input.button [ Background.color Styles.saffron, Border.solid, Element.padding 10, Border.rounded 10 ]
+            , Input.button [ Background.color Colors.saffron, Border.solid, Element.padding 10, Border.rounded 10 ]
                 { onPress = Just GoToStartPage
                 , label = Element.text "Back to overview"
                 }

@@ -87,6 +87,7 @@ decoderTests =
         ]
 
 
+extendedGridValue : ( String, Maybe (List FinishedGameHistoryEntry) )
 extendedGridValue =
     ( """
     [

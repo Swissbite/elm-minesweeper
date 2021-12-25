@@ -1,25 +1,36 @@
 module Main exposing (..)
 
-import Browser
+import Browser exposing (Document, UrlRequest(..))
+import Browser.Events as Events
+import Browser.Navigation exposing (Key)
 import Element exposing (Element, fill)
 import Element.Lazy as Lazy
+import ErrorPage404
 import Game.Game as Game
-import Html exposing (Html)
 import Tuple
 import Types exposing (..)
+import Url exposing (Url)
 
 
 
 --- PROGRAM ---
 
 
-main : Program String Model Msg
+main : Program Flags Model Msg
 main =
-    Browser.element
+    Browser.application
         { view = view
         , init = init
         , update = update
         , subscriptions = subscriptions
+        , onUrlChange =
+            \url ->
+                Debug.log "onUrlChange" url
+                    |> (\_ -> Navigation Noop)
+        , onUrlRequest =
+            \request ->
+                Debug.log "onUrlRequest" request
+                    |> (\_ -> Navigation Noop)
         }
 
 
@@ -34,16 +45,27 @@ update msg model =
             Game.update gameMsg model
                 |> Tuple.mapSecond (Cmd.map GameView)
 
+        Navigation _ ->
+            ( model, Cmd.none )
 
-init : String -> ( Model, Cmd Msg )
-init storedFinishedGameHistory =
-    ( { currentView = Game, gameBoardStatus = NoGame PreSelect, gameInteractionMode = Reveal, gameRunningTimes = [], gamePauseResumeState = Paused, playedGameHistory = Game.decodeStoredFinishedGameHistory storedFinishedGameHistory }, Cmd.none )
+        SetScreenSize x y ->
+            ( { model | device = Element.classifyDevice { width = x, height = y } }, Cmd.none )
+
+
+init : Flags -> Url -> Key -> ( Model, Cmd Msg )
+init flags url key =
+    Debug.log "init url" url
+        |> (\_ ->
+                Debug.log "init key" key
+                    |> (\_ -> ( { device = Element.classifyDevice { width = flags.width, height = flags.height }, currentView = Game, gameBoardStatus = NoGame PreSelect, gameInteractionMode = Reveal, gameRunningTimes = [], gamePauseResumeState = Paused, playedGameHistory = Game.decodeStoredFinishedGameHistory flags.history }, Cmd.none ))
+           )
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Sub.map GameView (Game.subscriptions model)
+        , Events.onResize (\values -> SetScreenSize values)
         ]
 
 
@@ -51,13 +73,17 @@ subscriptions model =
 --- VIEW ---
 
 
-view : Model -> Html Msg
+view : Model -> Document Msg
 view m =
-    Element.layout [ Element.width Element.fill, Element.height Element.fill ] <|
-        Element.column [ Element.width fill, Element.height fill, Element.centerX ]
-            [ Lazy.lazy (\t -> Element.el [ Element.centerX ] <| Element.text t) "Minesweeper"
-            , Lazy.lazy selectBoardView m
-            ]
+    { title = "Elm - Minesweeper"
+    , body =
+        [ Element.layout [ Element.width Element.fill, Element.height Element.fill ] <|
+            Element.column [ Element.width fill, Element.height fill, Element.centerX ]
+                [ Lazy.lazy (\t -> Element.el [ Element.centerX ] <| Element.text t) "Minesweeper"
+                , Lazy.lazy selectBoardView m
+                ]
+        ]
+    }
 
 
 selectBoardView : Model -> Element Msg
@@ -66,3 +92,11 @@ selectBoardView model =
         Game ->
             Game.view model
                 |> Element.map GameView
+
+        Error404 ->
+            ErrorPage404.view model
+
+
+navigationHeader : Model -> Element Msg
+navigationHeader _ =
+    Element.row [ Element.width Element.fill ] []
