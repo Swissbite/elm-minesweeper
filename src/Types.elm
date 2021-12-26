@@ -1,5 +1,7 @@
 module Types exposing (..)
 
+import Browser exposing (UrlRequest)
+import Browser.Navigation exposing (Key)
 import Element exposing (Device)
 import Grid exposing (Grid)
 import Time
@@ -9,13 +11,8 @@ import Time
 -}
 type Msg
     = GameView GameMsg
-    | Navigation NavigationMsg
+    | Navigation UrlRequest
     | SetScreenSize Int Int
-
-
-type NavigationMsg
-    = Noop
-    | NotFound
 
 
 type alias Flags =
@@ -47,6 +44,7 @@ type alias Model =
     , playedGameHistory : List FinishedGameHistoryEntry
     , currentView : View
     , device : Device
+    , key : Key
     }
 
 

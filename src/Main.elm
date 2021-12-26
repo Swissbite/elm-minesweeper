@@ -2,11 +2,14 @@ module Main exposing (..)
 
 import Browser exposing (Document, UrlRequest(..))
 import Browser.Events as Events
-import Browser.Navigation exposing (Key)
+import Browser.Navigation as Navigation exposing (Key)
+import Dict exposing (Dict)
 import Element exposing (Element, fill)
 import Element.Lazy as Lazy
 import ErrorPage404
 import Game.Game as Game
+import Platform exposing (Task)
+import Task
 import Tuple
 import Types exposing (..)
 import Url exposing (Url)
@@ -25,17 +28,16 @@ main =
         , subscriptions = subscriptions
         , onUrlChange =
             \url ->
-                Debug.log "onUrlChange" url
-                    |> (\_ -> Navigation Noop)
+                Internal url
+                    |> Navigation
         , onUrlRequest =
             \request ->
-                Debug.log "onUrlRequest" request
-                    |> (\_ -> Navigation Noop)
+                Navigation request
         }
 
 
 
---- UPDATE / INIT / SUBSCRIPTIONS ---
+--- UPDATE / INIT / SUBSCRIPTIONS / URL Handling ---
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -45,20 +47,54 @@ update msg model =
             Game.update gameMsg model
                 |> Tuple.mapSecond (Cmd.map GameView)
 
-        Navigation _ ->
-            ( model, Cmd.none )
+        Navigation request ->
+            navigationHandling request model
 
         SetScreenSize x y ->
             ( { model | device = Element.classifyDevice { width = x, height = y } }, Cmd.none )
 
 
+knownPathsToViewMap : Dict String View
+knownPathsToViewMap =
+    Dict.fromList [ ( "/", Game ) ]
+
+
+navigationHandling : UrlRequest -> Model -> ( Model, Cmd Msg )
+navigationHandling request model =
+    case request of
+        Internal url ->
+            Dict.get url.path knownPathsToViewMap
+                |> Maybe.withDefault Error404
+                |> (\v -> ( { model | currentView = v }, Cmd.none ))
+
+        External url ->
+            ( model, Navigation.load url )
+
+
 init : Flags -> Url -> Key -> ( Model, Cmd Msg )
 init flags url key =
-    Debug.log "init url" url
-        |> (\_ ->
-                Debug.log "init key" key
-                    |> (\_ -> ( { device = Element.classifyDevice { width = flags.width, height = flags.height }, currentView = Game, gameBoardStatus = NoGame PreSelect, gameInteractionMode = Reveal, gameRunningTimes = [], gamePauseResumeState = Paused, playedGameHistory = Game.decodeStoredFinishedGameHistory flags.history }, Cmd.none ))
-           )
+    let
+        basicInitModel : Model
+        basicInitModel =
+            { key = key
+            , device =
+                Element.classifyDevice
+                    { width = flags.width
+                    , height = flags.height
+                    }
+            , currentView = Game
+            , gameBoardStatus = NoGame PreSelect
+            , gameInteractionMode = Reveal
+            , gameRunningTimes = []
+            , gamePauseResumeState = Paused
+            , playedGameHistory = Game.decodeStoredFinishedGameHistory flags.history
+            }
+
+        navigationMsg : Msg
+        navigationMsg =
+            Navigation (Internal url)
+    in
+    update navigationMsg basicInitModel
 
 
 subscriptions : Model -> Sub Msg
