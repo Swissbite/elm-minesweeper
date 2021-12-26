@@ -607,10 +607,10 @@ runningGameCellToElement : Int -> Int -> GameCell -> Element GameMsg
 runningGameCellToElement x y cell =
     case cell of
         GameCell _ Flagged ->
-            Element.el (Styles.untouchedCellStyle ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.markerFlag
+            Element.el (Styles.flaggedCellStyle ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.markerFlag
 
         GameCell _ Untouched ->
-            Element.el (Styles.untouchedCellStyle ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) Element.none
+            Element.el (Styles.untouchedCellStyle ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.markerFlag
 
         GameCell EmptyCell Opened ->
             Element.el Styles.openedCellStyle Element.none

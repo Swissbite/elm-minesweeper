@@ -88,6 +88,11 @@ white =
     rgb255 255 255 255
 
 
+black : Color
+black =
+    rgb255 0 0 0
+
+
 cellWidth : Element.Length
 cellWidth =
     Element.px 50
@@ -98,9 +103,16 @@ basicCellStyle =
     [ Element.width cellWidth
     , Element.height cellWidth
     , Border.color cellBorderColor
+    , Font.color untouchedCellGray
+    , Background.color untouchedCellGray
     , Border.width 1
     , Element.pointer
+    , Element.htmlAttribute <| HA.style "transition" "all 200ms"
     ]
+
+
+flaggedCellStyle =
+    basicCellStyle ++ [ Font.color black ]
 
 
 untouchedCellStyle : List (Element.Attribute msg)
@@ -114,6 +126,7 @@ openedCellStyle : List (Element.Attribute msg)
 openedCellStyle =
     basicCellStyle
         ++ [ Background.color openedCellGray
+           , Font.color black
            ]
 
 
