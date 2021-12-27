@@ -8,8 +8,6 @@ import Element exposing (Element, fill)
 import Element.Lazy as Lazy
 import ErrorPage404
 import Game.Game as Game
-import Platform exposing (Task)
-import Task
 import Tuple
 import Types exposing (..)
 import Url exposing (Url)
