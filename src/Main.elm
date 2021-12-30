@@ -3,7 +3,6 @@ module Main exposing (..)
 import Browser exposing (Document, UrlRequest(..))
 import Browser.Events as Events
 import Browser.Navigation as Navigation exposing (Key)
-import Dict exposing (Dict)
 import Element exposing (Element, fill)
 import Element.Lazy as Lazy
 import ErrorPage404
@@ -13,7 +12,6 @@ import Tuple
 import Types exposing (..)
 import Url exposing (Url)
 import Url.Parser as UP exposing ((</>), (<?>))
-import Url.Parser.Query as QP
 
 
 
@@ -29,11 +27,13 @@ main =
         , subscriptions = subscriptions
         , onUrlChange =
             \url ->
-                Internal url
+                Debug.log "onUrlChange" url
+                    |> Internal
                     |> Navigation
         , onUrlRequest =
             \request ->
-                Navigation request
+                Debug.log "onUrlRequest" request
+                    |> Navigation
         }
 
 
@@ -84,7 +84,11 @@ navigationHandling request model =
             UP.parse viewRouteParser url
                 |> Maybe.withDefault Error404
                 |> (\parsedView ->
-                        ( { model | currentView = parsedView }, Cmd.none )
+                        if model.currentView == parsedView then
+                            ( model, Cmd.none )
+
+                        else
+                            ( { model | currentView = parsedView }, Navigation.pushUrl model.key (Url.toString url) )
                    )
 
         External url ->
@@ -135,11 +139,20 @@ view m =
     , body =
         [ Element.layout [ Element.width Element.fill, Element.height Element.fill ] <|
             Element.column [ Element.width fill, Element.height fill, Element.centerX ]
-                [ Lazy.lazy (\t -> Element.el [ Element.centerX ] <| Element.text t) "Minesweeper"
+                [ navigationView
                 , Lazy.lazy selectBoardView m
                 ]
         ]
     }
+
+
+navigationView : Element Msg
+navigationView =
+    Element.row [ Element.width Element.fill ]
+        [ Element.el [ Element.alignLeft, Element.paddingXY 10 10 ] <| Element.text "Minesweeper"
+        , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = "/", label = Element.text "Game" }
+        , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = "/history", label = Element.text "History" }
+        ]
 
 
 selectBoardView : Model -> Element Msg

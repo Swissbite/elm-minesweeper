@@ -14,9 +14,7 @@ import Element.Input as Input
 import Element.Lazy as Lazy
 import Game.Internal exposing (..)
 import Grid
-import Json.Decode as Decode exposing (Decoder)
-import Json.Encode as Encode
-import Ports
+import Json.Decode as Decode
 import Random as Random exposing (Generator)
 import Set exposing (Set)
 import Styles exposing (..)
