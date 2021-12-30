@@ -8,9 +8,12 @@ import Element exposing (Element, fill)
 import Element.Lazy as Lazy
 import ErrorPage404
 import Game.Game as Game
+import Game.History as GameHistory
 import Tuple
 import Types exposing (..)
 import Url exposing (Url)
+import Url.Parser as UP exposing ((</>), (<?>))
+import Url.Parser.Query as QP
 
 
 
@@ -45,6 +48,10 @@ update msg model =
             Game.update gameMsg model
                 |> Tuple.mapSecond (Cmd.map GameView)
 
+        GameHistory gameHistoryMsg ->
+            GameHistory.update gameHistoryMsg model
+                |> Tuple.mapSecond (Cmd.map GameHistory)
+
         Navigation request ->
             navigationHandling request model
 
@@ -52,18 +59,33 @@ update msg model =
             ( { model | device = Element.classifyDevice { width = x, height = y } }, Cmd.none )
 
 
-knownPathsToViewMap : Dict String View
-knownPathsToViewMap =
-    Dict.fromList [ ( "/", Game ) ]
+viewRouteParser : UP.Parser (View -> a) a
+viewRouteParser =
+    UP.oneOf
+        [ UP.map Game UP.top
+        , UP.map gameHistoryQueryToView (UP.s "history" <?> GameHistory.queryParser)
+        ]
+
+
+gameHistoryQueryToView : GameHistory.GameHistoryQuery -> View
+gameHistoryQueryToView query =
+    History query.displayMode query.orderBy query.orderDirection
+
+
+mayBeQueryParamsToHistoryView : Maybe GameHistoryDisplayMode -> Maybe GameHistoryOrderBy -> Maybe OrderDirection -> View
+mayBeQueryParamsToHistoryView maybeMode maybeOrderBy maybeSort =
+    History (Maybe.withDefault DisplayAll maybeMode) (Maybe.withDefault ByEntryId maybeOrderBy) (Maybe.withDefault Ascending maybeSort)
 
 
 navigationHandling : UrlRequest -> Model -> ( Model, Cmd Msg )
 navigationHandling request model =
     case request of
         Internal url ->
-            Dict.get url.path knownPathsToViewMap
+            UP.parse viewRouteParser url
                 |> Maybe.withDefault Error404
-                |> (\v -> ( { model | currentView = v }, Cmd.none ))
+                |> (\parsedView ->
+                        ( { model | currentView = parsedView }, Cmd.none )
+                   )
 
         External url ->
             ( model, Navigation.load url )
@@ -129,6 +151,10 @@ selectBoardView model =
 
         Error404 ->
             ErrorPage404.view model
+
+        History _ _ _ ->
+            GameHistory.view model
+                |> Element.map GameHistory
 
 
 navigationHeader : Model -> Element Msg

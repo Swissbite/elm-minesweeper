@@ -11,6 +11,7 @@ import Time
 -}
 type Msg
     = GameView GameMsg
+    | GameHistory GameHistoryMsg
     | Navigation UrlRequest
     | SetScreenSize Int Int
 
@@ -36,6 +37,30 @@ type GameMsg
     | ToogleGamePause
 
 
+type GameHistoryMsg
+    = DeleteAll
+    | DeleteLost
+    | SetDisplayMode GameHistoryDisplayMode
+    | SetOrderBy GameHistoryOrderBy OrderDirection
+
+
+type GameHistoryDisplayMode
+    = DisplayAll
+    | DisplayLost
+    | DisplayWon
+
+
+type GameHistoryOrderBy
+    = ByDuration
+    | ByFieldSize
+    | ByEntryId
+
+
+type OrderDirection
+    = Ascending
+    | Descending
+
+
 type alias Model =
     { gameBoardStatus : GameBoardStatus
     , gameInteractionMode : CellClickMode
@@ -50,6 +75,7 @@ type alias Model =
 
 type View
     = Game
+    | History GameHistoryDisplayMode GameHistoryOrderBy OrderDirection
     | Error404
 
 
