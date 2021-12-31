@@ -97,9 +97,17 @@ type alias Coordinates =
     }
 
 
-type FinishedGameHistoryEntry
-    = FinishedGameHistoryEntry PlayGameGrid GameResult Int
+type alias FinishedGameHistory =
+    { entries : List FinishedGameHistoryEntry 
+    , version : Int
+    }
 
+type alias FinishedGameHistoryEntry =
+    { grid : PlayGameGrid
+    , result : GameResult
+    , duration : Int
+    , playFinish: Time.Posix
+    }
 
 type GameBoardStatus
     = WaitOnStart InitGameGrid

@@ -28,6 +28,48 @@ manualStringDecodedParams params =
             """{ "orderBy": \"""" ++ orderByToString data.orderBy ++ """", "direction": \"""" ++ orderDirectionToString data.orderDirection ++ """" """
 
 
+sortAndFilterListByQueryParameter : Maybe GameHistoryQuery -> List FinishedGameHistoryEntry -> List FinishedGameHistoryEntry
+sortAndFilterListByQueryParameter maybeParams list =
+    case maybeParams of
+        Nothing ->
+            list
+
+        Just params ->
+            list
+                |> List.filter (filterByDisplayMode params.displayMode)
+                |> List.sortWith ()
+
+
+filterByDisplayMode : GameHistoryDisplayMode -> (FinishedGameHistoryEntry -> Bool)
+filterByDisplayMode displayMode =
+    case displayMode of
+        DisplayWon ->
+            \(FinishedGameHistoryEntry _ result _) ->
+                case result of
+                    Won ->
+                        True
+
+                    Lost ->
+                        False
+
+        DisplayLost ->
+            \(FinishedGameHistoryEntry _ result _) ->
+                case result of
+                    Won ->
+                        False
+
+                    Lost ->
+                        True
+
+        DisplayAll ->
+            \_ -> True
+
+
+sortAndOrder : GameHistoryOrderBy -> GameHistoryOrderDirection -> (FinishedGameHistoryEntry -> FinishedGameHistoryEntry -> Ordering)
+sortAndOrder orderBy direction =
+    case (orderBy, direction) of
+        
+
 extractQueryParameterFromView : Model -> Maybe GameHistoryQuery
 extractQueryParameterFromView model =
     case model.currentView of
