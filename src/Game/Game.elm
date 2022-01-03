@@ -1,4 +1,4 @@
-module Game.Game exposing (decodeStoredFinishedGameHistory, subscriptions, update, view)
+module Game.Game exposing (decodeStoredFinishedGameHistory, initModel, subscriptions, update, view)
 
 {-| Game module for rendering the complete game, as long as the currentView in the model is set to Game.
 Exposes the basic update / view / subscription functions, so that Main.elm can use them.
@@ -20,6 +20,16 @@ import Set exposing (Set)
 import Styles exposing (..)
 import Time
 import Types exposing (..)
+
+
+initModel : GameModel
+initModel =
+    { gameBoardStatus = NoGame PreSelect
+    , gameInteractionMode = Reveal
+    , gameRunningTimes = []
+    , gamePauseResumeState = Paused
+    , lastClockTick = Time.millisToPosix 0
+    }
 
 
 
@@ -45,39 +55,58 @@ update : GameMsg -> Model -> ( Model, Cmd GameMsg )
 update gameMsg model =
     case gameMsg of
         GoToStartPage ->
-            ( { model | gameBoardStatus = NoGame PreSelect }, Cmd.none )
+            let
+                gameModel =
+                    model.game
+            in
+            ( { model | game = { gameModel | gameBoardStatus = NoGame PreSelect } }, Cmd.none )
 
         ClickedOnInitGameCell initGame coords ->
             ( model, generatePlayGameGrid initGame coords |> Random.generate StartGame )
 
         StartGame playGrid ->
-            ( { model | gameBoardStatus = RunningGame playGrid, gameRunningTimes = [], gamePauseResumeState = Resumed 1 }, Cmd.none )
+            let
+                gameModel =
+                    model.game
+            in
+            ( { model | game = { gameModel | gameBoardStatus = RunningGame playGrid, gameRunningTimes = [], gamePauseResumeState = Resumed 1 } }, Cmd.none )
 
         CreateNewGame playgroundDefinition ->
-            ( { model | gameBoardStatus = WaitOnStart <| createInitGameGrid playgroundDefinition, gameInteractionMode = Reveal }, Cmd.none )
+            let
+                gameModel =
+                    model.game
+            in
+            ( { model | game = { gameModel | gameBoardStatus = WaitOnStart <| createInitGameGrid playgroundDefinition, gameInteractionMode = Reveal } }, Cmd.none )
 
         ClickOnGameCell coords ->
             updateModelByClickOnGameCell coords model
 
         ToogleGameCellInteractionMode ->
             let
+                gameModel =
+                    model.game
+
                 nextMode =
-                    case model.gameInteractionMode of
+                    case gameModel.gameInteractionMode of
                         Reveal ->
                             Flag
 
                         Flag ->
                             Reveal
             in
-            ( { model | gameInteractionMode = nextMode }, Cmd.none )
+            ( { model | game = { gameModel | gameInteractionMode = nextMode } }, Cmd.none )
 
         ToogleGamePause ->
-            case ( model.gameBoardStatus, model.gamePauseResumeState ) of
+            let
+                gameModel =
+                    model.game
+            in
+            case ( gameModel.gameBoardStatus, gameModel.gamePauseResumeState ) of
                 ( RunningGame _, Paused ) ->
-                    ( { model | gamePauseResumeState = Resumed (List.length model.gameRunningTimes + 1) }, Cmd.none )
+                    ( { model | game = { gameModel | gamePauseResumeState = Resumed (List.length gameModel.gameRunningTimes + 1) } }, Cmd.none )
 
                 ( RunningGame _, Resumed _ ) ->
-                    ( { model | gamePauseResumeState = Paused }, Cmd.none )
+                    ( { model | game = { gameModel | gamePauseResumeState = Paused } }, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -88,15 +117,18 @@ update gameMsg model =
 
 updateTimePlayGame : Model -> Time.Posix -> ( Model, Cmd GameMsg )
 updateTimePlayGame model time =
-    case ( model.gameBoardStatus, model.gamePauseResumeState ) of
+    case ( model.game.gameBoardStatus, model.game.gamePauseResumeState ) of
         ( RunningGame _, Resumed timesResume ) ->
             let
+                gameModel =
+                    model.game
+
                 shouldReplaceHead =
-                    List.length model.gameRunningTimes == timesResume
+                    List.length gameModel.gameRunningTimes == timesResume
 
                 newList =
                     if shouldReplaceHead then
-                        case model.gameRunningTimes of
+                        case gameModel.gameRunningTimes of
                             [] ->
                                 [ ( time, time ) ]
 
@@ -104,9 +136,9 @@ updateTimePlayGame model time =
                                 ( start, time ) :: xs
 
                     else
-                        ( time, time ) :: model.gameRunningTimes
+                        ( time, time ) :: model.game.gameRunningTimes
             in
-            ( { model | gameRunningTimes = newList }, Cmd.none )
+            ( { model | game = { gameModel | gameRunningTimes = newList } }, Cmd.none )
 
         _ ->
             ( model, Cmd.none )
@@ -114,12 +146,15 @@ updateTimePlayGame model time =
 
 updateModelByClickOnGameCell : Coordinates -> Model -> ( Model, Cmd GameMsg )
 updateModelByClickOnGameCell coords model =
-    case ( model.gamePauseResumeState, model.gameBoardStatus ) of
+    case ( model.game.gamePauseResumeState, model.game.gameBoardStatus ) of
         ( Resumed _, RunningGame playGrid ) ->
             let
+                gameModel =
+                    model.game
+
                 updatedPlayGrid : PlayGameGrid
                 updatedPlayGrid =
-                    case model.gameInteractionMode of
+                    case gameModel.gameInteractionMode of
                         Reveal ->
                             openCell coords playGrid
 
@@ -134,10 +169,10 @@ updateModelByClickOnGameCell coords model =
 
                 nextGameBoardStatus =
                     if aMineIsExploded then
-                        calculateElapsedTimeMilis model.gameRunningTimes |> FinishedGame updatedPlayGrid Lost
+                        calculateElapsedTimeMilis gameModel.gameRunningTimes |> FinishedGame updatedPlayGrid Lost
 
                     else if allFieldsRevealed then
-                        calculateElapsedTimeMilis model.gameRunningTimes |> FinishedGame updatedPlayGrid Won
+                        calculateElapsedTimeMilis gameModel.gameRunningTimes |> FinishedGame updatedPlayGrid Won
 
                     else
                         RunningGame updatedPlayGrid
@@ -145,12 +180,17 @@ updateModelByClickOnGameCell coords model =
                 nextHistoryList =
                     case nextGameBoardStatus of
                         FinishedGame grid result time ->
-                            FinishedGameHistoryEntry grid result time :: model.playedGameHistory
+                            { grid = grid
+                            , result = result
+                            , duration = time
+                            , playFinish = gameModel.lastClockTick
+                            }
+                                :: model.playedGameHistory
 
                         _ ->
                             model.playedGameHistory
             in
-            ( { model | gameBoardStatus = nextGameBoardStatus, playedGameHistory = nextHistoryList }, saveFinishedGameHistory nextHistoryList )
+            ( { model | game = { gameModel | gameBoardStatus = nextGameBoardStatus }, playedGameHistory = nextHistoryList }, saveFinishedGameHistory nextHistoryList )
 
         _ ->
             ( model, Cmd.none )
@@ -162,7 +202,7 @@ updateModelByClickOnGameCell coords model =
 
 view : Model -> Element GameMsg
 view model =
-    case model.gameBoardStatus of
+    case model.game.gameBoardStatus of
         NoGame _ ->
             Element.column [ Element.width Element.fill, Element.height Element.fill, Element.spacing 10 ]
                 [ Element.row
@@ -201,7 +241,7 @@ view model =
 
         RunningGame playGrid ->
             Element.column [ Element.width Element.fill, Element.height Element.fill ]
-                [ Lazy.lazy mineToggleElement model.gameInteractionMode
+                [ Lazy.lazy mineToggleElement model.game.gameInteractionMode
                 , Lazy.lazy runningGameView playGrid
                 ]
 

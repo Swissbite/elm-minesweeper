@@ -27,13 +27,10 @@ main =
         , subscriptions = subscriptions
         , onUrlChange =
             \url ->
-                Debug.log "onUrlChange" url
-                    |> Internal
+                Internal url
                     |> Navigation
         , onUrlRequest =
-            \request ->
-                Debug.log "onUrlRequest" request
-                    |> Navigation
+            Navigation
         }
 
 
@@ -107,10 +104,7 @@ init flags url key =
                     , height = flags.height
                     }
             , currentView = Game
-            , gameBoardStatus = NoGame PreSelect
-            , gameInteractionMode = Reveal
-            , gameRunningTimes = []
-            , gamePauseResumeState = Paused
+            , game = Game.initModel
             , playedGameHistory = Game.decodeStoredFinishedGameHistory flags.history
             }
 

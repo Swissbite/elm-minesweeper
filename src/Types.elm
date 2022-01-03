@@ -62,14 +62,20 @@ type OrderDirection
 
 
 type alias Model =
-    { gameBoardStatus : GameBoardStatus
-    , gameInteractionMode : CellClickMode
-    , gameRunningTimes : List ( Time.Posix, Time.Posix )
-    , gamePauseResumeState : PauseResumeState
+    { game : GameModel
     , playedGameHistory : List FinishedGameHistoryEntry
     , currentView : View
     , device : Device
     , key : Key
+    }
+
+
+type alias GameModel =
+    { gameBoardStatus : GameBoardStatus
+    , gameInteractionMode : CellClickMode
+    , gameRunningTimes : List ( Time.Posix, Time.Posix )
+    , gamePauseResumeState : PauseResumeState
+    , lastClockTick : Time.Posix
     }
 
 
@@ -98,16 +104,18 @@ type alias Coordinates =
 
 
 type alias FinishedGameHistory =
-    { entries : List FinishedGameHistoryEntry 
+    { entries : List FinishedGameHistoryEntry
     , version : Int
     }
+
 
 type alias FinishedGameHistoryEntry =
     { grid : PlayGameGrid
     , result : GameResult
     , duration : Int
-    , playFinish: Time.Posix
+    , playFinish : Time.Posix
     }
+
 
 type GameBoardStatus
     = WaitOnStart InitGameGrid

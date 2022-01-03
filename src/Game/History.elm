@@ -6,6 +6,7 @@ import Game.Internal exposing (..)
 import Grid
 import List
 import Styles
+import Time
 import Types exposing (..)
 import Url.Parser.Query as Query
 
@@ -37,38 +38,92 @@ sortAndFilterListByQueryParameter maybeParams list =
         Just params ->
             list
                 |> List.filter (filterByDisplayMode params.displayMode)
-                |> List.sortWith ()
+                |> List.sortWith (sortAndOrder params.orderBy params.orderDirection)
 
 
 filterByDisplayMode : GameHistoryDisplayMode -> (FinishedGameHistoryEntry -> Bool)
 filterByDisplayMode displayMode =
-    case displayMode of
-        DisplayWon ->
-            \(FinishedGameHistoryEntry _ result _) ->
-                case result of
-                    Won ->
-                        True
+    \entry ->
+        case displayMode of
+            DisplayAll ->
+                True
 
-                    Lost ->
-                        False
+            DisplayWon ->
+                entry.result == Won
 
-        DisplayLost ->
-            \(FinishedGameHistoryEntry _ result _) ->
-                case result of
-                    Won ->
-                        False
-
-                    Lost ->
-                        True
-
-        DisplayAll ->
-            \_ -> True
+            DisplayLost ->
+                entry.result == Lost
 
 
-sortAndOrder : GameHistoryOrderBy -> GameHistoryOrderDirection -> (FinishedGameHistoryEntry -> FinishedGameHistoryEntry -> Ordering)
+sortAndOrder : GameHistoryOrderBy -> OrderDirection -> (FinishedGameHistoryEntry -> FinishedGameHistoryEntry -> Order)
 sortAndOrder orderBy direction =
-    case (orderBy, direction) of
-        
+    \e1 e2 ->
+        case ( orderBy, direction ) of
+            ( ByDuration, order ) ->
+                if e1.duration == e2.duration then
+                    EQ
+
+                else if e1.duration < e2.duration then
+                    if order == Ascending then
+                        LT
+
+                    else
+                        GT
+
+                else if order == Ascending then
+                    GT
+
+                else
+                    LT
+
+            ( ByFieldSize, order ) ->
+                let
+                    e1Size =
+                        Grid.width e1.grid * Grid.height e1.grid
+
+                    e2Size =
+                        Grid.width e2.grid * Grid.height e2.grid
+                in
+                if e1Size == e2Size then
+                    EQ
+
+                else if e1Size < e2Size then
+                    if order == Ascending then
+                        LT
+
+                    else
+                        GT
+
+                else if order == Ascending then
+                    GT
+
+                else
+                    LT
+
+            ( ByEntryId, order ) ->
+                let
+                    e1TimeInt =
+                        Time.posixToMillis e1.playFinish
+
+                    e2TimeInt =
+                        Time.posixToMillis e2.playFinish
+                in
+                if e1TimeInt == e2TimeInt then
+                    EQ
+
+                else if e1TimeInt < e2TimeInt then
+                    if order == Ascending then
+                        LT
+
+                    else
+                        GT
+
+                else if order == Ascending then
+                    GT
+
+                else
+                    LT
+
 
 extractQueryParameterFromView : Model -> Maybe GameHistoryQuery
 extractQueryParameterFromView model =
@@ -151,12 +206,7 @@ update msg model =
             let
                 onlyWonFilter : FinishedGameHistoryEntry -> Bool
                 onlyWonFilter e =
-                    case e of
-                        FinishedGameHistoryEntry _ Won _ ->
-                            True
-
-                        _ ->
-                            False
+                    e.result == Won
 
                 onlyWon =
                     List.filter onlyWonFilter model.playedGameHistory
@@ -185,52 +235,37 @@ finishedGameHistoryList finishedGameHistory =
     let
         gameStatistics : FinishedGameHistoryEntry -> { result : GameResult, playedSeconds : String, playedMinutes : String, gridHeight : Int, gridWidth : Int, mines : Int }
         gameStatistics entry =
-            { result =
-                case entry of
-                    FinishedGameHistoryEntry _ res _ ->
-                        res
+            { result = entry.result
             , playedSeconds =
-                case entry of
-                    FinishedGameHistoryEntry _ _ time ->
-                        time
-                            // 1000
-                            |> modBy 60
-                            |> (\s ->
-                                    if s < 10 then
-                                        String.concat [ "0", String.fromInt s ]
+                entry.duration
+                    // 1000
+                    |> modBy 60
+                    |> (\s ->
+                            if s < 10 then
+                                String.concat [ "0", String.fromInt s ]
 
-                                    else
-                                        String.fromInt s
-                               )
+                            else
+                                String.fromInt s
+                       )
             , playedMinutes =
-                case entry of
-                    FinishedGameHistoryEntry _ _ time ->
-                        time
-                            // 1000
-                            // 60
-                            |> String.fromInt
-            , gridHeight =
-                case entry of
-                    FinishedGameHistoryEntry grid _ _ ->
-                        Grid.height grid
-            , gridWidth =
-                case entry of
-                    FinishedGameHistoryEntry grid _ _ ->
-                        Grid.width grid
+                entry.duration
+                    // 1000
+                    // 60
+                    |> String.fromInt
+            , gridHeight = Grid.height entry.grid
+            , gridWidth = Grid.width entry.grid
             , mines =
-                case entry of
-                    FinishedGameHistoryEntry grid _ _ ->
-                        Grid.foldl
-                            (\cell count ->
-                                case cell of
-                                    GameCell MineCell _ ->
-                                        count + 1
+                Grid.foldl
+                    (\cell count ->
+                        case cell of
+                            GameCell MineCell _ ->
+                                count + 1
 
-                                    _ ->
-                                        count
-                            )
-                            0
-                            grid
+                            _ ->
+                                count
+                    )
+                    0
+                    entry.grid
             }
     in
     case finishedGameHistory of

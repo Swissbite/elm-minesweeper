@@ -4,6 +4,7 @@ import Grid exposing (Grid)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Ports
+import Time
 import Types exposing (..)
 
 
@@ -43,16 +44,56 @@ generateListOfPossibleIndizes initGrid clickedOn =
 
 deocdeFinishedGameHistory : Decoder (List FinishedGameHistoryEntry)
 deocdeFinishedGameHistory =
-    Decode.list decodeFinishedGameHistoryEntry
+    Decode.map (\history -> history.entries)
+        (Decode.oneOf
+            [ decodeVersion1GameHistory
+            , decodeVersion0GameHistory
+            ]
+        )
+
+
+decodeVersion1GameHistory : Decoder FinishedGameHistory
+decodeVersion1GameHistory =
+    Decode.map2
+        (\version entries ->
+            { version = version, entries = entries }
+        )
+        (Decode.field "version" Decode.int
+            |> Decode.andThen
+                (\v ->
+                    if v == 1 then
+                        Decode.succeed v
+
+                    else
+                        Decode.fail "Version is not 1. Wrong decoder"
+                )
+        )
+        (Decode.field "entries" (Decode.list decodeFinishedGameHistoryEntry))
+
+
+decodeVersion0GameHistory : Decoder FinishedGameHistory
+decodeVersion0GameHistory =
+    Decode.map
+        (\entries ->
+            { version = 1, entries = entries }
+        )
+        (Decode.list decodeFinishedGameHistoryEntry)
 
 
 decodeFinishedGameHistoryEntry : Decoder FinishedGameHistoryEntry
 decodeFinishedGameHistoryEntry =
-    Decode.map3
-        (\grid result time -> FinishedGameHistoryEntry grid result time)
+    Decode.map4
+        (\grid result time posix ->
+            { grid = grid
+            , result = result
+            , duration = time
+            , playFinish = Time.millisToPosix (Maybe.withDefault 0 posix)
+            }
+        )
         (Decode.field "grid" decodeGrid)
         (Decode.field "result" decodeResult)
         (Decode.field "time" Decode.int)
+        (Decode.maybe <| Decode.field "posix" Decode.int)
 
 
 decodeGrid : Decoder PlayGameGrid
@@ -90,14 +131,14 @@ decodeResult =
 
 
 finishedGameHistoryEntryEncoder : FinishedGameHistoryEntry -> Encode.Value
-finishedGameHistoryEntryEncoder (FinishedGameHistoryEntry grid result time) =
+finishedGameHistoryEntryEncoder entry =
     let
         gridJson =
-            Grid.rows grid
+            Grid.rows entry.grid
                 |> Encode.array (Encode.array gameCellEncoder)
 
         resultJson =
-            case result of
+            case entry.result of
                 Won ->
                     Encode.string "won"
 
@@ -105,9 +146,13 @@ finishedGameHistoryEntryEncoder (FinishedGameHistoryEntry grid result time) =
                     Encode.string "lost"
 
         timeJson =
-            Encode.int time
+            Encode.int entry.duration
+
+        posix =
+            Time.posixToMillis entry.playFinish
+                |> Encode.int
     in
-    Encode.object [ ( "grid", gridJson ), ( "result", resultJson ), ( "time", timeJson ) ]
+    Encode.object [ ( "grid", gridJson ), ( "result", resultJson ), ( "time", timeJson ), ( "posix", posix ) ]
 
 
 gameCellDecoder : Decoder GameCell
