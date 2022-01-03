@@ -114,3 +114,95 @@ extendedGridValue =
             , [ GameCell (MineNeighbourCell 1) Untouched, GameCell MineCell Opened ]
             ]
     )
+
+
+gameHistoryEncoderTest : Test
+gameHistoryEncoderTest =
+    describe "Testing the encoding to JSON String"
+        [ test "Empty entries should generate correct uptodate version" <|
+            \_ -> GameInternal.encodeFinishedGameHistory (Tuple.first emptyHistoryToEncodedVersion01) |> Expect.equal (Tuple.second emptyHistoryToEncodedVersion01)
+        ]
+
+
+emptyHistoryToEncodedVersion01 : ( List FinishedGameHistoryEntry, String )
+emptyHistoryToEncodedVersion01 =
+    ( []
+    , """
+    { "version": 1, "entries": [] }
+    """
+        |> String.replace "\t" ""
+        |> String.replace "\n" ""
+        |> String.replace " " ""
+    )
+
+
+severalWonLostEntriesEncodedVersion01 : String
+severalWonLostEntriesEncodedVersion01 =
+    """
+    {
+        "version": 1,
+        "entries": [
+            {
+                "grid": [
+                    [
+                        {
+                            "cellType": "mineNeighbourCell",
+                            "minesOnNeighbourCell": 1,
+                            "cellStatus": "opened"
+                        },
+                        {
+                            "cellType": "mineNeighbourCell",
+                            "minesOnNeighbourCell": 1,
+                            "cellStatus": "flagged"
+                        }
+                    ],
+                    [
+                        {
+                            "cellType": "mineNeighbourCell",
+                            "minesOnNeighbourCell": 1,
+                            "cellStatus": "untouched"
+                        },
+                        {
+                            "cellType": "mineCell",
+                            "minesOnNeighbourCell": null,
+                            "cellStatus": "opened"
+                        }
+                    ]
+                ],
+                "result": "won",
+                "duration": 1000
+                "posix": 10
+            },
+            {
+                "grid": [
+                    [
+                        {
+                            "cellType": "mineNeighbourCell",
+                            "minesOnNeighbourCell": 1,
+                            "cellStatus": "opened"
+                        },
+                        {
+                            "cellType": "mineNeighbourCell",
+                            "minesOnNeighbourCell": 1,
+                            "cellStatus": "flagged"
+                        }
+                    ],
+                    [
+                        {
+                            "cellType": "mineNeighbourCell",
+                            "minesOnNeighbourCell": 1,
+                            "cellStatus": "untouched"
+                        },
+                        {
+                            "cellType": "mineCell",
+                            "minesOnNeighbourCell": null,
+                            "cellStatus": "opened"
+                        }
+                    ]
+                ],
+                "result": "lost",
+                "duration": 1000
+            }
+        ]
+    }
+    """

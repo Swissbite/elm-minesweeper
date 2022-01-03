@@ -68,7 +68,7 @@ decodeVersion1GameHistory =
                         Decode.fail "Version is not 1. Wrong decoder"
                 )
         )
-        (Decode.field "entries" (Decode.list decodeFinishedGameHistoryEntry))
+        (Decode.field "entries" (Decode.list decodeFinishedGameHistoryEntryVersion1))
 
 
 decodeVersion0GameHistory : Decoder FinishedGameHistory
@@ -77,23 +77,38 @@ decodeVersion0GameHistory =
         (\entries ->
             { version = 1, entries = entries }
         )
-        (Decode.list decodeFinishedGameHistoryEntry)
+        (Decode.list decodeFinishedGameHistoryEntryVersion0)
 
 
-decodeFinishedGameHistoryEntry : Decoder FinishedGameHistoryEntry
-decodeFinishedGameHistoryEntry =
+decodeFinishedGameHistoryEntryVersion1 : Decoder FinishedGameHistoryEntry
+decodeFinishedGameHistoryEntryVersion1 =
     Decode.map4
-        (\grid result time posix ->
+        (\grid result duration posix ->
+            { grid = grid
+            , result = result
+            , duration = duration
+            , playFinish = Time.millisToPosix posix
+            }
+        )
+        (Decode.field "grid" decodeGrid)
+        (Decode.field "result" decodeResult)
+        (Decode.field "duration" Decode.int)
+        (Decode.field "posix" Decode.int)
+
+
+decodeFinishedGameHistoryEntryVersion0 : Decoder FinishedGameHistoryEntry
+decodeFinishedGameHistoryEntryVersion0 =
+    Decode.map3
+        (\grid result time ->
             { grid = grid
             , result = result
             , duration = time
-            , playFinish = Time.millisToPosix (Maybe.withDefault 0 posix)
+            , playFinish = Time.millisToPosix 0
             }
         )
         (Decode.field "grid" decodeGrid)
         (Decode.field "result" decodeResult)
         (Decode.field "time" Decode.int)
-        (Decode.maybe <| Decode.field "posix" Decode.int)
 
 
 decodeGrid : Decoder PlayGameGrid
@@ -152,7 +167,7 @@ finishedGameHistoryEntryEncoder entry =
             Time.posixToMillis entry.playFinish
                 |> Encode.int
     in
-    Encode.object [ ( "grid", gridJson ), ( "result", resultJson ), ( "time", timeJson ), ( "posix", posix ) ]
+    Encode.object [ ( "grid", gridJson ), ( "result", resultJson ), ( "duration", timeJson ), ( "posix", posix ) ]
 
 
 gameCellDecoder : Decoder GameCell
@@ -269,8 +284,16 @@ gameCellEncoder (GameCell cellType cellStatus) =
     Encode.object [ ( "cellType", encodedType ), ( "minesOnNeighbourCell", encodedMinesOnNeighbourCell ), ( "cellStatus", encodedCellStatus ) ]
 
 
+encodeFinishedGameHistory : List FinishedGameHistoryEntry -> String
+encodeFinishedGameHistory finishedGameHistory =
+    Encode.object
+        [ ( "version", Encode.int 1 )
+        , ( "entries", Encode.list finishedGameHistoryEntryEncoder finishedGameHistory )
+        ]
+        |> Encode.encode 0
+
+
 saveFinishedGameHistory : List FinishedGameHistoryEntry -> Cmd msg
 saveFinishedGameHistory finishedGameHistory =
-    Encode.list finishedGameHistoryEntryEncoder finishedGameHistory
-        |> Encode.encode 0
+    encodeFinishedGameHistory finishedGameHistory
         |> Ports.storeFinishedGameHistory
