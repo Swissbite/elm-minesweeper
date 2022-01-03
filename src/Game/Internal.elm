@@ -10,6 +10,9 @@ generateListOfPossibleIndizes initGrid clickedOn =
         gridWidth =
             Grid.width initGrid
 
+        gridHeight =
+            Grid.height initGrid
+
         foldFn : Maybe Int -> List Int -> List Int
         foldFn x acc =
             case x of
@@ -18,10 +21,14 @@ generateListOfPossibleIndizes initGrid clickedOn =
 
                 Just idx ->
                     idx :: acc
+
+        openingAreaCoordinates =
+            List.range (max 0 clickedOn.x - 1) (min (gridWidth - 1) (clickedOn.x + 1))
+                |> List.concatMap (\x -> List.map (\y -> { x = x, y = y }) <| List.range (max 0 clickedOn.y - 1) (min (gridHeight - 1) (clickedOn.y + 1)))
     in
     Grid.indexedMap
         (\x y _ ->
-            if x == clickedOn.x && y == clickedOn.y then
+            if List.member { x = x, y = y } openingAreaCoordinates then
                 Nothing
 
             else
