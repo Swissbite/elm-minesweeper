@@ -1,9 +1,11 @@
 module GameTests exposing (..)
 
 import Expect
+import Fuzz exposing (intRange)
 import Game.Game as Game
 import Game.Internal as GameInternal
 import Grid
+import Set exposing (Set)
 import Test exposing (..)
 import Types exposing (..)
 
@@ -11,11 +13,60 @@ import Types exposing (..)
 all : Test
 all =
     describe "Check generation of a playgrid is reasonable"
-        [ test "the list of all possible indizes is correct" <|
+        [ test "the list of all possible indizes is correct at index 0 0" <|
             \_ ->
-                GameInternal.generateListOfPossibleIndizes (Grid.repeat 16 30 InitGameCell) { x = 0, y = 0 }
-                    |> Expect.equal (List.range 1 (16 * 30 - 1))
+                let
+                    coords =
+                        { x = 0, y = 0 }
+
+                    width =
+                        16
+
+                    height =
+                        30
+
+                    openingArea =
+                        calculateSurroundingAreaFields coords width height
+
+                    filteredAllowedIndizes =
+                        List.range 0 (width * height - 1)
+                            |> List.filter (\i -> not (Set.member i openingArea))
+                in
+                GameInternal.generateListOfPossibleIndizes (Grid.repeat width height InitGameCell) coords
+                    |> Expect.equal filteredAllowedIndizes
+        , fuzz2
+            (intRange 0 15)
+            (intRange 0 29)
+            "the list of all possible indizes in a 16 x 30 grid for fuzzed coordinates click must be correct"
+          <|
+            \x y ->
+                let
+                    coords =
+                        { x = x, y = y }
+
+                    width =
+                        16
+
+                    height =
+                        30
+
+                    openingArea =
+                        calculateSurroundingAreaFields coords width height
+
+                    filteredAllowedIndizes =
+                        List.range 0 (width * height - 1)
+                            |> List.filter (\i -> not (Set.member i openingArea))
+                in
+                GameInternal.generateListOfPossibleIndizes (Grid.repeat width height InitGameCell) coords
+                    |> Expect.equal filteredAllowedIndizes
         ]
+
+
+calculateSurroundingAreaFields : Coordinates -> Int -> Int -> Set Int
+calculateSurroundingAreaFields coords width height =
+    List.range (max 0 (coords.x - 1)) (min (width - 1) (coords.x + 1))
+        |> List.concatMap (\x -> List.map (\y -> y * width + x) <| List.range (max 0 (coords.y - 1)) (min (height - 1) (coords.y + 1)))
+        |> Set.fromList
 
 
 decoderTests : Test
