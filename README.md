@@ -27,7 +27,7 @@ Features it should have (in no particular order):
   - If the game has been won or lost ✔
   - The mines should be revealed on the board ✔
   - The end state of the board ✔
-  - Time it took for the game
+  - Time it took for the game ✔
 - After game finish:
    - Able to start a new game with the same difficulty ✔
    - Back to overview to create a new game ✔
