@@ -4,7 +4,7 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "./favicon.ico"
   },
   {
-    "revision": "56fc3b74546e6130ca5f4d2d5dc07866",
+    "revision": "94b94204e4713283fd59422ed9a285ba",
     "url": "./index.html"
   },
   {
@@ -16,12 +16,12 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "./manifest.json"
   },
   {
-    "revision": "7c1c19596d356a3f005b",
+    "revision": "c6b8fe6304e6d3e599c8",
     "url": "./static/css/main.0af5c45f.chunk.css"
   },
   {
-    "revision": "7c1c19596d356a3f005b",
-    "url": "./static/js/main.7c1c1959.chunk.js"
+    "revision": "c6b8fe6304e6d3e599c8",
+    "url": "./static/js/main.c6b8fe63.chunk.js"
   },
   {
     "revision": "d5752d2fdce3c7e150f5",
@@ -30,5 +30,9 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
     "revision": "0b49ec49a892799f59f3",
     "url": "./static/js/vendors~main.0b49ec49.chunk.js"
+  },
+  {
+    "revision": "96b35e1d5ba9bf760ca169e612016646",
+    "url": "./white-smoke-wallpaper-abstract-desktop-background.jpg"
   }
 ]);
