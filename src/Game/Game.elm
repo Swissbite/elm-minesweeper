@@ -1,10 +1,11 @@
-module Game.Game exposing (decodeStoredFinishedGameHistory, subscriptions, update, view)
+module Game.Game exposing (decodeStoredFinishedGameHistory, initModel, subscriptions, update, view)
 
 {-| Game module for rendering the complete game, as long as the currentView in the model is set to Game.
 Exposes the basic update / view / subscription functions, so that Main.elm can use them.
 -}
 
 import Array as Array
+import Colors
 import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
@@ -13,14 +14,22 @@ import Element.Input as Input
 import Element.Lazy as Lazy
 import Game.Internal exposing (..)
 import Grid
-import Json.Decode as Decode exposing (Decoder)
-import Json.Encode as Encode
-import Ports
+import Json.Decode as Decode
 import Random as Random exposing (Generator)
 import Set exposing (Set)
 import Styles exposing (..)
 import Time
 import Types exposing (..)
+
+
+initModel : GameModel
+initModel =
+    { gameBoardStatus = NoGame PreSelect
+    , gameInteractionMode = Reveal
+    , gameRunningTimes = []
+    , gamePauseResumeState = Paused
+    , lastClockTick = Time.millisToPosix 0
+    }
 
 
 
@@ -34,8 +43,13 @@ decodeStoredFinishedGameHistory string =
 
 
 subscriptions : Model -> Sub GameMsg
-subscriptions _ =
-    Time.every 500 (\posix -> ClockTick posix)
+subscriptions m =
+    case ( m.currentView, m.game.gameBoardStatus ) of
+        ( Game, RunningGame _ ) ->
+            Time.every 200 (\posix -> ClockTick posix)
+
+        _ ->
+            Sub.none
 
 
 
@@ -46,39 +60,58 @@ update : GameMsg -> Model -> ( Model, Cmd GameMsg )
 update gameMsg model =
     case gameMsg of
         GoToStartPage ->
-            ( { model | gameBoardStatus = NoGame PreSelect }, Cmd.none )
+            let
+                gameModel =
+                    model.game
+            in
+            ( { model | game = { gameModel | gameBoardStatus = NoGame PreSelect } }, Cmd.none )
 
         ClickedOnInitGameCell initGame coords ->
             ( model, generatePlayGameGrid initGame coords |> Random.generate StartGame )
 
         StartGame playGrid ->
-            ( { model | gameBoardStatus = RunningGame playGrid, gameRunningTimes = [], gamePauseResumeState = Resumed 1 }, Cmd.none )
+            let
+                gameModel =
+                    model.game
+            in
+            ( { model | game = { gameModel | gameBoardStatus = RunningGame playGrid, gameRunningTimes = [], gamePauseResumeState = Resumed 1 } }, Cmd.none )
 
         CreateNewGame playgroundDefinition ->
-            ( { model | gameBoardStatus = WaitOnStart <| createInitGameGrid playgroundDefinition, gameInteractionMode = Reveal }, Cmd.none )
+            let
+                gameModel =
+                    model.game
+            in
+            ( { model | game = { gameModel | gameBoardStatus = WaitOnStart <| createInitGameGrid playgroundDefinition, gameInteractionMode = Reveal } }, Cmd.none )
 
         ClickOnGameCell coords ->
             updateModelByClickOnGameCell coords model
 
         ToogleGameCellInteractionMode ->
             let
+                gameModel =
+                    model.game
+
                 nextMode =
-                    case model.gameInteractionMode of
+                    case gameModel.gameInteractionMode of
                         Reveal ->
                             Flag
 
                         Flag ->
                             Reveal
             in
-            ( { model | gameInteractionMode = nextMode }, Cmd.none )
+            ( { model | game = { gameModel | gameInteractionMode = nextMode } }, Cmd.none )
 
         ToogleGamePause ->
-            case ( model.gameBoardStatus, model.gamePauseResumeState ) of
+            let
+                gameModel =
+                    model.game
+            in
+            case ( gameModel.gameBoardStatus, gameModel.gamePauseResumeState ) of
                 ( RunningGame _, Paused ) ->
-                    ( { model | gamePauseResumeState = Resumed (List.length model.gameRunningTimes + 1) }, Cmd.none )
+                    ( { model | game = { gameModel | gamePauseResumeState = Resumed (List.length gameModel.gameRunningTimes + 1) } }, Cmd.none )
 
                 ( RunningGame _, Resumed _ ) ->
-                    ( { model | gamePauseResumeState = Paused }, Cmd.none )
+                    ( { model | game = { gameModel | gamePauseResumeState = Paused } }, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -89,15 +122,18 @@ update gameMsg model =
 
 updateTimePlayGame : Model -> Time.Posix -> ( Model, Cmd GameMsg )
 updateTimePlayGame model time =
-    case ( model.gameBoardStatus, model.gamePauseResumeState ) of
+    case ( model.game.gameBoardStatus, model.game.gamePauseResumeState ) of
         ( RunningGame _, Resumed timesResume ) ->
             let
+                gameModel =
+                    model.game
+
                 shouldReplaceHead =
-                    List.length model.gameRunningTimes == timesResume
+                    List.length gameModel.gameRunningTimes == timesResume
 
                 newList =
                     if shouldReplaceHead then
-                        case model.gameRunningTimes of
+                        case gameModel.gameRunningTimes of
                             [] ->
                                 [ ( time, time ) ]
 
@@ -105,9 +141,9 @@ updateTimePlayGame model time =
                                 ( start, time ) :: xs
 
                     else
-                        ( time, time ) :: model.gameRunningTimes
+                        ( time, time ) :: model.game.gameRunningTimes
             in
-            ( { model | gameRunningTimes = newList }, Cmd.none )
+            ( { model | game = { gameModel | gameRunningTimes = newList, lastClockTick = time } }, Cmd.none )
 
         _ ->
             ( model, Cmd.none )
@@ -115,12 +151,15 @@ updateTimePlayGame model time =
 
 updateModelByClickOnGameCell : Coordinates -> Model -> ( Model, Cmd GameMsg )
 updateModelByClickOnGameCell coords model =
-    case ( model.gamePauseResumeState, model.gameBoardStatus ) of
+    case ( model.game.gamePauseResumeState, model.game.gameBoardStatus ) of
         ( Resumed _, RunningGame playGrid ) ->
             let
+                gameModel =
+                    model.game
+
                 updatedPlayGrid : PlayGameGrid
                 updatedPlayGrid =
-                    case model.gameInteractionMode of
+                    case gameModel.gameInteractionMode of
                         Reveal ->
                             openCell coords playGrid
 
@@ -135,10 +174,10 @@ updateModelByClickOnGameCell coords model =
 
                 nextGameBoardStatus =
                     if aMineIsExploded then
-                        calculateElapsedTimeMilis model.gameRunningTimes |> FinishedGame updatedPlayGrid Lost
+                        calculateElapsedTimeMilis gameModel.gameRunningTimes |> FinishedGame updatedPlayGrid Lost
 
                     else if allFieldsRevealed then
-                        calculateElapsedTimeMilis model.gameRunningTimes |> FinishedGame updatedPlayGrid Won
+                        calculateElapsedTimeMilis gameModel.gameRunningTimes |> FinishedGame updatedPlayGrid Won
 
                     else
                         RunningGame updatedPlayGrid
@@ -146,205 +185,20 @@ updateModelByClickOnGameCell coords model =
                 nextHistoryList =
                     case nextGameBoardStatus of
                         FinishedGame grid result time ->
-                            FinishedGameHistoryEntry grid result time :: model.playedGameHistory
+                            { grid = grid
+                            , result = result
+                            , duration = time
+                            , playFinish = gameModel.lastClockTick
+                            }
+                                :: model.playedGameHistory
 
                         _ ->
                             model.playedGameHistory
             in
-            ( { model | gameBoardStatus = nextGameBoardStatus, playedGameHistory = nextHistoryList }, saveFinishedGameHistory nextHistoryList )
+            ( { model | game = { gameModel | gameBoardStatus = nextGameBoardStatus }, playedGameHistory = nextHistoryList }, saveFinishedGameHistory nextHistoryList )
 
         _ ->
             ( model, Cmd.none )
-
-
-deocdeFinishedGameHistory : Decoder (List FinishedGameHistoryEntry)
-deocdeFinishedGameHistory =
-    Decode.list decodeFinishedGameHistoryEntry
-
-
-decodeFinishedGameHistoryEntry : Decoder FinishedGameHistoryEntry
-decodeFinishedGameHistoryEntry =
-    Decode.map3
-        (\grid result time -> FinishedGameHistoryEntry grid result time)
-        (Decode.field "grid" decodeGrid)
-        (Decode.field "result" decodeResult)
-        (Decode.field "time" Decode.int)
-
-
-decodeGrid : Decoder PlayGameGrid
-decodeGrid =
-    Decode.list (Decode.list gameCellDecoder)
-        |> Decode.andThen
-            (\gridAsList ->
-                case Grid.fromList gridAsList of
-                    Just grid ->
-                        Decode.succeed grid
-
-                    Nothing ->
-                        Decode.fail "Could not decode grid"
-            )
-
-
-decodeResult : Decoder GameResult
-decodeResult =
-    Decode.string
-        |> Decode.andThen
-            (\resultAsString ->
-                String.toLower resultAsString
-                    |> (\lowerResult ->
-                            case lowerResult of
-                                "won" ->
-                                    Decode.succeed Won
-
-                                "lost" ->
-                                    Decode.succeed Lost
-
-                                _ ->
-                                    Decode.fail "Unknown game result string"
-                       )
-            )
-
-
-saveFinishedGameHistory : List FinishedGameHistoryEntry -> Cmd msg
-saveFinishedGameHistory finishedGameHistory =
-    Encode.list finishedGameHistoryEntryEncoder finishedGameHistory
-        |> Encode.encode 0
-        |> Ports.storeFinishedGameHistory
-
-
-finishedGameHistoryEntryEncoder : FinishedGameHistoryEntry -> Encode.Value
-finishedGameHistoryEntryEncoder (FinishedGameHistoryEntry grid result time) =
-    let
-        gridJson =
-            Grid.rows grid
-                |> Encode.array (Encode.array gameCellEncoder)
-
-        resultJson =
-            case result of
-                Won ->
-                    Encode.string "won"
-
-                Lost ->
-                    Encode.string "lost"
-
-        timeJson =
-            Encode.int time
-    in
-    Encode.object [ ( "grid", gridJson ), ( "result", resultJson ), ( "time", timeJson ) ]
-
-
-gameCellDecoder : Decoder GameCell
-gameCellDecoder =
-    let
-        singleFieldsToCell : CellType -> Maybe Int -> CellStatus -> Maybe GameCell
-        singleFieldsToCell cellType maybeMineCount cellStatus =
-            case ( cellType, maybeMineCount ) of
-                ( MineCell, _ ) ->
-                    Just (GameCell MineCell cellStatus)
-
-                ( EmptyCell, _ ) ->
-                    Just (GameCell EmptyCell cellStatus)
-
-                ( MineNeighbourCell _, Just count ) ->
-                    Just (GameCell (MineNeighbourCell count) cellStatus)
-
-                _ ->
-                    Nothing
-    in
-    Decode.map3 singleFieldsToCell
-        (Decode.field "cellType" decodeCellType)
-        (Decode.field "minesOnNeighbourCell" <| Decode.oneOf [ Decode.null Nothing, Decode.map Just Decode.int ])
-        (Decode.field "cellStatus" decodeCellStatus)
-        |> Decode.andThen
-            (\maybeGameCell ->
-                case maybeGameCell of
-                    Just gameCell ->
-                        Decode.succeed gameCell
-
-                    Nothing ->
-                        Decode.fail "Could not decode game cell"
-            )
-
-
-decodeCellType : Decoder CellType
-decodeCellType =
-    Decode.string
-        |> Decode.andThen
-            (\cellTypeAsString ->
-                case cellTypeAsString of
-                    "mine" ->
-                        Decode.succeed MineCell
-
-                    "mineCell" ->
-                        Decode.succeed MineCell
-
-                    "emptyCell" ->
-                        Decode.succeed EmptyCell
-
-                    "mineNeighbourCell" ->
-                        Decode.succeed (MineNeighbourCell -1)
-
-                    _ ->
-                        Decode.fail "Invalid cell type"
-            )
-
-
-decodeCellStatus : Decoder CellStatus
-decodeCellStatus =
-    Decode.string
-        |> Decode.andThen
-            (\cellStatusAsString ->
-                case String.toLower cellStatusAsString of
-                    "untouched" ->
-                        Decode.succeed Untouched
-
-                    "flagged" ->
-                        Decode.succeed Flagged
-
-                    "opened" ->
-                        Decode.succeed Opened
-
-                    _ ->
-                        Decode.fail "Invalid cell status"
-            )
-
-
-gameCellEncoder : GameCell -> Encode.Value
-gameCellEncoder (GameCell cellType cellStatus) =
-    let
-        encodedType =
-            (case cellType of
-                MineCell ->
-                    "mineCell"
-
-                MineNeighbourCell _ ->
-                    "mineNeighbourCell"
-
-                EmptyCell ->
-                    "emptyCell"
-            )
-                |> Encode.string
-
-        encodedMinesOnNeighbourCell =
-            case cellType of
-                MineNeighbourCell i ->
-                    Encode.int i
-
-                _ ->
-                    Encode.null
-
-        encodedCellStatus =
-            case cellStatus of
-                Untouched ->
-                    Encode.string "untouched"
-
-                Flagged ->
-                    Encode.string "flagged"
-
-                Opened ->
-                    Encode.string "opened"
-    in
-    Encode.object [ ( "cellType", encodedType ), ( "minesOnNeighbourCell", encodedMinesOnNeighbourCell ), ( "cellStatus", encodedCellStatus ) ]
 
 
 
@@ -353,36 +207,30 @@ gameCellEncoder (GameCell cellType cellStatus) =
 
 view : Model -> Element GameMsg
 view model =
-    case model.gameBoardStatus of
+    case model.game.gameBoardStatus of
         NoGame _ ->
-            Element.row [ Element.width Element.fill, Element.height Element.fill ]
-                [ Element.column [ Element.alignLeft, Element.alignTop ]
-                    [ Element.text "Game History"
-                    , Lazy.lazy finishedGameHistoryList model.playedGameHistory
+            Element.column [ Element.width Element.fill, Element.height Element.fill, Element.spacing 10 ]
+                [ Element.row
+                    [ Element.centerX, Element.centerY, Element.spacing 10 ]
+                    [ Styles.styledGameCelectionButton
+                        { onPress = Just (CreateNewGame smallPlayground)
+                        , label = Element.text "small"
+                        }
+                    , Styles.styledGameCelectionButton
+                        { onPress = Just (CreateNewGame mediumPlayground)
+                        , label = Element.text "medium"
+                        }
                     ]
-                , Element.column [ Element.width Element.fill, Element.height Element.fill, Element.spacing 10 ]
-                    [ Element.row
-                        [ Element.centerX, Element.centerY, Element.spacing 10 ]
-                        [ Styles.styledGameCelectionButton
-                            { onPress = Just (CreateNewGame smallPlayground)
-                            , label = Element.text "small"
-                            }
-                        , Styles.styledGameCelectionButton
-                            { onPress = Just (CreateNewGame mediumPlayground)
-                            , label = Element.text "medium"
-                            }
-                        ]
-                    , Element.row
-                        [ Element.centerX, Element.centerY, Element.spacing 10 ]
-                        [ Styles.styledGameCelectionButton
-                            { onPress = Just (CreateNewGame advancePlayground)
-                            , label = Element.text "advanced"
-                            }
-                        , Styles.styledGameCelectionButton
-                            { onPress = Just (CreateNewGame xxlPlayground)
-                            , label = Element.text "xxl"
-                            }
-                        ]
+                , Element.row
+                    [ Element.centerX, Element.centerY, Element.spacing 10 ]
+                    [ Styles.styledGameCelectionButton
+                        { onPress = Just (CreateNewGame advancePlayground)
+                        , label = Element.text "advanced"
+                        }
+                    , Styles.styledGameCelectionButton
+                        { onPress = Just (CreateNewGame xxlPlayground)
+                        , label = Element.text "xxl"
+                        }
                     ]
                 ]
 
@@ -398,109 +246,12 @@ view model =
 
         RunningGame playGrid ->
             Element.column [ Element.width Element.fill, Element.height Element.fill ]
-                [ Lazy.lazy mineToggleElement model.gameInteractionMode
+                [ Lazy.lazy mineToggleElement model.game.gameInteractionMode
                 , Lazy.lazy runningGameView playGrid
                 ]
 
         FinishedGame playGrid finishedStatus _ ->
             Lazy.lazy2 finishedGameView playGrid finishedStatus
-
-
-finishedGameHistoryList : List FinishedGameHistoryEntry -> Element GameMsg
-finishedGameHistoryList finishedGameHistory =
-    let
-        gameStatistics : FinishedGameHistoryEntry -> { result : GameResult, playedSeconds : String, playedMinutes : String, gridHeight : Int, gridWidth : Int, mines : Int }
-        gameStatistics entry =
-            { result =
-                case entry of
-                    FinishedGameHistoryEntry _ res _ ->
-                        res
-            , playedSeconds =
-                case entry of
-                    FinishedGameHistoryEntry _ _ time ->
-                        time
-                            // 1000
-                            |> modBy 60
-                            |> (\s ->
-                                    if s < 10 then
-                                        String.concat [ "0", String.fromInt s ]
-
-                                    else
-                                        String.fromInt s
-                               )
-            , playedMinutes =
-                case entry of
-                    FinishedGameHistoryEntry _ _ time ->
-                        time
-                            // 1000
-                            // 60
-                            |> String.fromInt
-            , gridHeight =
-                case entry of
-                    FinishedGameHistoryEntry grid _ _ ->
-                        Grid.height grid
-            , gridWidth =
-                case entry of
-                    FinishedGameHistoryEntry grid _ _ ->
-                        Grid.width grid
-            , mines =
-                case entry of
-                    FinishedGameHistoryEntry grid _ _ ->
-                        Grid.foldl
-                            (\cell count ->
-                                case cell of
-                                    GameCell MineCell _ ->
-                                        count + 1
-
-                                    _ ->
-                                        count
-                            )
-                            0
-                            grid
-            }
-    in
-    case finishedGameHistory of
-        [] ->
-            Element.el [ Element.paddingXY 0 30 ] <| Element.text "No games played yet"
-
-        _ ->
-            Element.table [ Element.spacing 10, Element.paddingXY 0 30 ]
-                { data = List.map gameStatistics finishedGameHistory
-                , columns =
-                    [ { header = Element.text <| String.fromList [ Styles.icons.victory, '/', Styles.icons.exploded ]
-                      , width = Element.fillPortion 1
-                      , view =
-                            \entry ->
-                                case entry.result of
-                                    Won ->
-                                        Element.text <| String.fromChar Styles.icons.victory
-
-                                    Lost ->
-                                        Element.text <| String.fromChar Styles.icons.exploded
-                      }
-                    , { header = Element.text "↔️"
-                      , width = Element.fillPortion 2
-                      , view =
-                            \entry -> Element.text <| String.fromInt entry.gridWidth
-                      }
-                    , { header = Element.text "↕️"
-                      , width = Element.fillPortion 2
-                      , view =
-                            \entry -> Element.text <| String.fromInt entry.gridHeight
-                      }
-                    , { header = Element.text <| String.fromChar Styles.icons.untouchedBomb
-                      , width = Element.fillPortion 2
-                      , view =
-                            \entry -> Element.text <| String.fromInt entry.mines
-                      }
-                    , { header = Element.text <| String.fromChar Styles.icons.stopWatch
-                      , width = Element.fillPortion 4
-                      , view =
-                            \entry ->
-                                Element.text <| String.concat [ entry.playedMinutes, ":", entry.playedSeconds ]
-                      }
-                    ]
-                }
 
 
 smallPlayground : PlayGroundDefinition
@@ -511,6 +262,7 @@ smallPlayground =
     }
 
 
+mediumPlayground : PlayGroundDefinition
 mediumPlayground =
     { cols = 16
     , rows = 16
@@ -518,6 +270,7 @@ mediumPlayground =
     }
 
 
+advancePlayground : PlayGroundDefinition
 advancePlayground =
     { cols = 30
     , rows = 16
@@ -525,6 +278,7 @@ advancePlayground =
     }
 
 
+xxlPlayground : PlayGroundDefinition
 xxlPlayground =
     { cols = 30
     , rows = 30
@@ -540,9 +294,9 @@ dummyToogleElement =
 styledToogleElement : Bool -> Element GameMsg
 styledToogleElement =
     Styles.toggleCheckboxWidget
-        { offColor = Styles.lightGrey
-        , onColor = Styles.green
-        , sliderColor = Styles.white
+        { offColor = Colors.lightGrey
+        , onColor = Colors.green
+        , sliderColor = Colors.white
         , toggleWidth = 60
         , toggleHeight = 28
         , onSymbol = Just Styles.icons.untouchedBomb
@@ -633,11 +387,11 @@ finishedGameView playGameGrid gameResult =
                 Lost ->
                     Element.text "You lost!"
         , Element.row [ Element.centerX, Element.centerY, Element.spacing 20, Border.solid, Border.rounded 25, Element.paddingXY 0 10 ]
-            [ Input.button [ Background.color Styles.asparagus, Border.solid, Element.padding 10, Border.rounded 10 ]
+            [ Input.button [ Background.color Colors.asparagus, Border.solid, Element.padding 10, Border.rounded 10 ]
                 { onPress = Just (CreateNewGame <| playGameGridToPlaygroundDefinition playGameGrid)
                 , label = Element.text "Start new game"
                 }
-            , Input.button [ Background.color Styles.saffron, Border.solid, Element.padding 10, Border.rounded 10 ]
+            , Input.button [ Background.color Colors.saffron, Border.solid, Element.padding 10, Border.rounded 10 ]
                 { onPress = Just GoToStartPage
                 , label = Element.text "Back to overview"
                 }

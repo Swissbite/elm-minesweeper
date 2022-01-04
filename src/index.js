@@ -1,5 +1,5 @@
 import './main.css';
-import { Elm } from './Main.elm';
+import { Elm, Main } from './Main.elm';
 import * as serviceWorker from './serviceWorker';
 
 const localStoreFinishedGameHistoryKey = 'finishedGameHistory';
@@ -9,8 +9,13 @@ const finishedGameHistory = storedFinishedGameHistory ? JSON.parse(storedFinishe
 
 const app = Elm.Main.init({
   node: document.getElementById('root'),
-  flags: finishedGameHistory
+  flags: {
+    history: finishedGameHistory,
+    height: window.innerHeight,
+    width: window.innerWidth
+  }
 });
+
 
 app.ports.storeFinishedGameHistory.subscribe(function(finishedGameHistory) {
   if (finishedGameHistory.length > 0) {

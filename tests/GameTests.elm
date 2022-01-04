@@ -7,6 +7,7 @@ import Game.Internal as GameInternal
 import Grid
 import Set exposing (Set)
 import Test exposing (..)
+import Time
 import Types exposing (..)
 
 
@@ -76,7 +77,7 @@ decoderTests =
             \_ -> Game.decodeStoredFinishedGameHistory "[]" |> Expect.equal []
         , test "Bulshit data should just return an empty list" <|
             \_ -> Game.decodeStoredFinishedGameHistory "asdf" |> Expect.equal []
-        , test "A bit more advanced list should work" <|
+        , test "Upgrade from version 0 to current version should work" <|
             \_ ->
                 case Tuple.second extendedGridValue of
                     Nothing ->
@@ -87,6 +88,7 @@ decoderTests =
         ]
 
 
+extendedGridValue : ( String, Maybe (List FinishedGameHistoryEntry) )
 extendedGridValue =
     ( """
     [
@@ -106,9 +108,101 @@ extendedGridValue =
         |> String.replace "\t" ""
         |> String.replace "\n" ""
         |> String.replace " " ""
-    , Maybe.map (\grid -> [ FinishedGameHistoryEntry grid Lost 1000 ]) <|
+    , Maybe.map (\grid -> [ FinishedGameHistoryEntry grid Lost 1000 (Time.millisToPosix 0) ]) <|
         Grid.fromList
             [ [ GameCell (MineNeighbourCell 1) Opened, GameCell (MineNeighbourCell 1) Flagged ]
             , [ GameCell (MineNeighbourCell 1) Untouched, GameCell MineCell Opened ]
             ]
     )
+
+
+gameHistoryEncoderTest : Test
+gameHistoryEncoderTest =
+    describe "Testing the encoding to JSON String"
+        [ test "Empty entries should generate correct uptodate version" <|
+            \_ -> GameInternal.encodeFinishedGameHistory (Tuple.first emptyHistoryToEncodedVersion01) |> Expect.equal (Tuple.second emptyHistoryToEncodedVersion01)
+        ]
+
+
+emptyHistoryToEncodedVersion01 : ( List FinishedGameHistoryEntry, String )
+emptyHistoryToEncodedVersion01 =
+    ( []
+    , """
+    { "version": 1, "entries": [] }
+    """
+        |> String.replace "\t" ""
+        |> String.replace "\n" ""
+        |> String.replace " " ""
+    )
+
+
+severalWonLostEntriesEncodedVersion01 : String
+severalWonLostEntriesEncodedVersion01 =
+    """
+    {
+        "version": 1,
+        "entries": [
+            {
+                "grid": [
+                    [
+                        {
+                            "cellType": "mineNeighbourCell",
+                            "minesOnNeighbourCell": 1,
+                            "cellStatus": "opened"
+                        },
+                        {
+                            "cellType": "mineNeighbourCell",
+                            "minesOnNeighbourCell": 1,
+                            "cellStatus": "flagged"
+                        }
+                    ],
+                    [
+                        {
+                            "cellType": "mineNeighbourCell",
+                            "minesOnNeighbourCell": 1,
+                            "cellStatus": "untouched"
+                        },
+                        {
+                            "cellType": "mineCell",
+                            "minesOnNeighbourCell": null,
+                            "cellStatus": "opened"
+                        }
+                    ]
+                ],
+                "result": "won",
+                "duration": 1000
+                "posix": 10
+            },
+            {
+                "grid": [
+                    [
+                        {
+                            "cellType": "mineNeighbourCell",
+                            "minesOnNeighbourCell": 1,
+                            "cellStatus": "opened"
+                        },
+                        {
+                            "cellType": "mineNeighbourCell",
+                            "minesOnNeighbourCell": 1,
+                            "cellStatus": "flagged"
+                        }
+                    ],
+                    [
+                        {
+                            "cellType": "mineNeighbourCell",
+                            "minesOnNeighbourCell": 1,
+                            "cellStatus": "untouched"
+                        },
+                        {
+                            "cellType": "mineCell",
+                            "minesOnNeighbourCell": null,
+                            "cellStatus": "opened"
+                        }
+                    ]
+                ],
+                "result": "lost",
+                "duration": 1000
+            }
+        ]
+    }
+    """

@@ -1,5 +1,6 @@
 module Styles exposing (..)
 
+import Colors
 import Element as Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
@@ -18,76 +19,6 @@ icons =
     }
 
 
-saffron : Element.Color
-saffron =
-    Element.rgba255 227 181 5 1
-
-
-fieryRose : Element.Color
-fieryRose =
-    Element.rgba255 245 100 118 1
-
-
-cerise : Element.Color
-cerise =
-    Element.rgba255 228 63 111 1
-
-
-smitten : Element.Color
-smitten =
-    Element.rgba255 190 62 130 1
-
-
-eggplant : Element.Color
-eggplant =
-    Element.rgba255 94 67 82 1
-
-
-caputMortuum : Element.Color
-caputMortuum =
-    Element.rgba255 80 36 25 1
-
-
-asparagus : Element.Color
-asparagus =
-    Element.rgba255 126 161 114 1
-
-
-babyBlue : Element.Color
-babyBlue =
-    Element.rgba255 108 212 255 1
-
-
-untouchedCellGray : Element.Color
-untouchedCellGray =
-    Element.rgba255 190 190 190 0.8
-
-
-openedCellGray : Element.Color
-openedCellGray =
-    Element.rgba255 190 190 190 0.2
-
-
-cellBorderColor : Element.Color
-cellBorderColor =
-    Element.rgba 100 100 100 1
-
-
-lightGrey : Color
-lightGrey =
-    rgb255 187 187 187
-
-
-green : Color
-green =
-    rgb255 39 203 139
-
-
-white : Color
-white =
-    rgb255 255 255 255
-
-
 cellWidth : Element.Length
 cellWidth =
     Element.px 50
@@ -97,7 +28,7 @@ basicCellStyle : List (Element.Attribute msg)
 basicCellStyle =
     [ Element.width cellWidth
     , Element.height cellWidth
-    , Border.color cellBorderColor
+    , Border.color Colors.cellBorderColor
     , Border.width 1
     , Element.pointer
     ]
@@ -106,14 +37,14 @@ basicCellStyle =
 untouchedCellStyle : List (Element.Attribute msg)
 untouchedCellStyle =
     basicCellStyle
-        ++ [ Background.color untouchedCellGray
+        ++ [ Background.color Colors.untouchedCellGray
            ]
 
 
 openedCellStyle : List (Element.Attribute msg)
 openedCellStyle =
     basicCellStyle
-        ++ [ Background.color openedCellGray
+        ++ [ Background.color Colors.openedCellGray
            ]
 
 
@@ -123,31 +54,31 @@ openedMineNeighbourCellStyle number =
         color =
             case number of
                 1 ->
-                    saffron
+                    Colors.saffron
 
                 2 ->
-                    fieryRose
+                    Colors.fieryRose
 
                 3 ->
-                    cerise
+                    Colors.cerise
 
                 4 ->
-                    smitten
+                    Colors.smitten
 
                 5 ->
-                    eggplant
+                    Colors.eggplant
 
                 6 ->
-                    caputMortuum
+                    Colors.caputMortuum
 
                 7 ->
-                    asparagus
+                    Colors.asparagus
 
                 8 ->
-                    babyBlue
+                    Colors.babyBlue
 
                 _ ->
-                    Element.rgba 0 0 0 1
+                    Colors.black
     in
     openedCellStyle
         ++ [ Font.color color
@@ -170,7 +101,7 @@ styledGameCelectionButton =
                 |> Element.maximum 400
                 |> Element.minimum 300
             )
-        , Background.color lightGrey
+        , Background.color Colors.lightGrey
         , Element.centerX
         , Element.centerY
         ]

@@ -1,5 +1,8 @@
 module Types exposing (..)
 
+import Browser exposing (UrlRequest)
+import Browser.Navigation exposing (Key)
+import Element exposing (Device)
 import Grid exposing (Grid)
 import Time
 
@@ -8,6 +11,16 @@ import Time
 -}
 type Msg
     = GameView GameMsg
+    | GameHistory GameHistoryMsg
+    | Navigation UrlRequest
+    | SetScreenSize Int Int
+
+
+type alias Flags =
+    { height : Int
+    , width : Int
+    , history : String
+    }
 
 
 {-| Type definition of all Messages for playing minesweeper itself. Moved from Msg to own type to simplify the update function in Main.elm
@@ -24,18 +37,54 @@ type GameMsg
     | ToogleGamePause
 
 
+type GameHistoryMsg
+    = DeleteAll
+    | DeleteLost
+    | SetDisplayMode GameHistoryDisplayMode
+    | SetOrderBy GameHistoryOrderBy OrderDirection
+
+
+type GameHistoryDisplayMode
+    = DisplayAll
+    | DisplayLost
+    | DisplayWon
+
+
+type GameHistoryOrderBy
+    = ByDuration
+    | ByFieldSize
+    | ByPosix
+    | ByResult
+    | ByMines
+
+
+type OrderDirection
+    = Ascending
+    | Descending
+
+
 type alias Model =
+    { game : GameModel
+    , playedGameHistory : List FinishedGameHistoryEntry
+    , currentView : View
+    , device : Device
+    , key : Key
+    }
+
+
+type alias GameModel =
     { gameBoardStatus : GameBoardStatus
     , gameInteractionMode : CellClickMode
     , gameRunningTimes : List ( Time.Posix, Time.Posix )
     , gamePauseResumeState : PauseResumeState
-    , playedGameHistory : List FinishedGameHistoryEntry
-    , currentView : View
+    , lastClockTick : Time.Posix
     }
 
 
 type View
     = Game
+    | History GameHistoryDisplayMode GameHistoryOrderBy OrderDirection
+    | Error404
 
 
 type PauseResumeState
@@ -56,8 +105,18 @@ type alias Coordinates =
     }
 
 
-type FinishedGameHistoryEntry
-    = FinishedGameHistoryEntry PlayGameGrid GameResult Int
+type alias FinishedGameHistory =
+    { entries : List FinishedGameHistoryEntry
+    , version : Int
+    }
+
+
+type alias FinishedGameHistoryEntry =
+    { grid : PlayGameGrid
+    , result : GameResult
+    , duration : Int
+    , playFinish : Time.Posix
+    }
 
 
 type GameBoardStatus

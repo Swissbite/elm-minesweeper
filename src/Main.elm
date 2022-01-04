@@ -1,30 +1,41 @@
 module Main exposing (..)
 
-import Browser
+import Browser exposing (Document, UrlRequest(..))
+import Browser.Events as Events
+import Browser.Navigation as Navigation exposing (Key)
 import Element exposing (Element, fill)
 import Element.Lazy as Lazy
+import ErrorPage404
 import Game.Game as Game
-import Html exposing (Html)
+import Game.History as GameHistory
 import Tuple
 import Types exposing (..)
+import Url exposing (Url)
+import Url.Parser as UP exposing ((</>), (<?>))
 
 
 
 --- PROGRAM ---
 
 
-main : Program String Model Msg
+main : Program Flags Model Msg
 main =
-    Browser.element
+    Browser.application
         { view = view
         , init = init
         , update = update
         , subscriptions = subscriptions
+        , onUrlChange =
+            \url ->
+                Internal url
+                    |> Navigation
+        , onUrlRequest =
+            Navigation
         }
 
 
 
---- UPDATE / INIT / SUBSCRIPTIONS ---
+--- UPDATE / INIT / SUBSCRIPTIONS / URL Handling ---
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -34,16 +45,81 @@ update msg model =
             Game.update gameMsg model
                 |> Tuple.mapSecond (Cmd.map GameView)
 
+        GameHistory gameHistoryMsg ->
+            GameHistory.update gameHistoryMsg model
+                |> Tuple.mapSecond (Cmd.map GameHistory)
 
-init : String -> ( Model, Cmd Msg )
-init storedFinishedGameHistory =
-    ( { currentView = Game, gameBoardStatus = NoGame PreSelect, gameInteractionMode = Reveal, gameRunningTimes = [], gamePauseResumeState = Paused, playedGameHistory = Game.decodeStoredFinishedGameHistory storedFinishedGameHistory }, Cmd.none )
+        Navigation request ->
+            navigationHandling request model
+
+        SetScreenSize x y ->
+            ( { model | device = Element.classifyDevice { width = x, height = y } }, Cmd.none )
+
+
+viewRouteParser : UP.Parser (View -> a) a
+viewRouteParser =
+    UP.oneOf
+        [ UP.map Game UP.top
+        , UP.map gameHistoryQueryToView (UP.s "history" <?> GameHistory.queryParser)
+        ]
+
+
+gameHistoryQueryToView : GameHistory.GameHistoryQuery -> View
+gameHistoryQueryToView query =
+    History query.displayMode query.orderBy query.orderDirection
+
+
+mayBeQueryParamsToHistoryView : Maybe GameHistoryDisplayMode -> Maybe GameHistoryOrderBy -> Maybe OrderDirection -> View
+mayBeQueryParamsToHistoryView maybeMode maybeOrderBy maybeSort =
+    History (Maybe.withDefault DisplayAll maybeMode) (Maybe.withDefault ByPosix maybeOrderBy) (Maybe.withDefault Ascending maybeSort)
+
+
+navigationHandling : UrlRequest -> Model -> ( Model, Cmd Msg )
+navigationHandling request model =
+    case request of
+        Internal url ->
+            UP.parse viewRouteParser url
+                |> Maybe.withDefault Error404
+                |> (\parsedView ->
+                        if model.currentView == parsedView then
+                            ( model, Cmd.none )
+
+                        else
+                            ( { model | currentView = parsedView }, Navigation.pushUrl model.key (Url.toString url) )
+                   )
+
+        External url ->
+            ( model, Navigation.load url )
+
+
+init : Flags -> Url -> Key -> ( Model, Cmd Msg )
+init flags url key =
+    let
+        basicInitModel : Model
+        basicInitModel =
+            { key = key
+            , device =
+                Element.classifyDevice
+                    { width = flags.width
+                    , height = flags.height
+                    }
+            , currentView = Game
+            , game = Game.initModel
+            , playedGameHistory = Game.decodeStoredFinishedGameHistory flags.history
+            }
+
+        navigationMsg : Msg
+        navigationMsg =
+            Navigation (Internal url)
+    in
+    update navigationMsg basicInitModel
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Sub.map GameView (Game.subscriptions model)
+        , Events.onResize (\values -> SetScreenSize values)
         ]
 
 
@@ -51,13 +127,26 @@ subscriptions model =
 --- VIEW ---
 
 
-view : Model -> Html Msg
+view : Model -> Document Msg
 view m =
-    Element.layout [ Element.width Element.fill, Element.height Element.fill ] <|
-        Element.column [ Element.width fill, Element.height fill, Element.centerX ]
-            [ Lazy.lazy (\t -> Element.el [ Element.centerX ] <| Element.text t) "Minesweeper"
-            , Lazy.lazy selectBoardView m
-            ]
+    { title = "Elm - Minesweeper"
+    , body =
+        [ Element.layout [ Element.width Element.fill, Element.height Element.fill ] <|
+            Element.column [ Element.width fill, Element.height fill, Element.centerX ]
+                [ navigationView
+                , Lazy.lazy selectBoardView m
+                ]
+        ]
+    }
+
+
+navigationView : Element Msg
+navigationView =
+    Element.row [ Element.width Element.fill ]
+        [ Element.el [ Element.alignLeft, Element.paddingXY 10 10 ] <| Element.text "Minesweeper"
+        , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = "/", label = Element.text "Game" }
+        , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = "/history", label = Element.text "History" }
+        ]
 
 
 selectBoardView : Model -> Element Msg
@@ -66,3 +155,15 @@ selectBoardView model =
         Game ->
             Game.view model
                 |> Element.map GameView
+
+        Error404 ->
+            ErrorPage404.view model
+
+        History _ _ _ ->
+            GameHistory.view model
+                |> Element.map GameHistory
+
+
+navigationHeader : Model -> Element Msg
+navigationHeader _ =
+    Element.row [ Element.width Element.fill ] []
