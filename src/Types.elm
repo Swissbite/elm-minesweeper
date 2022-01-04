@@ -53,7 +53,9 @@ type GameHistoryDisplayMode
 type GameHistoryOrderBy
     = ByDuration
     | ByFieldSize
-    | ByEntryId
+    | ByPosix
+    | ByResult
+    | ByMines
 
 
 type OrderDirection

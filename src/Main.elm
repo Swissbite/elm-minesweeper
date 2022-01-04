@@ -71,7 +71,7 @@ gameHistoryQueryToView query =
 
 mayBeQueryParamsToHistoryView : Maybe GameHistoryDisplayMode -> Maybe GameHistoryOrderBy -> Maybe OrderDirection -> View
 mayBeQueryParamsToHistoryView maybeMode maybeOrderBy maybeSort =
-    History (Maybe.withDefault DisplayAll maybeMode) (Maybe.withDefault ByEntryId maybeOrderBy) (Maybe.withDefault Ascending maybeSort)
+    History (Maybe.withDefault DisplayAll maybeMode) (Maybe.withDefault ByPosix maybeOrderBy) (Maybe.withDefault Ascending maybeSort)
 
 
 navigationHandling : UrlRequest -> Model -> ( Model, Cmd Msg )

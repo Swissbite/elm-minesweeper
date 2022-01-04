@@ -43,8 +43,13 @@ decodeStoredFinishedGameHistory string =
 
 
 subscriptions : Model -> Sub GameMsg
-subscriptions _ =
-    Time.every 500 (\posix -> ClockTick posix)
+subscriptions m =
+    case ( m.currentView, m.game.gameBoardStatus ) of
+        ( Game, RunningGame _ ) ->
+            Time.every 200 (\posix -> ClockTick posix)
+
+        _ ->
+            Sub.none
 
 
 
@@ -138,7 +143,7 @@ updateTimePlayGame model time =
                     else
                         ( time, time ) :: model.game.gameRunningTimes
             in
-            ( { model | game = { gameModel | gameRunningTimes = newList } }, Cmd.none )
+            ( { model | game = { gameModel | gameRunningTimes = newList, lastClockTick = time } }, Cmd.none )
 
         _ ->
             ( model, Cmd.none )

@@ -1,9 +1,18 @@
 module Game.History exposing (GameHistoryQuery, queryParser, update, view)
 
-import Dict
-import Element exposing (Element)
+import Colors
+import Dict exposing (Dict)
+import Element exposing (Attribute, Column, Element)
+import Element.Background as Background
+import Element.Border as Border
+import Element.Events as Events
+import Element.Font as Font
+import Element.Input as Input
+import Framework.Color exposing (pre_background)
 import Game.Internal exposing (..)
 import Grid
+import Html.Attributes as HA
+import Html.Events exposing (onClick)
 import List
 import Styles
 import Time
@@ -13,20 +22,298 @@ import Url.Parser.Query as Query
 
 view : Model -> Element GameHistoryMsg
 view model =
-    Element.column [ Element.centerX, Element.centerY ]
-        [ Element.text "Hello. Your view should be history"
-        , extractQueryParameterFromView model |> manualStringDecodedParams |> Element.text
+    Element.column [ Element.centerX, Element.height Element.fill, Element.spacing 10 ]
+        [ Element.el [ Font.semiBold, Font.size 30, Element.centerX ] <| Element.text "Your play history"
+        , Element.row [ Element.width Element.fill, Element.spacing 10 ]
+            [ Input.button [ Background.color Colors.saffron, Border.solid, Element.padding 10, Border.rounded 10, Element.centerX ]
+                { label = Element.text "Delete lost games"
+                , onPress = Just DeleteLost
+                }
+            , Input.button [ Background.color Colors.tomato, Border.solid, Element.padding 10, Border.rounded 10, Element.centerX ]
+                { label = Element.text "Delete history"
+                , onPress = Just DeleteAll
+                }
+            ]
+        , sortableHistoryTable model
         ]
 
 
-manualStringDecodedParams : Maybe GameHistoryQuery -> String
-manualStringDecodedParams params =
-    case params of
-        Nothing ->
-            "No Param. URL Decoding issue"
+sortableHistoryTable : Model -> Element GameHistoryMsg
+sortableHistoryTable model =
+    let
+        currentQueryParameter : GameHistoryQuery
+        currentQueryParameter =
+            extractQueryParameterFromView model |> extractQueryParameterFromViewWithDefaults
+    in
+    Element.table [ Element.spacingXY 20 10, Element.centerX, Element.width Element.fill, Element.paddingXY 20 10 ]
+        { data = sortAndFilterListByQueryParameter (extractQueryParameterFromView model) model.playedGameHistory
+        , columns =
+            [ historyColumns ByResult currentQueryParameter
+            , historyColumns ByPosix currentQueryParameter
+            , historyColumns ByFieldSize currentQueryParameter
+            , historyColumns ByMines currentQueryParameter
+            , historyColumns ByDuration currentQueryParameter
+            ]
+        }
 
-        Just data ->
-            """{ "orderBy": \"""" ++ orderByToString data.orderBy ++ """", "direction": \"""" ++ orderDirectionToString data.orderDirection ++ """" """
+
+historyColumns : GameHistoryOrderBy -> (GameHistoryQuery -> Column FinishedGameHistoryEntry GameHistoryMsg)
+historyColumns orderBy =
+    case orderBy of
+        ByResult ->
+            byResultColumn
+
+        ByFieldSize ->
+            byFieldSizeColumn
+
+        ByDuration ->
+            byDurationColumn
+
+        ByPosix ->
+            byPosixColumn
+
+        ByMines ->
+            byMinesColumn
+
+
+byResultColumn : GameHistoryQuery -> Column FinishedGameHistoryEntry GameHistoryMsg
+byResultColumn query =
+    { header =
+        Element.row
+            [ Events.onClick <|
+                case ( query.orderBy, query.orderDirection ) of
+                    ( ByResult, Ascending ) ->
+                        SetOrderBy ByResult Descending
+
+                    _ ->
+                        SetOrderBy ByResult Ascending
+            ]
+            [ Element.text "Result "
+            , Element.text <|
+                case ( query.orderBy, query.orderDirection ) of
+                    ( ByResult, Ascending ) ->
+                        "⬇️"
+
+                    ( ByResult, Descending ) ->
+                        "⬆️"
+
+                    _ ->
+                        ""
+            ]
+    , width = Element.fill |> Element.minimum 300
+    , view =
+        \entry ->
+            case entry.result of
+                Won ->
+                    Element.text <| String.fromChar Styles.icons.victory
+
+                Lost ->
+                    Element.text <| String.fromChar Styles.icons.exploded
+    }
+
+
+byDurationColumn : GameHistoryQuery -> Column FinishedGameHistoryEntry GameHistoryMsg
+byDurationColumn query =
+    { header =
+        Element.row
+            [ Events.onClick <|
+                case ( query.orderBy, query.orderDirection ) of
+                    ( ByDuration, Ascending ) ->
+                        SetOrderBy ByDuration Descending
+
+                    _ ->
+                        SetOrderBy ByDuration Ascending
+            ]
+            [ Element.text <| String.fromChar Styles.icons.stopWatch
+            , Element.text " Duration "
+            , Element.text <|
+                case ( query.orderBy, query.orderDirection ) of
+                    ( ByDuration, Ascending ) ->
+                        "⬇️"
+
+                    ( ByDuration, Descending ) ->
+                        "⬆️"
+
+                    _ ->
+                        ""
+            ]
+    , width = Element.fill |> Element.minimum 300
+    , view =
+        \entry ->
+            Element.row []
+                [ entry.duration // 1000 // 60 |> String.fromInt |> Element.text
+                , Element.text ":"
+                , entry.duration
+                    // 1000
+                    |> String.fromInt
+                    |> (\s ->
+                            if String.length s == 1 then
+                                String.append "0" s
+
+                            else
+                                s
+                       )
+                    |> Element.text
+                ]
+    }
+
+
+byFieldSizeColumn : GameHistoryQuery -> Column FinishedGameHistoryEntry GameHistoryMsg
+byFieldSizeColumn query =
+    { header =
+        Element.row
+            [ Element.centerX
+            , Element.width Element.fill
+            , Events.onClick <|
+                case ( query.orderBy, query.orderDirection ) of
+                    ( ByFieldSize, Ascending ) ->
+                        SetOrderBy ByFieldSize Descending
+
+                    _ ->
+                        SetOrderBy ByFieldSize Ascending
+            ]
+            [ Element.text <| String.fromChar Styles.icons.stopWatch
+            , Element.text " Field size "
+            , Element.text <|
+                case ( query.orderBy, query.orderDirection ) of
+                    ( ByFieldSize, Ascending ) ->
+                        "⬇️"
+
+                    ( ByFieldSize, Descending ) ->
+                        "⬆️"
+
+                    _ ->
+                        ""
+            ]
+    , width = Element.fill |> Element.minimum 300
+    , view =
+        \entry ->
+            Element.row [ Element.centerX, Element.width Element.fill ]
+                [ Grid.width entry.grid |> String.fromInt |> Element.text
+                , Element.text " x "
+                , Grid.height entry.grid |> String.fromInt |> Element.text
+                ]
+    }
+
+
+byMinesColumn : GameHistoryQuery -> Column FinishedGameHistoryEntry GameHistoryMsg
+byMinesColumn query =
+    { header =
+        Element.row
+            [ Events.onClick <|
+                case ( query.orderBy, query.orderDirection ) of
+                    ( ByMines, Ascending ) ->
+                        SetOrderBy ByMines Descending
+
+                    _ ->
+                        SetOrderBy ByMines Ascending
+            ]
+            [ Element.text <| String.fromChar Styles.icons.untouchedBomb
+            , Element.text " Mines "
+            , Element.text <|
+                case ( query.orderBy, query.orderDirection ) of
+                    ( ByMines, Ascending ) ->
+                        "⬇️"
+
+                    ( ByMines, Descending ) ->
+                        "⬆️"
+
+                    _ ->
+                        ""
+            ]
+    , width = Element.fill |> Element.minimum 300
+    , view =
+        \entry ->
+            countMines entry.grid |> String.fromInt |> Element.text
+    }
+
+
+byPosixColumn : GameHistoryQuery -> Column FinishedGameHistoryEntry GameHistoryMsg
+byPosixColumn query =
+    { header =
+        Element.row
+            [ Element.centerX
+            , Element.width Element.fill
+            , Events.onClick <|
+                case ( query.orderBy, query.orderDirection ) of
+                    ( ByPosix, Ascending ) ->
+                        SetOrderBy ByPosix Descending
+
+                    _ ->
+                        SetOrderBy ByPosix Ascending
+            ]
+            [ Element.text "Date "
+            , Element.text <|
+                case ( query.orderBy, query.orderDirection ) of
+                    ( ByPosix, Ascending ) ->
+                        "⬇️"
+
+                    ( ByPosix, Descending ) ->
+                        "⬆️"
+
+                    _ ->
+                        ""
+            ]
+    , width = Element.fill |> Element.minimum 300
+    , view =
+        let
+            toNumberMonthAsString : Time.Month -> String
+            toNumberMonthAsString month =
+                case month of
+                    Time.Jan ->
+                        "01"
+
+                    Time.Feb ->
+                        "02"
+
+                    Time.Mar ->
+                        "03"
+
+                    Time.Apr ->
+                        "04"
+
+                    Time.May ->
+                        "05"
+
+                    Time.Jun ->
+                        "06"
+
+                    Time.Jul ->
+                        "07"
+
+                    Time.Aug ->
+                        "08"
+
+                    Time.Sep ->
+                        "09"
+
+                    Time.Oct ->
+                        "10"
+
+                    Time.Nov ->
+                        "11"
+
+                    Time.Dec ->
+                        "12"
+        in
+        \entry ->
+            Element.row [ Element.centerX, Element.width Element.fill ]
+                [ Time.toYear Time.utc entry.playFinish |> String.fromInt |> Element.text
+                , Element.text "-"
+                , Time.toMonth Time.utc entry.playFinish |> toNumberMonthAsString |> Element.text
+                , Element.text "-"
+                , Time.toDay Time.utc entry.playFinish
+                    |> String.fromInt
+                    |> (\s ->
+                            if String.length s == 1 then
+                                "0" ++ s
+
+                            else
+                                s
+                       )
+                    |> Element.text
+                ]
+    }
 
 
 sortAndFilterListByQueryParameter : Maybe GameHistoryQuery -> List FinishedGameHistoryEntry -> List FinishedGameHistoryEntry
@@ -59,22 +346,41 @@ sortAndOrder : GameHistoryOrderBy -> OrderDirection -> (FinishedGameHistoryEntry
 sortAndOrder orderBy direction =
     \e1 e2 ->
         case ( orderBy, direction ) of
+            ( ByResult, order ) ->
+                if e1.result == e2.result then
+                    EQ
+
+                else
+                    case ( e1.result, order ) of
+                        ( Won, Ascending ) ->
+                            GT
+
+                        ( Won, Descending ) ->
+                            LT
+
+                        ( Lost, Ascending ) ->
+                            LT
+
+                        ( Lost, Descending ) ->
+                            GT
+
             ( ByDuration, order ) ->
                 if e1.duration == e2.duration then
                     EQ
 
-                else if e1.duration < e2.duration then
-                    if order == Ascending then
-                        LT
-
-                    else
-                        GT
-
-                else if order == Ascending then
-                    GT
-
                 else
-                    LT
+                    case ( e1.duration < e2.duration, order ) of
+                        ( True, Ascending ) ->
+                            LT
+
+                        ( True, Descending ) ->
+                            GT
+
+                        ( False, Ascending ) ->
+                            GT
+
+                        ( False, Descending ) ->
+                            LT
 
             ( ByFieldSize, order ) ->
                 let
@@ -87,20 +393,21 @@ sortAndOrder orderBy direction =
                 if e1Size == e2Size then
                     EQ
 
-                else if e1Size < e2Size then
-                    if order == Ascending then
-                        LT
-
-                    else
-                        GT
-
-                else if order == Ascending then
-                    GT
-
                 else
-                    LT
+                    case ( e1Size < e2Size, order ) of
+                        ( True, Ascending ) ->
+                            LT
 
-            ( ByEntryId, order ) ->
+                        ( True, Descending ) ->
+                            GT
+
+                        ( False, Ascending ) ->
+                            GT
+
+                        ( False, Descending ) ->
+                            LT
+
+            ( ByPosix, order ) ->
                 let
                     e1TimeInt =
                         Time.posixToMillis e1.playFinish
@@ -111,18 +418,63 @@ sortAndOrder orderBy direction =
                 if e1TimeInt == e2TimeInt then
                     EQ
 
-                else if e1TimeInt < e2TimeInt then
-                    if order == Ascending then
-                        LT
+                else
+                    case ( e1TimeInt < e2TimeInt, order ) of
+                        ( True, Ascending ) ->
+                            LT
 
-                    else
-                        GT
+                        ( True, Descending ) ->
+                            GT
 
-                else if order == Ascending then
-                    GT
+                        ( False, Ascending ) ->
+                            GT
+
+                        ( False, Descending ) ->
+                            LT
+
+            ( ByMines, order ) ->
+                let
+                    e1Mines =
+                        countMines e1.grid
+
+                    e2Mines =
+                        countMines e2.grid
+                in
+                if e1Mines == e2Mines then
+                    EQ
 
                 else
-                    LT
+                    case ( e1Mines < e2Mines, order ) of
+                        ( True, Ascending ) ->
+                            LT
+
+                        ( True, Descending ) ->
+                            GT
+
+                        ( False, Ascending ) ->
+                            GT
+
+                        ( False, Descending ) ->
+                            LT
+
+
+countMines : PlayGameGrid -> Int
+countMines =
+    Grid.foldl
+        (\cell acc ->
+            case cell of
+                GameCell MineCell _ ->
+                    acc + 1
+
+                _ ->
+                    acc
+        )
+        0
+
+
+extractQueryParameterFromViewWithDefaults : Maybe GameHistoryQuery -> GameHistoryQuery
+extractQueryParameterFromViewWithDefaults =
+    Maybe.withDefault { orderBy = ByPosix, orderDirection = Descending, displayMode = DisplayAll }
 
 
 extractQueryParameterFromView : Model -> Maybe GameHistoryQuery
@@ -137,42 +489,6 @@ extractQueryParameterFromView model =
 
         _ ->
             Nothing
-
-
-orderByToString : GameHistoryOrderBy -> String
-orderByToString orderBy =
-    case orderBy of
-        ByDuration ->
-            "duration"
-
-        ByFieldSize ->
-            "size"
-
-        ByEntryId ->
-            "date"
-
-
-orderDirectionToString : OrderDirection -> String
-orderDirectionToString direction =
-    case direction of
-        Ascending ->
-            "asc"
-
-        Descending ->
-            "desc"
-
-
-displayModeToString : GameHistoryDisplayMode -> String
-displayModeToString mode =
-    case mode of
-        DisplayAll ->
-            "all"
-
-        DisplayWon ->
-            "won"
-
-        DisplayLost ->
-            "lost"
 
 
 type alias GameHistoryQuery =
@@ -191,9 +507,37 @@ queryParser =
             , displayMode = mode
             }
         )
-        (Query.map (Maybe.withDefault ByEntryId) (Query.enum "orderBy" <| Dict.fromList [ ( "date", ByEntryId ), ( "size", ByFieldSize ), ( "duration", ByDuration ) ]))
-        (Query.map (Maybe.withDefault Descending) (Query.enum "direction" <| Dict.fromList [ ( "asc", Ascending ), ( "desc", Descending ) ]))
-        (Query.map (Maybe.withDefault DisplayAll) (Query.enum "mode" <| Dict.fromList [ ( "all", DisplayAll ), ( "lost", DisplayLost ), ( "won", DisplayWon ) ]))
+        (Query.map
+            (Maybe.withDefault ByPosix)
+            (Query.enum "orderBy" <|
+                Dict.fromList
+                    [ ( "date", ByPosix )
+                    , ( "size", ByFieldSize )
+                    , ( "duration", ByDuration )
+                    , ( "result", ByResult )
+                    , ( "mines", ByMines )
+                    ]
+            )
+        )
+        (Query.map
+            (Maybe.withDefault Descending)
+            (Query.enum "direction" <|
+                Dict.fromList
+                    [ ( "asc", Ascending )
+                    , ( "desc", Descending )
+                    ]
+            )
+        )
+        (Query.map
+            (Maybe.withDefault DisplayAll)
+            (Query.enum "mode" <|
+                Dict.fromList
+                    [ ( "all", DisplayAll )
+                    , ( "lost", DisplayLost )
+                    , ( "won", DisplayWon )
+                    ]
+            )
+        )
 
 
 update : GameHistoryMsg -> Model -> ( Model, Cmd GameHistoryMsg )
