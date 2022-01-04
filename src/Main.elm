@@ -60,7 +60,9 @@ viewRouteParser : UP.Parser (View -> a) a
 viewRouteParser =
     UP.oneOf
         [ UP.map Game UP.top
+        , UP.map Game (UP.s "elm-minesweeper")
         , UP.map gameHistoryQueryToView (UP.s "history" <?> GameHistory.queryParser)
+        , UP.map gameHistoryQueryToView (UP.s "elm-minesweeper" </> UP.s "history" <?> GameHistory.queryParser)
         ]
 
 
