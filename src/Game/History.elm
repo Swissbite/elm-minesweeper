@@ -1,18 +1,15 @@
 module Game.History exposing (GameHistoryQuery, queryParser, update, view)
 
 import Colors
-import Dict exposing (Dict)
-import Element exposing (Attribute, Column, Element)
+import Dict
+import Element exposing (Column, Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
-import Framework.Color exposing (pre_background)
 import Game.Internal exposing (..)
 import Grid
-import Html.Attributes as HA
-import Html.Events exposing (onClick)
 import List
 import Styles
 import Time
@@ -145,6 +142,7 @@ byDurationColumn query =
                 , Element.text ":"
                 , entry.duration
                     // 1000
+                    |> modBy 60
                     |> String.fromInt
                     |> (\s ->
                             if String.length s == 1 then
@@ -572,85 +570,3 @@ update msg model =
 
                 _ ->
                     ( model, Cmd.none )
-
-
-finishedGameHistoryList : List FinishedGameHistoryEntry -> Element GameHistoryMsg
-finishedGameHistoryList finishedGameHistory =
-    let
-        gameStatistics : FinishedGameHistoryEntry -> { result : GameResult, playedSeconds : String, playedMinutes : String, gridHeight : Int, gridWidth : Int, mines : Int }
-        gameStatistics entry =
-            { result = entry.result
-            , playedSeconds =
-                entry.duration
-                    // 1000
-                    |> modBy 60
-                    |> (\s ->
-                            if s < 10 then
-                                String.concat [ "0", String.fromInt s ]
-
-                            else
-                                String.fromInt s
-                       )
-            , playedMinutes =
-                entry.duration
-                    // 1000
-                    // 60
-                    |> String.fromInt
-            , gridHeight = Grid.height entry.grid
-            , gridWidth = Grid.width entry.grid
-            , mines =
-                Grid.foldl
-                    (\cell count ->
-                        case cell of
-                            GameCell MineCell _ ->
-                                count + 1
-
-                            _ ->
-                                count
-                    )
-                    0
-                    entry.grid
-            }
-    in
-    case finishedGameHistory of
-        [] ->
-            Element.el [ Element.paddingXY 0 30 ] <| Element.text "No games played yet"
-
-        _ ->
-            Element.table [ Element.spacing 10, Element.paddingXY 0 30 ]
-                { data = List.map gameStatistics finishedGameHistory
-                , columns =
-                    [ { header = Element.text <| String.fromList [ Styles.icons.victory, '/', Styles.icons.exploded ]
-                      , width = Element.fillPortion 1
-                      , view =
-                            \entry ->
-                                case entry.result of
-                                    Won ->
-                                        Element.text <| String.fromChar Styles.icons.victory
-
-                                    Lost ->
-                                        Element.text <| String.fromChar Styles.icons.exploded
-                      }
-                    , { header = Element.text "↔️"
-                      , width = Element.fillPortion 2
-                      , view =
-                            \entry -> Element.text <| String.fromInt entry.gridWidth
-                      }
-                    , { header = Element.text "↕️"
-                      , width = Element.fillPortion 2
-                      , view =
-                            \entry -> Element.text <| String.fromInt entry.gridHeight
-                      }
-                    , { header = Element.text <| String.fromChar Styles.icons.untouchedBomb
-                      , width = Element.fillPortion 2
-                      , view =
-                            \entry -> Element.text <| String.fromInt entry.mines
-                      }
-                    , { header = Element.text <| String.fromChar Styles.icons.stopWatch
-                      , width = Element.fillPortion 4
-                      , view =
-                            \entry ->
-                                Element.text <| String.concat [ entry.playedMinutes, ":", entry.playedSeconds ]
-                      }
-                    ]
-                }
