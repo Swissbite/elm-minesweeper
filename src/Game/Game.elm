@@ -102,22 +102,41 @@ update gameMsg model =
             ( { model | game = { gameModel | gameInteractionMode = nextMode } }, Cmd.none )
 
         ToogleGamePause ->
-            let
-                gameModel =
-                    model.game
-            in
-            case ( gameModel.gameBoardStatus, gameModel.gamePauseResumeState ) of
-                ( RunningGame _, Paused ) ->
-                    ( { model | game = { gameModel | gamePauseResumeState = Resumed (List.length gameModel.gameRunningTimes + 1) } }, Cmd.none )
-
-                ( RunningGame _, Resumed _ ) ->
-                    ( { model | game = { gameModel | gamePauseResumeState = Paused } }, Cmd.none )
-
-                _ ->
-                    ( model, Cmd.none )
+            ( tooglePause model, Cmd.none )
 
         ClockTick posix ->
             updateTimePlayGame model posix
+
+        NavigationEvent to ->
+            case ( model.currentView, to ) of
+                ( Game, Game ) ->
+                    ( model, Cmd.none )
+
+                ( Game, _ ) ->
+                    ( tooglePause model, Cmd.none )
+
+                ( _, Game ) ->
+                    ( tooglePause model, Cmd.none )
+
+                ( _, _ ) ->
+                    ( model, Cmd.none )
+
+
+tooglePause : Model -> Model
+tooglePause model =
+    let
+        gameModel =
+            model.game
+    in
+    case ( gameModel.gameBoardStatus, gameModel.gamePauseResumeState ) of
+        ( RunningGame _, Paused ) ->
+            { model | game = { gameModel | gamePauseResumeState = Resumed (List.length gameModel.gameRunningTimes + 1) } }
+
+        ( RunningGame _, Resumed _ ) ->
+            { model | game = { gameModel | gamePauseResumeState = Paused } }
+
+        _ ->
+            model
 
 
 updateTimePlayGame : Model -> Time.Posix -> ( Model, Cmd GameMsg )

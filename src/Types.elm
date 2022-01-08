@@ -35,6 +35,7 @@ type GameMsg
     | GoToStartPage
     | ClockTick Time.Posix
     | ToogleGamePause
+    | NavigationEvent View
 
 
 type GameHistoryMsg

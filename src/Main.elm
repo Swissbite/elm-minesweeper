@@ -87,7 +87,15 @@ navigationHandling request model =
                             ( model, Cmd.none )
 
                         else
-                            ( { model | currentView = parsedView }, Navigation.pushUrl model.key (Url.toString url) )
+                            Game.update (NavigationEvent parsedView) model
+                                |> Tuple.mapBoth
+                                    (\m -> { m | currentView = parsedView })
+                                    (\cmd ->
+                                        Cmd.batch
+                                            [ Cmd.map GameView cmd
+                                            , Navigation.pushUrl model.key (Url.toString url)
+                                            ]
+                                    )
                    )
 
         External url ->
