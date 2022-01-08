@@ -3,7 +3,9 @@ module Main exposing (..)
 import Browser exposing (Document, UrlRequest(..))
 import Browser.Events as Events
 import Browser.Navigation as Navigation exposing (Key)
+import Colors
 import Element exposing (Element, fill)
+import Element.Background as Background
 import Element.Lazy as Lazy
 import ErrorPage404
 import Game.Game as Game
@@ -142,7 +144,7 @@ view m =
     { title = "Elm - Minesweeper"
     , body =
         [ Element.layout [ Element.width Element.fill, Element.height Element.fill ] <|
-            Element.column [ Element.width fill, Element.height fill, Element.centerX ]
+            Element.column [ Element.width fill, Element.height fill, Element.centerX, Element.spacingXY 0 10 ]
                 [ navigationView
                 , Lazy.lazy selectBoardView m
                 ]
@@ -152,7 +154,7 @@ view m =
 
 navigationView : Element Msg
 navigationView =
-    Element.row [ Element.width Element.fill ]
+    Element.row [ Element.width Element.fill, Background.color Colors.openedCellGray ]
         [ Element.el [ Element.alignLeft, Element.paddingXY 10 10 ] <| Element.text "Minesweeper"
         , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = "/", label = Element.text "Game" }
         , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = "/history", label = Element.text "History" }

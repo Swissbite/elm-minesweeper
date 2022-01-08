@@ -27,7 +27,7 @@ type alias Flags =
 Prefixed in Msg by GameView, so that the update function in Main.elm can make an simple case match and call the update function in Game.elm
 -}
 type GameMsg
-    = ClickedOnInitGameCell InitGameGrid Coordinates
+    = ClickedOnInitGameCell InitGameData Coordinates
     | StartGame PlayGameGrid
     | ClickOnGameCell Coordinates
     | ToogleGameCellInteractionMode
@@ -121,7 +121,7 @@ type alias FinishedGameHistoryEntry =
 
 
 type GameBoardStatus
-    = WaitOnStart InitGameGrid
+    = WaitOnStart InitGameData
     | RunningGame PlayGameGrid
     | FinishedGame PlayGameGrid GameResult Int
     | NoGame NoGameMode
@@ -132,7 +132,7 @@ type NoGameMode
     | Custom
 
 
-type alias InitGameGrid =
+type alias InitGameData =
     { grid : Grid InitGameCell
     , mines : Int
     }

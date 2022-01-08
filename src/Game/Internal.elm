@@ -1,5 +1,17 @@
 module Game.Internal exposing (..)
 
+{-|
+
+    Internal helper functions for game logic, parsing and transforming data.
+    Reasons for this module:
+
+    1. Write idendical helper functions for the game and the history just once
+    2. Expose only the necesary functions (view and update) in Game.elm or History.elm
+    3. Make complicated functions testable without expoising them in Game.elm or History.elm
+    4. No circular includes
+
+-}
+
 import Grid exposing (Grid)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
@@ -297,3 +309,28 @@ saveFinishedGameHistory : List FinishedGameHistoryEntry -> Cmd msg
 saveFinishedGameHistory finishedGameHistory =
     encodeFinishedGameHistory finishedGameHistory
         |> Ports.storeFinishedGameHistory
+
+
+milisToString : Int -> String
+milisToString milis =
+    let
+        seconds =
+            milis
+                // 1000
+                |> modBy 60
+                |> String.fromInt
+                |> (\s ->
+                        if String.length s < 2 then
+                            "0" ++ s
+
+                        else
+                            s
+                   )
+
+        minutes =
+            milis
+                // 1000
+                // 60
+                |> String.fromInt
+    in
+    minutes ++ ":" ++ seconds
