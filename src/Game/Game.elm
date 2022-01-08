@@ -6,10 +6,11 @@ Exposes the basic update / view / subscription functions, so that Main.elm can u
 
 import Array as Array
 import Colors
-import Element exposing (Element)
+import Element exposing (Element, el)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
+import Element.Font as Font
 import Element.Input as Input
 import Element.Lazy as Lazy
 import Game.Internal exposing (..)
@@ -256,21 +257,38 @@ view model =
         WaitOnStart initGameGrid ->
             Lazy.lazy
                 (\initGrid ->
-                    Element.column [ Element.width Element.fill, Element.height Element.fill ]
-                        [ dummyToogleElement
-                        , initGameGridView initGrid
+                    Element.column
+                        [ Element.width Element.fill
+                        , Element.height Element.fill
+                        , Element.padding 20
+                        , Element.inFront <| sidebarElement model.game
+                        ]
+                        [ initGameGridView initGrid
                         ]
                 )
                 initGameGrid
 
         RunningGame playGrid ->
-            Element.column [ Element.width Element.fill, Element.height Element.fill ]
-                [ Lazy.lazy mineToggleElement model.game.gameInteractionMode
-                , Lazy.lazy runningGameView playGrid
+            Element.column
+                [ Element.width Element.fill
+                , Element.height Element.fill
+                , Element.inFront <|
+                    sidebarElement model.game
+                , Element.padding 20
+                ]
+                [ Lazy.lazy runningGameView playGrid
                 ]
 
         FinishedGame playGrid finishedStatus _ ->
-            Lazy.lazy2 finishedGameView playGrid finishedStatus
+            Element.column
+                [ Element.width Element.fill
+                , Element.height Element.fill
+                , Element.padding 20
+                , Element.inFront <|
+                    sidebarElement model.game
+                ]
+                [ Lazy.lazy2 finishedGameView playGrid finishedStatus
+                ]
 
 
 smallPlayground : PlayGroundDefinition
@@ -305,9 +323,70 @@ xxlPlayground =
     }
 
 
-dummyToogleElement : Element GameMsg
-dummyToogleElement =
-    Element.el [ Element.centerX, Element.centerY, Element.paddingXY 0 10 ] <| styledToogleElement False
+sidebarElement : GameModel -> Element GameMsg
+sidebarElement model =
+    let
+        toogleElement =
+            case model.gameBoardStatus of
+                RunningGame _ ->
+                    Lazy.lazy mineToggleElement model.gameInteractionMode
+
+                _ ->
+                    Element.none
+
+        toggleElementLabel =
+            case model.gameBoardStatus of
+                RunningGame _ ->
+                    Element.el [ Font.bold ] <| Element.text "Reveal/Flag"
+
+                _ ->
+                    Element.none
+
+        gameInformationElements : List (Element GameMsg)
+        gameInformationElements =
+            case getRunningGameStats model of
+                Nothing ->
+                    []
+
+                Just data ->
+                    [ Element.el [ Font.bold ] <| Element.text <| milisToString data.elapsedTime
+                    , Element.el [ Font.bold ] <| Element.text <| String.concat [ String.fromChar Styles.icons.untouchedBomb, " ", String.fromInt data.mines ]
+                    , Element.el [ Font.bold ] <| Element.text <| String.concat [ String.fromChar Styles.icons.markerFlag, " ", String.fromInt data.flags ]
+                    ]
+
+        gameFinishedElements =
+            case model.gameBoardStatus of
+                FinishedGame playGameGrid gameResult elapsedTime ->
+                    [ case gameResult of
+                        Won ->
+                            Element.text "You won!"
+
+                        Lost ->
+                            Element.text "You lost!"
+                    , Input.button [ Background.color Colors.asparagus, Border.solid, Element.padding 10, Border.rounded 10 ]
+                        { onPress = Just (CreateNewGame <| playGameGridToPlaygroundDefinition playGameGrid)
+                        , label = Element.text "Start new game"
+                        }
+                    , Input.button [ Background.color Colors.saffron, Border.solid, Element.padding 10, Border.rounded 10 ]
+                        { onPress = Just GoToStartPage
+                        , label = Element.text "Back to overview"
+                        }
+                    ]
+
+                _ ->
+                    []
+    in
+    gameInformationElements
+        ++ [ toggleElementLabel
+           , toogleElement
+           ]
+        ++ gameFinishedElements
+        |> Element.column
+            [ Element.alignTop
+            , Element.alignRight
+            , Element.padding 20
+            , Element.spacing 10
+            ]
 
 
 styledToogleElement : Bool -> Element GameMsg
@@ -340,7 +419,7 @@ mineToggleElement gameInteractionMode =
             }
 
 
-initGameGridView : InitGameGrid -> Element GameMsg
+initGameGridView : InitGameData -> Element GameMsg
 initGameGridView initGameGrid =
     let
         indexedFn =
@@ -352,10 +431,10 @@ initGameGridView initGameGrid =
         gridAsListOfRows =
             Grid.rows gridWithElements |> Array.map Array.toList |> Array.map (\l -> Element.row [] l) |> Array.toList
     in
-    Element.column [ Element.centerX, Element.centerY ] gridAsListOfRows
+    Element.column [ Element.centerX, Element.alignTop ] gridAsListOfRows
 
 
-initGameCellToElement : InitGameGrid -> (Int -> Int -> InitGameCell -> Element GameMsg)
+initGameCellToElement : InitGameData -> (Int -> Int -> InitGameCell -> Element GameMsg)
 initGameCellToElement initGameGrid =
     \x y _ ->
         let
@@ -373,7 +452,7 @@ runningGameView playGameGrid =
         |> Array.map Array.toList
         |> Array.map (\l -> Element.row [] l)
         |> Array.toList
-        |> Element.column [ Element.centerX, Element.centerY ]
+        |> Element.column [ Element.centerX, Element.alignTop ]
 
 
 runningGameCellToElement : Int -> Int -> GameCell -> Element GameMsg
@@ -397,25 +476,8 @@ runningGameCellToElement x y cell =
 
 finishedGameView : PlayGameGrid -> GameResult -> Element GameMsg
 finishedGameView playGameGrid gameResult =
-    Element.column [ Element.centerX, Element.centerY ]
-        [ Element.el [ Element.centerX, Element.centerY, Element.paddingXY 0 10 ] <|
-            case gameResult of
-                Won ->
-                    Element.text "You won!"
-
-                Lost ->
-                    Element.text "You lost!"
-        , Element.row [ Element.centerX, Element.centerY, Element.spacing 20, Border.solid, Border.rounded 25, Element.paddingXY 0 10 ]
-            [ Input.button [ Background.color Colors.asparagus, Border.solid, Element.padding 10, Border.rounded 10 ]
-                { onPress = Just (CreateNewGame <| playGameGridToPlaygroundDefinition playGameGrid)
-                , label = Element.text "Start new game"
-                }
-            , Input.button [ Background.color Colors.saffron, Border.solid, Element.padding 10, Border.rounded 10 ]
-                { onPress = Just GoToStartPage
-                , label = Element.text "Back to overview"
-                }
-            ]
-        , finishedGridToView playGameGrid
+    Element.column [ Element.centerX, Element.alignTop ]
+        [ finishedGridToView playGameGrid
         ]
 
 
@@ -456,7 +518,7 @@ finishedGameCellToElement cell =
 --- HELPER ---
 
 
-createInitGameGrid : PlayGroundDefinition -> InitGameGrid
+createInitGameGrid : PlayGroundDefinition -> InitGameData
 createInitGameGrid definition =
     let
         sanitized =
@@ -508,7 +570,7 @@ sanitizePlaygroundDefinition definition =
 {-| Takes the initGame and the clicked coordinates and generates a new play game grid.
 The clicked cell is opened and the surrounding cells - if the clicked cell is an empty cell - are opened as well.
 -}
-generatePlayGameGrid : InitGameGrid -> Coordinates -> Generator PlayGameGrid
+generatePlayGameGrid : InitGameData -> Coordinates -> Generator PlayGameGrid
 generatePlayGameGrid initGameGrid coords =
     let
         initialPossibilities : List Int
@@ -822,3 +884,59 @@ singleMineIndexGenerator head restOfPossibleIdx =
 emptySetGenerator : Generator (Set Int)
 emptySetGenerator =
     Random.constant Set.empty
+
+
+extractMinesAndFlags : PlayGameGrid -> { mines : Int, flags : Int }
+extractMinesAndFlags grid =
+    Grid.foldl
+        (\cell acc ->
+            case cell of
+                GameCell MineCell Flagged ->
+                    { mines = acc.mines + 1, flags = acc.flags + 1 }
+
+                GameCell MineCell _ ->
+                    { acc | mines = acc.mines + 1 }
+
+                GameCell _ Flagged ->
+                    { acc | flags = acc.flags + 1 }
+
+                _ ->
+                    acc
+        )
+        { mines = 0, flags = 0 }
+        grid
+
+
+combineGridInfosWithElapsedTime : { mines : Int, flags : Int } -> Int -> GameStats
+combineGridInfosWithElapsedTime minesFlags elapsedTime =
+    { mines = minesFlags.mines, flags = minesFlags.flags, elapsedTime = elapsedTime }
+
+
+getRunningGameStats : GameModel -> Maybe GameStats
+getRunningGameStats gameModel =
+    case gameModel.gameBoardStatus of
+        RunningGame grid ->
+            calculateElapsedTimeMilis gameModel.gameRunningTimes
+                |> combineGridInfosWithElapsedTime (extractMinesAndFlags grid)
+                |> Just
+
+        FinishedGame grid _ elapsed ->
+            combineGridInfosWithElapsedTime (extractMinesAndFlags grid) elapsed
+                |> Just
+
+        WaitOnStart initGameData ->
+            Just
+                { mines = initGameData.mines
+                , flags = 0
+                , elapsedTime = 0
+                }
+
+        _ ->
+            Nothing
+
+
+type alias GameStats =
+    { mines : Int
+    , flags : Int
+    , elapsedTime : Int
+    }
