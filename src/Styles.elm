@@ -9,13 +9,15 @@ import Element.Input as Input
 import Html.Attributes as HA
 
 
-icons : { markerFlag : Char, untouchedBomb : Char, exploded : Char, stopWatch : Char, victory : Char }
+icons : { markerFlag : Char, untouchedBomb : Char, exploded : Char, stopWatch : Char, victory : Char, downSign : Char, upSign : Char }
 icons =
     { markerFlag = '⚑'
     , untouchedBomb = '💣'
     , exploded = '💥'
     , stopWatch = '⏱'
     , victory = '🎉'
+    , downSign = '🔻'
+    , upSign = '🔺'
     }
 
 

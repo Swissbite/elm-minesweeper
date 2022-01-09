@@ -89,10 +89,10 @@ byResultColumn query =
             , Element.text <|
                 case ( query.orderBy, query.orderDirection ) of
                     ( ByResult, Ascending ) ->
-                        "⬇️"
+                        String.fromChar Styles.icons.upSign
 
                     ( ByResult, Descending ) ->
-                        "⬆️"
+                        String.fromChar Styles.icons.downSign
 
                     _ ->
                         ""
@@ -126,10 +126,10 @@ byDurationColumn query =
             , Element.text <|
                 case ( query.orderBy, query.orderDirection ) of
                     ( ByDuration, Ascending ) ->
-                        "⬇️"
+                        String.fromChar Styles.icons.upSign
 
                     ( ByDuration, Descending ) ->
-                        "⬆️"
+                        String.fromChar Styles.icons.downSign
 
                     _ ->
                         ""
@@ -175,10 +175,10 @@ byFieldSizeColumn query =
             , Element.text <|
                 case ( query.orderBy, query.orderDirection ) of
                     ( ByFieldSize, Ascending ) ->
-                        "⬇️"
+                        String.fromChar Styles.icons.upSign
 
                     ( ByFieldSize, Descending ) ->
-                        "⬆️"
+                        String.fromChar Styles.icons.downSign
 
                     _ ->
                         ""
@@ -211,10 +211,10 @@ byMinesColumn query =
             , Element.text <|
                 case ( query.orderBy, query.orderDirection ) of
                     ( ByMines, Ascending ) ->
-                        "⬇️"
+                        String.fromChar Styles.icons.upSign
 
                     ( ByMines, Descending ) ->
-                        "⬆️"
+                        String.fromChar Styles.icons.downSign
 
                     _ ->
                         ""
@@ -244,10 +244,10 @@ byPosixColumn query =
             , Element.text <|
                 case ( query.orderBy, query.orderDirection ) of
                     ( ByPosix, Ascending ) ->
-                        "⬇️"
+                        String.fromChar Styles.icons.upSign
 
                     ( ByPosix, Descending ) ->
-                        "⬆️"
+                        String.fromChar Styles.icons.downSign
 
                     _ ->
                         ""
