@@ -1,7 +1,7 @@
 {
   "main.css": "./static/css/main.0af5c45f.chunk.css",
-  "main.js": "./static/js/main.01508261.chunk.js",
-  "main.js.map": "./static/js/main.01508261.chunk.js.map",
+  "main.js": "./static/js/main.04950fa1.chunk.js",
+  "main.js.map": "./static/js/main.04950fa1.chunk.js.map",
   "runtime~main.js": "./static/js/runtime~main.d5752d2f.js",
   "runtime~main.js.map": "./static/js/runtime~main.d5752d2f.js.map",
   "vendors~main.js": "./static/js/vendors~main.0b49ec49.chunk.js",
@@ -11,6 +11,6 @@
   "index.html": "./index.html",
   "logo.svg": "./logo.svg",
   "manifest.json": "./manifest.json",
-  "precache-manifest.93d1c94db57816fd88a31284aa19274a.js": "./precache-manifest.93d1c94db57816fd88a31284aa19274a.js",
+  "precache-manifest.813bbba28d6b888ead030ac66d805640.js": "./precache-manifest.813bbba28d6b888ead030ac66d805640.js",
   "white-smoke-wallpaper-abstract-desktop-background.jpg": "./white-smoke-wallpaper-abstract-desktop-background.jpg"
 }
