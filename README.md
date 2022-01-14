@@ -20,7 +20,7 @@ solved some issues for touch devices.
 Features it should have (in no particular order):
 
 - Multiple difficulties ✔
-- A current played game history ✔  
+- A current played game history ✔
 - Able to pause and resume the game
 - Able to switch between click or mark fields ✔
 - See the result board after finished the game
@@ -34,9 +34,9 @@ Features it should have (in no particular order):
 - Click on a number, where are enough marks to open all remaining items should work ✔
 - Open a blank field should open all other blank fields and the neighbour number fields ✔
 - Have some game information like
-  - how many mines are still missing
-  - how many have been marked
-  - how much time it took for the game
+  - how many mines are still missing ✔
+  - how many have been marked ✔
+  - how much time it took for the game ✔
 - Have the game automated build and published to https://swissbite.github.io/elm-minesweeper/ ✔
 
 This project will be an on/off project ;-)
