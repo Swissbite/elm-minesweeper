@@ -30,6 +30,6 @@
   "homepage": "https://github.com/Swissbite/elm-minesweeper#readme",
   "devDependencies": {
     "create-elm-app": "^5.22.0",
-    "elm-tooling": "^1.10.0"
+    "elm-tooling": "^1.11.0"
   }
 }
