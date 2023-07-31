@@ -16,6 +16,11 @@ import Url exposing (Url)
 import Url.Parser as UP exposing ((</>), (<?>))
 
 
+githubPagePathPrefix : String
+githubPagePathPrefix =
+    "elm-minesweeper"
+
+
 
 --- PROGRAM ---
 
@@ -29,10 +34,13 @@ main =
         , subscriptions = subscriptions
         , onUrlChange =
             \url ->
-                Internal url
+                url
+                    |> Internal
                     |> Navigation
         , onUrlRequest =
-            Navigation
+            \request ->
+                request
+                    |> Navigation
         }
 
 
@@ -62,9 +70,9 @@ viewRouteParser : UP.Parser (View -> a) a
 viewRouteParser =
     UP.oneOf
         [ UP.map Game UP.top
-        , UP.map Game (UP.s "elm-minesweeper")
+        , UP.map Game (UP.s githubPagePathPrefix)
         , UP.map gameHistoryQueryToView (UP.s "history" <?> GameHistory.queryParser)
-        , UP.map gameHistoryQueryToView (UP.s "elm-minesweeper" </> UP.s "history" <?> GameHistory.queryParser)
+        , UP.map gameHistoryQueryToView (UP.s githubPagePathPrefix </> UP.s "history" <?> GameHistory.queryParser)
         ]
 
 
@@ -82,7 +90,8 @@ navigationHandling : UrlRequest -> Model -> ( Model, Cmd Msg )
 navigationHandling request model =
     case request of
         Internal url ->
-            UP.parse viewRouteParser url
+            url
+                |> UP.parse viewRouteParser
                 |> Maybe.withDefault Error404
                 |> (\parsedView ->
                         if model.currentView == parsedView then
@@ -117,6 +126,7 @@ init flags url key =
                     }
             , currentView = Game
             , game = Game.initModel
+            , containsGithubPrefixInPath = flags.initPath |> hasGithubPathPrefix
             , playedGameHistory = Game.decodeStoredFinishedGameHistory flags.history
             }
 
@@ -125,6 +135,11 @@ init flags url key =
             Navigation (Internal url)
     in
     update navigationMsg basicInitModel
+
+
+hasGithubPathPrefix : String -> Bool
+hasGithubPathPrefix initPath =
+    String.startsWith ("/" ++ githubPagePathPrefix) initPath
 
 
 subscriptions : Model -> Sub Msg
@@ -145,19 +160,29 @@ view m =
     , body =
         [ Element.layout [ Element.width Element.fill, Element.height Element.fill ] <|
             Element.column [ Element.width fill, Element.height fill, Element.centerX, Element.spacingXY 0 10 ]
-                [ navigationView
+                [ navigationView m.containsGithubPrefixInPath
                 , Lazy.lazy selectBoardView m
                 ]
         ]
     }
 
 
-navigationView : Element Msg
-navigationView =
+navigationView : Bool -> Element Msg
+navigationView containsGithubPrefixInPath =
+    let
+        pathWithTrailingSlash : String
+        pathWithTrailingSlash =
+            case containsGithubPrefixInPath of
+                True ->
+                    "/" ++ githubPagePathPrefix ++ "/"
+
+                False ->
+                    "/"
+    in
     Element.row [ Element.width Element.fill, Background.color Colors.openedCellGray ]
         [ Element.el [ Element.alignLeft, Element.paddingXY 10 10 ] <| Element.text "Minesweeper"
-        , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = "/", label = Element.text "Game" }
-        , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = "/history", label = Element.text "History" }
+        , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = pathWithTrailingSlash ++ "", label = Element.text "Game" }
+        , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = pathWithTrailingSlash ++ "history", label = Element.text "History" }
         ]
 
 
