@@ -4,7 +4,7 @@ module Game.Game exposing (decodeStoredFinishedGameHistory, initModel, subscript
 Exposes the basic update / view / subscription functions, so that Main.elm can use them.
 -}
 
-import Array as Array
+import Array
 import Colors
 import Element exposing (Element, el)
 import Element.Background as Background
@@ -16,7 +16,7 @@ import Element.Lazy as Lazy
 import Game.Internal exposing (..)
 import Grid
 import Json.Decode as Decode
-import Random as Random exposing (Generator)
+import Random exposing (Generator)
 import Set exposing (Set)
 import Styles exposing (..)
 import Time
