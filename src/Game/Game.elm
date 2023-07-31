@@ -342,6 +342,17 @@ sidebarElement model =
                 _ ->
                     Element.none
 
+        giveUpElement =
+            case model.gameBoardStatus of
+                FinishedGame _ _ _ ->
+                    Element.none
+
+                _ ->
+                    Input.button [ Background.color Colors.black, Border.solid, Element.padding 10, Border.rounded 10, Font.color Colors.gold ]
+                        { onPress = Just GoToStartPage
+                        , label = Element.text "Give up 💀"
+                        }
+
         gameInformationElements : List (Element GameMsg)
         gameInformationElements =
             case getRunningGameStats model of
@@ -356,7 +367,7 @@ sidebarElement model =
 
         gameFinishedElements =
             case model.gameBoardStatus of
-                FinishedGame playGameGrid gameResult elapsedTime ->
+                FinishedGame playGameGrid gameResult _ ->
                     [ case gameResult of
                         Won ->
                             Element.text "You won!"
@@ -379,6 +390,7 @@ sidebarElement model =
     gameInformationElements
         ++ [ toggleElementLabel
            , toogleElement
+           , giveUpElement
            ]
         ++ gameFinishedElements
         |> Element.column

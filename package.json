@@ -7,7 +7,7 @@
   },
   "scripts": {
     "test": "elm-test",
-    "format": "elm-format",
+    "format": "elm-format ./src ./tests",
     "format-validate": "elm-format ./src ./tests --validate",
     "start": "elm-app start",
     "build": "elm-app build",
