@@ -1,7 +1,7 @@
 module Styles exposing (..)
 
 import Colors
-import Element as Element exposing (..)
+import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font

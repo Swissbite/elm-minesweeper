@@ -20,6 +20,7 @@ type alias Flags =
     { height : Int
     , width : Int
     , history : String
+    , initPath : String
     }
 
 
@@ -70,6 +71,7 @@ type alias Model =
     , currentView : View
     , device : Device
     , key : Key
+    , containsGithubPrefixInPath : Bool
     }
 
 
