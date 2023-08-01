@@ -1,6 +1,6 @@
 {
-  "short_name": "Elm App",
-  "name": "Create Elm App Sample",
+  "short_name": "elm-minesweeper",
+  "name": "Elm Minesweeper by Swissbite",
   "icons": [
     {
       "src": "favicon.ico",
