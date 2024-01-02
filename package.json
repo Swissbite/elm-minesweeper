@@ -6,11 +6,15 @@
     "test": "tests"
   },
   "scripts": {
+    "parc": "parcel",
+    "build": "parcel build public/**/*.html",
+    "start": "parcel public/**/*.html",
+    "make": "elm make",
+    "repl": "elm repl",
+    "reactor": "elm reactor",
     "test": "elm-test",
     "format": "elm-format ./src ./tests",
     "format-validate": "elm-format ./src ./tests --validate",
-    "start": "elm-app start",
-    "build": "elm-app build",
     "postinstall": "elm-tooling install"
   },
   "repository": {
@@ -29,8 +33,23 @@
   },
   "homepage": "https://github.com/Swissbite/elm-minesweeper#readme",
   "devDependencies": {
-    "create-elm-app": "^5.22.0",
+    "@parcel/config-webextension": "^2.10.3",
+    "@parcel/packager-raw-url": "^2.10.3",
+    "@parcel/transformer-elm": "^2.10.3",
+    "@parcel/transformer-webmanifest": "^2.10.3",
+    "elm": "latest-0.19.1",
+    "elm-hot": "^1.1.6",
     "elm-test": "^0.19.1-revision12",
-    "elm-tooling": "^1.15.0"
+    "elm-tooling": "^1.15.0",
+    "node-elm-compiler": "^5.0.6",
+    "parcel": "^2.10.3"
+  },
+  "targets": {
+    "frontend": {
+      "distDir": "./build",
+      "publicUrl":"/elm-minesweeper",
+      "outputFormat": "esmodule"
+    }
   }
 }
+

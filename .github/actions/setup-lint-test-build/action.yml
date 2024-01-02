@@ -45,4 +45,4 @@ runs:
     
   - name: Build elm application
     shell: bash
-    run: PUBLIC_URL=./ npm run build
+    run: npm run build
