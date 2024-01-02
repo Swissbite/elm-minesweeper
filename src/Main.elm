@@ -172,12 +172,11 @@ navigationView containsGithubPrefixInPath =
     let
         pathWithTrailingSlash : String
         pathWithTrailingSlash =
-            case containsGithubPrefixInPath of
-                True ->
-                    "/" ++ githubPagePathPrefix ++ "/"
+            if containsGithubPrefixInPath then
+                "/" ++ githubPagePathPrefix ++ "/"
 
-                False ->
-                    "/"
+            else
+                "/"
     in
     Element.row [ Element.width Element.fill, Background.color Colors.openedCellGray ]
         [ Element.el [ Element.alignLeft, Element.paddingXY 10 10 ] <| Element.text "Minesweeper"
