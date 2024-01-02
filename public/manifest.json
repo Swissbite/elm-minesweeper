@@ -1,4 +1,5 @@
 {
+  "version": "3.0.0",
   "short_name": "elm-minesweeper",
   "name": "Elm Minesweeper by Swissbite",
   "icons": [
