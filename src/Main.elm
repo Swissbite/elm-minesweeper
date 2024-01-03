@@ -205,7 +205,16 @@ navigationView containsGithubPrefixInPath =
 
 footerView : Element Msg
 footerView =
-    Element.row [ Element.width Element.fill, Element.alignBottom, Element.alignRight, Element.paddingXY 10 10 ] [ Element.el [ Element.centerX ] <| Element.text "(c) 2024 David Daester", Element.image [ Element.alignRight ] { src = "./agplv3-88x31.png", description = "AGPLv3 license logo" } ]
+    Element.row
+        [ Element.width Element.fill
+        , Element.alignBottom
+        , Element.paddingXY 10 10
+        , Element.spaceEvenly
+        ]
+        [ Element.el [] <| Element.text "(c) 2024 David Daester"
+        , Element.link [] { url = "https://github.com/Swissbite/elm-minesweeper", label = Element.image [ Element.height <| Element.px 25 ] { src = "./github-mark.svg", description = "GitHub logo" } }
+        , Element.image [] { src = "./agplv3-88x31.png", description = "AGPLv3 license logo" }
+        ]
 
 
 selectBoardView : Model -> Element Msg
