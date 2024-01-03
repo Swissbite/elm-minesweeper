@@ -77,3 +77,7 @@ To simplify lookups as a developer, I split it in three main files:
 ## License
 See [LICENSE](LICENSE)
 
+### Why this License
+
+I belive in Open Source. And I give this application for free use in any kind. Anyone should be able to use my small application, modify it and republish. 
+Because this application is free of any charge, any modification should be equal.

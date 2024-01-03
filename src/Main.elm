@@ -1,3 +1,20 @@
+{-
+   -- This file is part of Elm Minesweeper.
+   --
+   -- Elm Minesweeper is free software: you can redistribute it and/or modify it under
+   -- the terms of the GNU General Public License as published by the Free Software
+   -- Foundation, either version 3 of the License, or (at your option) any later version.
+   --
+   -- Elm Minesweeper is distributed in the hope that it will be useful, but WITHOUT ANY
+   -- WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+   -- PARTICULAR PURPOSE. See the GNU General Public License for more details.
+   --
+   -- You should have received a copy of the GNU General Public License along with
+   -- Elm Minesweeper. If not, see <https://www.gnu.org/licenses/>.
+   --
+-}
+
+
 module Main exposing (..)
 
 import Browser exposing (Document, UrlRequest(..))
@@ -159,9 +176,10 @@ view m =
     { title = "Elm - Minesweeper"
     , body =
         [ Element.layout [ Element.width Element.fill, Element.height Element.fill ] <|
-            Element.column [ Element.width fill, Element.height fill, Element.centerX, Element.spacingXY 0 10 ]
+            Element.column [ Element.width fill, Element.height fill, Element.centerX, Element.spacingXY 0 0 ]
                 [ navigationView m.containsGithubPrefixInPath
                 , Lazy.lazy selectBoardView m
+                , footerView
                 ]
         ]
     }
@@ -179,10 +197,15 @@ navigationView containsGithubPrefixInPath =
                 "/"
     in
     Element.row [ Element.width Element.fill, Background.color Colors.openedCellGray ]
-        [ Element.el [ Element.alignLeft, Element.paddingXY 10 10 ] <| Element.text "Minesweeper"
+        [ Element.el [ Element.alignLeft, Element.paddingXY 10 10 ] <| Element.text "Elm Minesweeper"
         , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = pathWithTrailingSlash ++ "", label = Element.text "Game" }
         , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = pathWithTrailingSlash ++ "history", label = Element.text "History" }
         ]
+
+
+footerView : Element Msg
+footerView =
+    Element.row [ Element.width Element.fill, Element.alignBottom, Element.alignRight, Element.paddingXY 10 10 ] [ Element.el [ Element.centerX ] <| Element.text "(c) 2024 David Daester", Element.image [ Element.alignRight ] { src = "./agplv3-88x31.png", description = "AGPLv3 license logo" } ]
 
 
 selectBoardView : Model -> Element Msg
