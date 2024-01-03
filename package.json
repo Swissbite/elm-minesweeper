@@ -7,8 +7,8 @@
   },
   "scripts": {
     "parc": "parcel",
-    "build": "parcel build public/**/*.html",
-    "start": "parcel public/**/*.html",
+    "build": "parcel build public/**/*.{html,jpg,png,svg}",
+    "start": "parcel public/**/*.{html,jpg,png,svg}",
     "make": "elm make",
     "repl": "elm repl",
     "reactor": "elm reactor",
