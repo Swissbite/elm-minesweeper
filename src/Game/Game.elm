@@ -5,8 +5,9 @@ Exposes the basic update / view / subscription functions, so that Main.elm can u
 -}
 
 import Array
+import Browser.Events
 import Colors
-import Element exposing (Element, el)
+import Element exposing (Element, px)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
@@ -47,10 +48,38 @@ subscriptions : Model -> Sub GameMsg
 subscriptions m =
     case ( m.currentView, m.game.gameBoardStatus ) of
         ( Game, RunningGame _ ) ->
-            Time.every 200 (\posix -> ClockTick posix)
+            Sub.batch
+                [ Time.every 200 (\posix -> ClockTick posix)
+                , Browser.Events.onKeyDown keyPressedDecoder
+                ]
 
         _ ->
             Sub.none
+
+
+keyPressedDecoder : Decode.Decoder GameMsg
+keyPressedDecoder =
+    Decode.map toKeyEventMsg (Decode.field "key" Decode.string)
+
+
+toKeyEventMsg : String -> GameMsg
+toKeyEventMsg eventKeyString =
+    case eventKeyString of
+        string_ ->
+            case String.uncons string_ of
+                Just ( char, "" ) ->
+                    case Char.toLower char of
+                        't' ->
+                            ToogleGameCellInteractionMode
+
+                        'p' ->
+                            ToogleGamePause
+
+                        _ ->
+                            NoUpdate
+
+                _ ->
+                    NoUpdate
 
 
 
@@ -60,6 +89,9 @@ subscriptions m =
 update : GameMsg -> Model -> ( Model, Cmd GameMsg )
 update gameMsg model =
     case gameMsg of
+        NoUpdate ->
+            ( model, Cmd.none )
+
         GoToStartPage ->
             let
                 gameModel =
@@ -232,22 +264,22 @@ view model =
             Element.column [ Element.width Element.fill, Element.height Element.fill, Element.spacing 10 ]
                 [ Element.row
                     [ Element.centerX, Element.centerY, Element.spacing 10 ]
-                    [ Styles.styledGameCelectionButton
+                    [ Styles.styledGameSelectionButton
                         { onPress = Just (CreateNewGame smallPlayground)
                         , label = Element.text "small"
                         }
-                    , Styles.styledGameCelectionButton
+                    , Styles.styledGameSelectionButton
                         { onPress = Just (CreateNewGame mediumPlayground)
                         , label = Element.text "medium"
                         }
                     ]
                 , Element.row
                     [ Element.centerX, Element.centerY, Element.spacing 10 ]
-                    [ Styles.styledGameCelectionButton
+                    [ Styles.styledGameSelectionButton
                         { onPress = Just (CreateNewGame advancePlayground)
                         , label = Element.text "advanced"
                         }
-                    , Styles.styledGameCelectionButton
+                    , Styles.styledGameSelectionButton
                         { onPress = Just (CreateNewGame xxlPlayground)
                         , label = Element.text "xxl"
                         }
@@ -270,13 +302,26 @@ view model =
 
         RunningGame playGrid ->
             Element.column
-                [ Element.width Element.fill
-                , Element.height Element.fill
-                , Element.inFront <|
+                ([ Element.width Element.fill
+                 , Element.height Element.fill
+                 , Element.inFront <|
                     sidebarElement model.game
-                , Element.padding 20
-                ]
-                [ Lazy.lazy runningGameView playGrid
+                 , Element.padding 20
+                 ]
+                    ++ (case model.game.gamePauseResumeState of
+                            Paused ->
+                                [ Element.inFront <| Element.el [ Element.centerX, Element.centerY, Element.width <| px 400, Element.height <| px 400, Background.color <| Element.rgba255 255 0 0 0.5 ] <| Element.el [ Element.centerX, Element.centerY, Font.extraBold, Font.size 99 ] <| Element.text "Paused" ]
+
+                            _ ->
+                                []
+                       )
+                )
+                [ case model.game.gamePauseResumeState of
+                    Paused ->
+                        Lazy.lazy pausedGameView playGrid
+
+                    Resumed _ ->
+                        Lazy.lazy runningGameView playGrid
                 ]
 
         FinishedGame playGrid finishedStatus _ ->
@@ -393,6 +438,7 @@ sidebarElement model =
            , giveUpElement
            ]
         ++ gameFinishedElements
+        ++ [ Element.el [ Font.bold ] <| Element.text "Shortcuts:", Element.text "T: Toogle Selector", Element.text "P: Pause/Resume" ]
         |> Element.column
             [ Element.alignTop
             , Element.alignRight
@@ -411,6 +457,7 @@ styledToogleElement =
         , toggleHeight = 28
         , onSymbol = Just Styles.icons.untouchedBomb
         , offSymbol = Just Styles.icons.markerFlag
+        , tooltip = Just "Shortcut: T"
         }
 
 
@@ -443,7 +490,7 @@ initGameGridView initGameGrid =
         gridAsListOfRows =
             Grid.rows gridWithElements |> Array.map Array.toList |> Array.map (\l -> Element.row [] l) |> Array.toList
     in
-    Element.column [ Element.centerX, Element.alignTop ] gridAsListOfRows
+    Element.column [ Element.centerX, Element.centerY ] gridAsListOfRows
 
 
 initGameCellToElement : InitGameData -> (Int -> Int -> InitGameCell -> Element GameMsg)
@@ -456,15 +503,25 @@ initGameCellToElement initGameGrid =
         Element.el (Styles.untouchedCellStyle ++ [ Events.onClick <| ClickedOnInitGameCell initGameGrid coords ]) <| Element.text ""
 
 
-runningGameView : PlayGameGrid -> Element GameMsg
-runningGameView playGameGrid =
+gameView : PlayGameGrid -> (Grid.Grid GameCell -> Grid.Grid (Element GameMsg)) -> Element GameMsg
+gameView playGameGrid gridGameToGridElementMapper =
     playGameGrid
-        |> Grid.indexedMap runningGameCellToElement
+        |> gridGameToGridElementMapper
         |> Grid.rows
         |> Array.map Array.toList
         |> Array.map (\l -> Element.row [] l)
         |> Array.toList
-        |> Element.column [ Element.centerX, Element.alignTop ]
+        |> Element.column [ Element.centerX, Element.centerY ]
+
+
+runningGameView : PlayGameGrid -> Element GameMsg
+runningGameView playGameGrid =
+    gameView playGameGrid <| Grid.indexedMap runningGameCellToElement
+
+
+pausedGameView : PlayGameGrid -> Element GameMsg
+pausedGameView playGameGrid =
+    gameView playGameGrid <| Grid.map (\_ -> Element.el Styles.openedCellStyle Element.none)
 
 
 runningGameCellToElement : Int -> Int -> GameCell -> Element GameMsg
@@ -487,8 +544,8 @@ runningGameCellToElement x y cell =
 
 
 finishedGameView : PlayGameGrid -> GameResult -> Element GameMsg
-finishedGameView playGameGrid gameResult =
-    Element.column [ Element.centerX, Element.alignTop ]
+finishedGameView playGameGrid _ =
+    Element.column [ Element.centerX, Element.centerY ]
         [ finishedGridToView playGameGrid
         ]
 

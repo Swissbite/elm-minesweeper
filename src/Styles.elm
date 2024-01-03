@@ -90,8 +90,8 @@ openedMineNeighbourCellStyle number =
            ]
 
 
-styledGameCelectionButton : { onPress : Maybe msg, label : Element msg } -> Element msg
-styledGameCelectionButton =
+styledGameSelectionButton : { onPress : Maybe msg, label : Element msg } -> Element msg
+styledGameSelectionButton =
     Input.button
         [ Element.width
             (fill
@@ -111,8 +111,8 @@ styledGameCelectionButton =
 
 {-| Credits to <https://ellie-app.com/85HbWTjCGWha1>
 -}
-toggleCheckboxWidget : { offColor : Color, onColor : Color, sliderColor : Color, toggleWidth : Int, toggleHeight : Int, offSymbol : Maybe Char, onSymbol : Maybe Char } -> Bool -> Element msg
-toggleCheckboxWidget { offColor, onColor, sliderColor, toggleWidth, toggleHeight, offSymbol, onSymbol } checked =
+toggleCheckboxWidget : { offColor : Color, onColor : Color, sliderColor : Color, toggleWidth : Int, toggleHeight : Int, offSymbol : Maybe Char, onSymbol : Maybe Char, tooltip : Maybe String } -> Bool -> Element msg
+toggleCheckboxWidget { offColor, onColor, sliderColor, toggleWidth, toggleHeight, offSymbol, onSymbol, tooltip } checked =
     let
         pad =
             3
@@ -125,16 +125,16 @@ toggleCheckboxWidget { offColor, onColor, sliderColor, toggleWidth, toggleHeight
                 |> String.fromInt
     in
     Element.el
-        [ Background.color <|
+        ([ Background.color <|
             if checked then
                 onColor
 
             else
                 offColor
-        , width <| px <| toggleWidth
-        , height <| px <| toggleHeight
-        , Border.rounded <| toggleHeight // 2
-        , inFront <|
+         , width <| px <| toggleWidth
+         , height <| px <| toggleHeight
+         , Border.rounded <| toggleHeight // 2
+         , inFront <|
             el [ height fill ] <|
                 el
                     [ Background.color sliderColor
@@ -160,6 +160,14 @@ toggleCheckboxWidget { offColor, onColor, sliderColor, toggleWidth, toggleHeight
 
                             else
                                 Maybe.withDefault "" <| Maybe.map String.fromChar onSymbol
-        ]
+         ]
+            ++ (case tooltip of
+                    Just text ->
+                        [ htmlAttribute <| HA.title text ]
+
+                    Nothing ->
+                        []
+               )
+        )
     <|
         Element.none
