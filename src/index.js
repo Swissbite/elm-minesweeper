@@ -50,7 +50,6 @@ app.ports.storeFinishedGameHistory.subscribe(function(finishedGameHistory) {
   if (finishedGameHistory.length > 0) {
     const historyAsJson = JSON.stringify(finishedGameHistory);
     localStorage.setItem(localStoreFinishedGameHistoryKey, historyAsJson);
-    console.log('saved state', historyAsJson);
   }
 });
 
