@@ -1,5 +1,7 @@
 # Elm Minesweeper
 
+[![Build and deploy elm-minesweeper](https://github.com/Swissbite/elm-minesweeper/actions/workflows/main.yml/badge.svg)](https://github.com/Swissbite/elm-minesweeper/actions/workflows/main.yml)
+
 This project is just something for me to play around 
 with [elm-lang](https://elm-lang.org/), [elm-ui](https://github.com/mdgriffith/elm-ui) 
 and to wrap my head around functional programming at it's purest.
