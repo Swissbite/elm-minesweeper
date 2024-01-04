@@ -404,6 +404,7 @@ sidebarElement model =
                 _ ->
                     Element.none
 
+        giveUpElement: Element GameMsg
         giveUpElement =
             case model.gameBoardStatus of
                 FinishedGame _ _ _ ->
@@ -414,6 +415,22 @@ sidebarElement model =
                         { onPress = Just GoToStartPage
                         , label = Element.text "Give up 💀"
                         }
+        pauseElement: Element GameMsg
+        pauseElement =             
+            case (model.gameBoardStatus, model.gamePauseResumeState) of
+                (RunningGame _, Paused) ->
+                    Input.button [ Background.color Colors.black, Border.solid, Element.padding 10, Border.rounded 10, Font.color Colors.gold ]
+                        { onPress = Just ToogleGamePause
+                        , label = Element.text "Resume"
+                        }
+                (RunningGame _, Resumed _ ) ->
+                    Input.button [ Background.color Colors.black, Border.solid, Element.padding 10, Border.rounded 10, Font.color Colors.gold ]
+                        { onPress = Just ToogleGamePause
+                        , label = Element.text "Pause"
+                        }
+                _ ->
+                    Element.none
+        
 
         gameInformationElements : List (Element GameMsg)
         gameInformationElements =
@@ -422,7 +439,7 @@ sidebarElement model =
                     []
 
                 Just data ->
-                    [ Element.el [ Font.bold ] <| Element.text <| milisToString data.elapsedTime
+                    [ Element.el [ Font.bold ] <| Element.text <| String.concat [ Styles.icons.stopWatch, " ", milisToString data.elapsedTime ]
                     , Element.el [ Font.bold ] <| Element.text <| String.concat [ String.fromChar Styles.icons.untouchedBomb, " ", String.fromInt data.mines ]
                     , Element.el [ Font.bold ] <| Element.text <| String.concat [ String.fromChar Styles.icons.markerFlag, " ", String.fromInt data.flags ]
                     ]
@@ -453,6 +470,7 @@ sidebarElement model =
         ++ [ toggleElementLabel
            , toogleElement
            , giveUpElement
+           , pauseElement
            ]
         ++ gameFinishedElements
         ++ [ Element.el [ Font.bold ] <| Element.text "Shortcuts:", Element.text "T: Toogle Selector", Element.text "P: Pause/Resume" ]
