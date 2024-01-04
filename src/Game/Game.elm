@@ -24,7 +24,7 @@ Exposes the basic update / view / subscription functions, so that Main.elm can u
 import Array
 import Browser.Events
 import Colors
-import Element exposing (Element, px)
+import Element exposing (DeviceClass(..), Element, px)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
@@ -276,32 +276,63 @@ updateModelByClickOnGameCell coords model =
 
 view : Model -> Element GameMsg
 view model =
+    let
+        gameGridElement : PauseResumeState -> PlayGameGrid -> Element GameMsg
+        gameGridElement pauseResumeState playGrid =
+            case pauseResumeState of
+                Paused ->
+                    Lazy.lazy pausedGameView playGrid
+
+                Resumed _ ->
+                    Lazy.lazy runningGameView playGrid
+    in
     case model.game.gameBoardStatus of
         NoGame _ ->
-            Element.column [ Element.width Element.fill, Element.height Element.fill, Element.spacing 10 ]
-                [ Element.row
-                    [ Element.centerX, Element.centerY, Element.spacing 10 ]
-                    [ Styles.styledGameSelectionButton
-                        { onPress = Just (CreateNewGame smallPlayground)
-                        , label = Element.text "small"
-                        }
-                    , Styles.styledGameSelectionButton
-                        { onPress = Just (CreateNewGame mediumPlayground)
-                        , label = Element.text "medium"
-                        }
-                    ]
-                , Element.row
-                    [ Element.centerX, Element.centerY, Element.spacing 10 ]
-                    [ Styles.styledGameSelectionButton
-                        { onPress = Just (CreateNewGame advancePlayground)
-                        , label = Element.text "advanced"
-                        }
-                    , Styles.styledGameSelectionButton
-                        { onPress = Just (CreateNewGame xxlPlayground)
-                        , label = Element.text "xxl"
-                        }
-                    ]
-                ]
+            Element.column [ Element.width Element.fill, Element.height Element.fill, Element.spacing 10 ] <|
+                case model.device.class of
+                    Phone ->
+                        [ Styles.styledGameSelectionButton
+                            { onPress = Just (CreateNewGame smallPlayground)
+                            , label = Element.text "small"
+                            }
+                        , Styles.styledGameSelectionButton
+                            { onPress = Just (CreateNewGame mediumPlayground)
+                            , label = Element.text "medium"
+                            }
+                        , Styles.styledGameSelectionButton
+                            { onPress = Just (CreateNewGame advancePlayground)
+                            , label = Element.text "advanced"
+                            }
+                        , Styles.styledGameSelectionButton
+                            { onPress = Just (CreateNewGame xxlPlayground)
+                            , label = Element.text "xxl"
+                            }
+                        ]
+
+                    _ ->
+                        [ Element.row
+                            [ Element.centerX, Element.centerY, Element.spacing 10 ]
+                            [ Styles.styledGameSelectionButton
+                                { onPress = Just (CreateNewGame smallPlayground)
+                                , label = Element.text "small"
+                                }
+                            , Styles.styledGameSelectionButton
+                                { onPress = Just (CreateNewGame mediumPlayground)
+                                , label = Element.text "medium"
+                                }
+                            ]
+                        , Element.row
+                            [ Element.centerX, Element.centerY, Element.spacing 10 ]
+                            [ Styles.styledGameSelectionButton
+                                { onPress = Just (CreateNewGame advancePlayground)
+                                , label = Element.text "advanced"
+                                }
+                            , Styles.styledGameSelectionButton
+                                { onPress = Just (CreateNewGame xxlPlayground)
+                                , label = Element.text "xxl"
+                                }
+                            ]
+                        ]
 
         WaitOnStart initGameGrid ->
             Lazy.lazy
@@ -310,36 +341,38 @@ view model =
                         [ Element.width Element.fill
                         , Element.height Element.fill
                         , Element.padding 20
-                        , Element.inFront <| sidebarElement model.game
                         ]
-                        [ initGameGridView initGrid
-                        ]
+                    <|
+                        case model.device.class of
+                            Phone ->
+                                [ sidebarElement model, initGameGridView initGrid ]
+
+                            Tablet ->
+                                [ sidebarElement model, initGameGridView initGrid ]
+
+                            _ ->
+                                [ Element.row [ Element.centerX, Element.width Element.fill, Element.height Element.fill ] [ initGameGridView initGrid, sidebarElement model ]
+                                ]
                 )
                 initGameGrid
 
         RunningGame playGrid ->
             Element.column
-                ([ Element.width Element.fill
-                 , Element.height Element.fill
-                 , Element.inFront <|
-                    sidebarElement model.game
-                 , Element.padding 20
-                 ]
-                    ++ (case model.game.gamePauseResumeState of
-                            Paused ->
-                                [ Element.inFront <| Element.el [ Element.centerX, Element.centerY, Element.width <| px 400, Element.height <| px 400, Background.color <| Element.rgba255 255 0 0 0.5 ] <| Element.el [ Element.centerX, Element.centerY, Font.extraBold, Font.size 99 ] <| Element.text "Paused" ]
-
-                            _ ->
-                                []
-                       )
-                )
-                [ case model.game.gamePauseResumeState of
-                    Paused ->
-                        Lazy.lazy pausedGameView playGrid
-
-                    Resumed _ ->
-                        Lazy.lazy runningGameView playGrid
+                [ Element.width Element.fill
+                , Element.height Element.fill
+                , Element.padding 20
                 ]
+            <|
+                case model.device.class of
+                    Phone ->
+                        [ sidebarElement model, gameGridElement model.game.gamePauseResumeState playGrid ]
+
+                    Tablet ->
+                        [ sidebarElement model, gameGridElement model.game.gamePauseResumeState playGrid ]
+
+                    _ ->
+                        [ Element.row [ Element.centerX, Element.width Element.fill, Element.height Element.fill ] [ gameGridElement model.game.gamePauseResumeState playGrid, sidebarElement model ]
+                        ]
 
         FinishedGame playGrid finishedStatus _ ->
             Element.column
@@ -347,7 +380,7 @@ view model =
                 , Element.height Element.fill
                 , Element.padding 20
                 , Element.inFront <|
-                    sidebarElement model.game
+                    sidebarElement model
                 ]
                 [ Lazy.lazy2 finishedGameView playGrid finishedStatus
                 ]
@@ -385,19 +418,19 @@ xxlPlayground =
     }
 
 
-sidebarElement : GameModel -> Element GameMsg
+sidebarElement : Model -> Element GameMsg
 sidebarElement model =
     let
         toogleElement =
-            case model.gameBoardStatus of
+            case model.game.gameBoardStatus of
                 RunningGame _ ->
-                    Lazy.lazy mineToggleElement model.gameInteractionMode
+                    Lazy.lazy mineToggleElement model.game.gameInteractionMode
 
                 _ ->
                     Element.none
 
         toggleElementLabel =
-            case model.gameBoardStatus of
+            case model.game.gameBoardStatus of
                 RunningGame _ ->
                     Element.el [ Font.bold ] <| Element.text "Reveal/Flag"
 
@@ -406,29 +439,39 @@ sidebarElement model =
 
         giveUpElement : Element GameMsg
         giveUpElement =
-            case model.gameBoardStatus of
+            case model.game.gameBoardStatus of
                 FinishedGame _ _ _ ->
                     Element.none
 
                 _ ->
                     Input.button [ Background.color Colors.black, Border.solid, Element.padding 10, Border.rounded 10, Font.color Colors.gold ]
                         { onPress = Just GoToStartPage
-                        , label = Element.text "Give up 💀"
+                        , label =
+                            Element.text <|
+                                case model.game.gameBoardStatus of
+                                    RunningGame _ ->
+                                        "Give up 💀"
+
+                                    WaitOnStart _ ->
+                                        "Cancel ❌"
+
+                                    _ ->
+                                        ""
                         }
 
-        pauseElement : Element GameMsg
-        pauseElement =
-            case ( model.gameBoardStatus, model.gamePauseResumeState ) of
+        toogleGamePauseElement : Element GameMsg
+        toogleGamePauseElement =
+            case ( model.game.gameBoardStatus, model.game.gamePauseResumeState ) of
                 ( RunningGame _, Paused ) ->
-                    Input.button [ Background.color Colors.black, Border.solid, Element.padding 10, Border.rounded 10, Font.color Colors.gold ]
+                    Input.button [ Border.solid, Element.padding 0, Border.rounded 10, Font.size 42 ]
                         { onPress = Just ToogleGamePause
-                        , label = Element.text "Resume"
+                        , label = Element.text Styles.icons.resume
                         }
 
                 ( RunningGame _, Resumed _ ) ->
-                    Input.button [ Background.color Colors.black, Border.solid, Element.padding 10, Border.rounded 10, Font.color Colors.gold ]
+                    Input.button [ Border.solid, Element.padding 0, Border.rounded 10, Font.size 42 ]
                         { onPress = Just ToogleGamePause
-                        , label = Element.text "Pause"
+                        , label = Element.text Styles.icons.pause
                         }
 
                 _ ->
@@ -436,7 +479,7 @@ sidebarElement model =
 
         gameInformationElements : List (Element GameMsg)
         gameInformationElements =
-            case getRunningGameStats model of
+            case getRunningGameStats model.game of
                 Nothing ->
                     []
 
@@ -447,7 +490,7 @@ sidebarElement model =
                     ]
 
         gameFinishedElements =
-            case model.gameBoardStatus of
+            case model.game.gameBoardStatus of
                 FinishedGame playGameGrid gameResult _ ->
                     [ case gameResult of
                         Won ->
@@ -472,16 +515,31 @@ sidebarElement model =
         ++ [ toggleElementLabel
            , toogleElement
            , giveUpElement
-           , pauseElement
+           , toogleGamePauseElement
            ]
         ++ gameFinishedElements
-        ++ [ Element.el [ Font.bold ] <| Element.text "Shortcuts:", Element.text "T: Toogle Selector", Element.text "P: Pause/Resume" ]
-        |> Element.column
-            [ Element.alignTop
-            , Element.alignRight
-            , Element.padding 20
-            , Element.spacing 10
-            ]
+        ++ (case ( model.device.class == Phone, model.device.class == Tablet ) of
+                ( False, False ) ->
+                    [ Element.column [ Font.bold ] [ Element.text "Shortcuts:", Element.text "T: Toogle Selector", Element.text "P: Pause/Resume" ] ]
+
+                ( _, _ ) ->
+                    []
+           )
+        |> (case model.device.class of
+                Phone ->
+                    Element.wrappedRow [ Element.alignTop, Element.centerX, Element.padding 20, Element.spacing 10 ]
+
+                Tablet ->
+                    Element.wrappedRow [ Element.alignTop, Element.centerX, Element.padding 20, Element.spacing 10 ]
+
+                _ ->
+                    Element.column
+                        [ Element.alignTop
+                        , Element.alignRight
+                        , Element.padding 20
+                        , Element.spacing 10
+                        ]
+           )
 
 
 styledToogleElement : Bool -> Element GameMsg
@@ -558,7 +616,29 @@ runningGameView playGameGrid =
 
 pausedGameView : PlayGameGrid -> Element GameMsg
 pausedGameView playGameGrid =
-    gameView playGameGrid <| Grid.map (\_ -> Element.el Styles.openedCellStyle Element.none)
+    Element.el
+        [ Element.width Element.fill
+        , Element.inFront <|
+            Element.el
+                [ Element.centerX
+                , Element.centerY
+                , Element.width <| px 400
+                , Element.height <| px 400
+                , Background.color <| Element.rgba255 255 0 0 0.5
+                ]
+            <|
+                Element.el
+                    [ Element.centerX
+                    , Element.centerY
+                    , Font.extraBold
+                    , Font.size 99
+                    ]
+                <|
+                    Element.text "Paused"
+        ]
+    <|
+        gameView playGameGrid <|
+            Grid.map (\_ -> Element.el Styles.openedCellStyle Element.none)
 
 
 runningGameCellToElement : Int -> Int -> GameCell -> Element GameMsg

@@ -26,7 +26,7 @@ import Element.Input as Input
 import Html.Attributes as HA
 
 
-icons : { markerFlag : Char, untouchedBomb : Char, exploded : Char, stopWatch : String, victory : Char, downSign : Char, upSign : Char, world : Char, calendar : String }
+icons : { markerFlag : Char, untouchedBomb : Char, exploded : Char, stopWatch : String, victory : Char, downSign : Char, upSign : Char, world : Char, calendar : String, pause : String, resume : String }
 icons =
     { markerFlag = '⚑'
     , untouchedBomb = '💣'
@@ -37,6 +37,8 @@ icons =
     , downSign = '🔻'
     , upSign = '🔺'
     , calendar = "🗓️"
+    , pause = "⏸️"
+    , resume = "▶️"
     }
 
 
