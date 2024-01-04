@@ -404,7 +404,7 @@ sidebarElement model =
                 _ ->
                     Element.none
 
-        giveUpElement: Element GameMsg
+        giveUpElement : Element GameMsg
         giveUpElement =
             case model.gameBoardStatus of
                 FinishedGame _ _ _ ->
@@ -415,22 +415,24 @@ sidebarElement model =
                         { onPress = Just GoToStartPage
                         , label = Element.text "Give up 💀"
                         }
-        pauseElement: Element GameMsg
-        pauseElement =             
-            case (model.gameBoardStatus, model.gamePauseResumeState) of
-                (RunningGame _, Paused) ->
+
+        pauseElement : Element GameMsg
+        pauseElement =
+            case ( model.gameBoardStatus, model.gamePauseResumeState ) of
+                ( RunningGame _, Paused ) ->
                     Input.button [ Background.color Colors.black, Border.solid, Element.padding 10, Border.rounded 10, Font.color Colors.gold ]
                         { onPress = Just ToogleGamePause
                         , label = Element.text "Resume"
                         }
-                (RunningGame _, Resumed _ ) ->
+
+                ( RunningGame _, Resumed _ ) ->
                     Input.button [ Background.color Colors.black, Border.solid, Element.padding 10, Border.rounded 10, Font.color Colors.gold ]
                         { onPress = Just ToogleGamePause
                         , label = Element.text "Pause"
                         }
+
                 _ ->
                     Element.none
-        
 
         gameInformationElements : List (Element GameMsg)
         gameInformationElements =
