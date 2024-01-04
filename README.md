@@ -23,9 +23,9 @@ Features it should have (in no particular order):
 
 - Multiple difficulties ✔
 - A current played game history ✔
-- Able to pause and resume the game
+- Able to pause and resume the game ✔
 - Able to switch between click or mark fields ✔
-- See the result board after finished the game
+- See the result board after finished the game ✔
   - If the game has been won or lost ✔
   - The mines should be revealed on the board ✔
   - The end state of the board ✔
