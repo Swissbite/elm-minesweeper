@@ -103,16 +103,7 @@ byResultColumn query =
                         SetOrderBy ByResult Ascending
             ]
             [ Element.text "Result "
-            , Element.text <|
-                case ( query.orderBy, query.orderDirection ) of
-                    ( ByResult, Ascending ) ->
-                        String.fromChar Styles.icons.upSign
-
-                    ( ByResult, Descending ) ->
-                        String.fromChar Styles.icons.downSign
-
-                    _ ->
-                        ""
+            , getOrderIcon query ByResult
             ]
     , width = Element.fill |> Element.minimum 300
     , view =
@@ -138,18 +129,9 @@ byDurationColumn query =
                     _ ->
                         SetOrderBy ByDuration Ascending
             ]
-            [ Element.text <| String.fromChar Styles.icons.stopWatch
+            [ Element.text Styles.icons.stopWatch
             , Element.text " Duration "
-            , Element.text <|
-                case ( query.orderBy, query.orderDirection ) of
-                    ( ByDuration, Ascending ) ->
-                        String.fromChar Styles.icons.upSign
-
-                    ( ByDuration, Descending ) ->
-                        String.fromChar Styles.icons.downSign
-
-                    _ ->
-                        ""
+            , getOrderIcon query ByDuration
             ]
     , width = Element.fill |> Element.minimum 300
     , view =
@@ -187,18 +169,9 @@ byFieldSizeColumn query =
                     _ ->
                         SetOrderBy ByFieldSize Ascending
             ]
-            [ Element.text <| String.fromChar Styles.icons.stopWatch
+            [ Element.text <| String.fromChar Styles.icons.world
             , Element.text " Field size "
-            , Element.text <|
-                case ( query.orderBy, query.orderDirection ) of
-                    ( ByFieldSize, Ascending ) ->
-                        String.fromChar Styles.icons.upSign
-
-                    ( ByFieldSize, Descending ) ->
-                        String.fromChar Styles.icons.downSign
-
-                    _ ->
-                        ""
+            , getOrderIcon query ByFieldSize
             ]
     , width = Element.fill |> Element.minimum 300
     , view =
@@ -225,22 +198,26 @@ byMinesColumn query =
             ]
             [ Element.text <| String.fromChar Styles.icons.untouchedBomb
             , Element.text " Mines "
-            , Element.text <|
-                case ( query.orderBy, query.orderDirection ) of
-                    ( ByMines, Ascending ) ->
-                        String.fromChar Styles.icons.upSign
-
-                    ( ByMines, Descending ) ->
-                        String.fromChar Styles.icons.downSign
-
-                    _ ->
-                        ""
+            , getOrderIcon query ByMines
             ]
     , width = Element.fill |> Element.minimum 300
     , view =
         \entry ->
             countMines entry.grid |> String.fromInt |> Element.text
     }
+
+
+getOrderIcon : GameHistoryQuery -> GameHistoryOrderBy -> Element msg
+getOrderIcon query orderByFilter =
+    case ( query.orderBy == orderByFilter, query.orderDirection ) of
+        ( False, _ ) ->
+            Element.el [ Element.width <| Element.px 20 ] Element.none
+
+        ( _, Ascending ) ->
+            Element.text <| String.fromChar Styles.icons.upSign
+
+        ( _, Descending ) ->
+            Element.text <| String.fromChar Styles.icons.downSign
 
 
 byPosixColumn : GameHistoryQuery -> Column FinishedGameHistoryEntry GameHistoryMsg
@@ -257,17 +234,8 @@ byPosixColumn query =
                     _ ->
                         SetOrderBy ByPosix Ascending
             ]
-            [ Element.text "Date "
-            , Element.text <|
-                case ( query.orderBy, query.orderDirection ) of
-                    ( ByPosix, Ascending ) ->
-                        String.fromChar Styles.icons.upSign
-
-                    ( ByPosix, Descending ) ->
-                        String.fromChar Styles.icons.downSign
-
-                    _ ->
-                        ""
+            [ Element.text <| Styles.icons.calendar ++ " Date "
+            , getOrderIcon query ByPosix
             ]
     , width = Element.fill |> Element.minimum 300
     , view =
