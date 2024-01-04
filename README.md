@@ -1,6 +1,6 @@
 # Elm Minesweeper
 
-[![Build and deploy elm-minesweeper](https://github.com/Swissbite/elm-minesweeper/actions/workflows/main.yml/badge.svg)](https://github.com/Swissbite/elm-minesweeper/actions/workflows/main.yml)
+[![Build and deploy elm-minesweeper](https://github.com/Swissbite/elm-minesweeper/actions/workflows/main.yml/badge.svg)](https://github.com/Swissbite/elm-minesweeper/actions/workflows/main.yml)  [![AGPL v3 logo](https://www.gnu.org/graphics/agplv3-88x31.png)](https://www.gnu.org/licenses/agpl-3.0.html)
 
 This project is just something for me to play around 
 with [elm-lang](https://elm-lang.org/), [elm-ui](https://github.com/mdgriffith/elm-ui) 
@@ -8,8 +8,8 @@ and to wrap my head around functional programming at it's purest.
 
 ## Table of Content
 - [The goal](#the-goal)
-- [Set up the project](#set-up-the-project)
-- [Basic game flow](#basic-game-flow)
+- [Set up the project](#setup-the-project)
+- [Project structure](#project-structure)
 
 ## The goal
 The goal of this **side project** is to have a working minesweeper web application (as a thousand other in the web)
@@ -75,9 +75,4 @@ To simplify lookups as a developer, I split it in three main files:
 - [Game/History.elm](./src/Game/History.elm): The game history of lost / won games. Sortable.
 
 ## License
-See [LICENSE](LICENSE)
-
-### Why this License
-
-I belive in Open Source. And I give this application for free use in any kind. Anyone should be able to use my small application, modify it and republish. 
-Because this application is free of any charge, any modification should be equal.
+Elm Minesweeper is licensed under the [GNU Affero General Public License version 3](LICENSE) or later.
