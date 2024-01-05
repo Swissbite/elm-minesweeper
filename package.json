@@ -33,10 +33,10 @@
   },
   "homepage": "https://github.com/Swissbite/elm-minesweeper#readme",
   "devDependencies": {
-    "@parcel/config-webextension": "^2.10.3",
-    "@parcel/packager-raw-url": "^2.10.3",
-    "@parcel/transformer-elm": "^2.10.3",
-    "@parcel/transformer-webmanifest": "^2.10.3",
+    "@parcel/config-webextension": "^2.11.0",
+    "@parcel/packager-raw-url": "^2.11.0",
+    "@parcel/transformer-elm": "^2.11.0",
+    "@parcel/transformer-webmanifest": "^2.11.0",
     "elm": "latest-0.19.1",
     "elm-hot": "^1.1.6",
     "elm-test": "^0.19.1-revision12",
@@ -47,9 +47,8 @@
   "targets": {
     "frontend": {
       "distDir": "./build",
-      "publicUrl":"/elm-minesweeper",
+      "publicUrl": "/elm-minesweeper",
       "outputFormat": "esmodule"
     }
   }
 }
-
