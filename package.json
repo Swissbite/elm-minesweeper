@@ -35,7 +35,7 @@
   "devDependencies": {
     "@parcel/config-webextension": "^2.11.0",
     "@parcel/packager-raw-url": "^2.11.0",
-    "@parcel/transformer-elm": "^2.11.0",
+    "@parcel/transformer-elm": "^2.12.0",
     "@parcel/transformer-webmanifest": "^2.11.0",
     "elm": "latest-0.19.1",
     "elm-hot": "^1.1.6",
