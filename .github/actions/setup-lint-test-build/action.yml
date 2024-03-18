@@ -11,7 +11,7 @@ runs:
       cache: 'npm'
 
   - name: using cache for .elm
-    uses: actions/cache@v3
+    uses: actions/cache@v4
     with:
       path: '~/.elm'
       key: ${{ runner.os }}-elm-${{ hashFiles('./elm-tooling.json') }}
