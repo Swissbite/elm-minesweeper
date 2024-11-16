@@ -22,9 +22,9 @@ module Game.Internal exposing (..)
     Internal helper functions for game logic, parsing and transforming data.
     Reasons for this module:
 
-    1. Write idendical helper functions for the game and the history just once
-    2. Expose only the necesary functions (view and update) in Game.elm or History.elm
-    3. Make complicated functions testable without expoising them in Game.elm or History.elm
+    1. Write identical helper functions for the game and the history just once
+    2. Expose only the necessary functions (view and update) in Game.elm or History.elm
+    3. Make complicated functions testable without exposing them in Game.elm or History.elm
     4. No circular includes
 
 -}
@@ -37,8 +37,8 @@ import Time
 import Types exposing (..)
 
 
-generateListOfPossibleIndizes : Grid InitGameCell -> Coordinates -> List Int
-generateListOfPossibleIndizes initGrid clickedOn =
+generateListOfPossibleIndices : Grid InitGameCell -> Coordinate -> List Int
+generateListOfPossibleIndices initGrid clickedOn =
     let
         gridWidth =
             Grid.width initGrid
@@ -328,11 +328,11 @@ saveFinishedGameHistory finishedGameHistory =
         |> Ports.storeFinishedGameHistory
 
 
-milisToString : Int -> String
-milisToString milis =
+millisToString : Int -> String
+millisToString millis =
     let
         seconds =
-            milis
+            millis
                 // 1000
                 |> modBy 60
                 |> String.fromInt
@@ -345,7 +345,7 @@ milisToString milis =
                    )
 
         minutes =
-            milis
+            millis
                 // 1000
                 // 60
                 |> String.fromInt

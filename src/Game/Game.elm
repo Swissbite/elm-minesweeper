@@ -152,7 +152,7 @@ update gameMsg model =
             ( { model | game = { gameModel | gameInteractionMode = nextMode } }, Cmd.none )
 
         ToogleGamePause ->
-            ( tooglePause model, Cmd.none )
+            ( togglePause model, Cmd.none )
 
         ClockTick posix ->
             updateTimePlayGame model posix
@@ -163,17 +163,17 @@ update gameMsg model =
                     ( model, Cmd.none )
 
                 ( Game, _ ) ->
-                    ( tooglePause model, Cmd.none )
+                    ( togglePause model, Cmd.none )
 
                 ( _, Game ) ->
-                    ( tooglePause model, Cmd.none )
+                    ( togglePause model, Cmd.none )
 
                 ( _, _ ) ->
                     ( model, Cmd.none )
 
 
-tooglePause : Model -> Model
-tooglePause model =
+togglePause : Model -> Model
+togglePause model =
     let
         gameModel =
             model.game
@@ -218,7 +218,7 @@ updateTimePlayGame model time =
             ( model, Cmd.none )
 
 
-updateModelByClickOnGameCell : Coordinates -> Model -> ( Model, Cmd GameMsg )
+updateModelByClickOnGameCell : Coordinate -> Model -> ( Model, Cmd GameMsg )
 updateModelByClickOnGameCell coords model =
     case ( model.game.gamePauseResumeState, model.game.gameBoardStatus ) of
         ( Resumed _, RunningGame playGrid ) ->
@@ -243,10 +243,10 @@ updateModelByClickOnGameCell coords model =
 
                 nextGameBoardStatus =
                     if aMineIsExploded then
-                        calculateElapsedTimeMilis gameModel.gameRunningTimes |> FinishedGame updatedPlayGrid Lost
+                        calculateElapsedTimeMillis gameModel.gameRunningTimes |> FinishedGame updatedPlayGrid Lost
 
                     else if allFieldsRevealed then
-                        calculateElapsedTimeMilis gameModel.gameRunningTimes |> FinishedGame updatedPlayGrid Won
+                        calculateElapsedTimeMillis gameModel.gameRunningTimes |> FinishedGame updatedPlayGrid Won
 
                     else
                         RunningGame updatedPlayGrid
@@ -421,7 +421,7 @@ xxlPlayground =
 sidebarElement : Model -> Element GameMsg
 sidebarElement model =
     let
-        toogleElement =
+        toggleElement =
             case model.game.gameBoardStatus of
                 RunningGame _ ->
                     Lazy.lazy mineToggleElement model.game.gameInteractionMode
@@ -459,8 +459,8 @@ sidebarElement model =
                                         ""
                         }
 
-        toogleGamePauseElement : Element GameMsg
-        toogleGamePauseElement =
+        toggleGamePauseElement : Element GameMsg
+        toggleGamePauseElement =
             case ( model.game.gameBoardStatus, model.game.gamePauseResumeState ) of
                 ( RunningGame _, Paused ) ->
                     Input.button [ Border.solid, Element.padding 0, Border.rounded 10, Font.size 42 ]
@@ -484,7 +484,7 @@ sidebarElement model =
                     []
 
                 Just data ->
-                    [ Element.el [ Font.bold ] <| Element.text <| String.concat [ Styles.icons.stopWatch, " ", milisToString data.elapsedTime ]
+                    [ Element.el [ Font.bold ] <| Element.text <| String.concat [ Styles.icons.stopWatch, " ", millisToString data.elapsedTime ]
                     , Element.el [ Font.bold ] <| Element.text <| String.concat [ String.fromChar Styles.icons.untouchedBomb, " ", String.fromInt data.mines ]
                     , Element.el [ Font.bold ] <| Element.text <| String.concat [ String.fromChar Styles.icons.markerFlag, " ", String.fromInt data.flags ]
                     ]
@@ -513,14 +513,14 @@ sidebarElement model =
     in
     gameInformationElements
         ++ [ toggleElementLabel
-           , toogleElement
+           , toggleElement
            , giveUpElement
-           , toogleGamePauseElement
+           , toggleGamePauseElement
            ]
         ++ gameFinishedElements
         ++ (case ( model.device.class == Phone, model.device.class == Tablet ) of
                 ( False, False ) ->
-                    [ Element.column [ Font.bold ] [ Element.text "Shortcuts:", Element.text "T: Toogle Selector", Element.text "P: Pause/Resume" ] ]
+                    [ Element.column [ Font.bold ] [ Element.text "Shortcuts:", Element.text "T: Toggle Selector", Element.text "P: Pause/Resume" ] ]
 
                 ( _, _ ) ->
                     []
@@ -542,8 +542,8 @@ sidebarElement model =
            )
 
 
-styledToogleElement : Bool -> Element GameMsg
-styledToogleElement =
+styledToggleElement : Bool -> Element GameMsg
+styledToggleElement =
     Styles.toggleCheckboxWidget
         { offColor = Colors.lightGrey
         , onColor = Colors.green
@@ -569,7 +569,7 @@ mineToggleElement gameInteractionMode =
 
                     Flag ->
                         True
-            , icon = styledToogleElement
+            , icon = styledToggleElement
             }
 
 
@@ -593,7 +593,7 @@ initGameCellToElement initGameGrid =
     \x y _ ->
         let
             coords =
-                Coordinates x y
+                Coordinate x y
         in
         Element.el (Styles.untouchedCellStyle ++ [ Events.onClick <| ClickedOnInitGameCell initGameGrid coords ]) <| Element.text ""
 
@@ -756,12 +756,12 @@ sanitizePlaygroundDefinition definition =
 {-| Takes the initGame and the clicked coordinates and generates a new play game grid.
 The clicked cell is opened and the surrounding cells - if the clicked cell is an empty cell - are opened as well.
 -}
-generatePlayGameGrid : InitGameData -> Coordinates -> Generator PlayGameGrid
+generatePlayGameGrid : InitGameData -> Coordinate -> Generator PlayGameGrid
 generatePlayGameGrid initGameGrid coords =
     let
         initialPossibilities : List Int
         initialPossibilities =
-            generateListOfPossibleIndizes initGameGrid.grid coords
+            generateListOfPossibleIndices initGameGrid.grid coords
 
         gameGridWidth =
             Grid.width initGameGrid.grid
@@ -773,35 +773,35 @@ generatePlayGameGrid initGameGrid coords =
         minesIdxGenerator =
             minesIndexGenerator initGameGrid.mines initialPossibilities emptySetGenerator
 
-        minesIdxAsCoordinates : Set Int -> List Coordinates
-        minesIdxAsCoordinates indizes =
-            Set.toList indizes
+        minesIdxAsCoordinates : Set Int -> List Coordinate
+        minesIdxAsCoordinates indices =
+            Set.toList indices
                 |> List.map (\i -> { x = modBy gameGridWidth i, y = i // gameGridWidth })
 
-        minesIdxAsCoordinatesGenerator : Generator (Set Int) -> Generator (List Coordinates)
+        minesIdxAsCoordinatesGenerator : Generator (Set Int) -> Generator (List Coordinate)
         minesIdxAsCoordinatesGenerator =
             Random.andThen (\set -> minesIdxAsCoordinates set |> Random.constant)
     in
     minesIdxAsCoordinatesGenerator minesIdxGenerator
         |> Random.andThen
             (\coordinates ->
-                List.map coordinatesToPair coordinates
+                List.map coordinateToPair coordinates
                     |> createPlayGameGrid gameGridWidth gameGridHeight
                     |> openCell coords
                     |> Random.constant
             )
 
 
-coordinatesToPair : Coordinates -> ( Int, Int )
-coordinatesToPair coords =
+coordinateToPair : Coordinate -> ( Int, Int )
+coordinateToPair coords =
     ( coords.x, coords.y )
 
 
 createPlayGameGrid : Int -> Int -> List ( Int, Int ) -> PlayGameGrid
-createPlayGameGrid widht height mineCoordinates =
+createPlayGameGrid width height mineCoordinates =
     let
         grid =
-            Grid.repeat widht height <| GameCell EmptyCell Untouched
+            Grid.repeat width height <| GameCell EmptyCell Untouched
 
         placeMines : PlayGameGrid -> List ( Int, Int ) -> PlayGameGrid
         placeMines gameGrid coordinates =
@@ -858,9 +858,9 @@ createPlayGameGrid widht height mineCoordinates =
         |> (\minedGrid -> Grid.indexedMap (indexedMapFn minedGrid) minedGrid)
 
 
-flagCell : Coordinates -> PlayGameGrid -> PlayGameGrid
+flagCell : Coordinate -> PlayGameGrid -> PlayGameGrid
 flagCell coords playGrid =
-    coordinatesToPair coords
+    coordinateToPair coords
         |> (\c ->
                 Grid.get c playGrid
                     |> (\cell ->
@@ -871,8 +871,8 @@ flagCell coords playGrid =
                                 Just (GameCell gameCell Untouched) ->
                                     Grid.set c (GameCell gameCell Flagged) playGrid
 
-                                Just (GameCell (MineNeighbourCell neighbhours) Opened) ->
-                                    if neighbhours == calculateFlaggedCellsArroundCoordinate coords playGrid then
+                                Just (GameCell (MineNeighbourCell neighbours) Opened) ->
+                                    if neighbours == calculateFlaggedCellsAroundCoordinate coords playGrid then
                                         openSurroundingCells coords playGrid
 
                                     else
@@ -884,11 +884,11 @@ flagCell coords playGrid =
            )
 
 
-openCell : Coordinates -> PlayGameGrid -> PlayGameGrid
+openCell : Coordinate -> PlayGameGrid -> PlayGameGrid
 openCell coords playGrid =
     let
         coordinateAsPair =
-            coordinatesToPair coords
+            coordinateToPair coords
 
         cell =
             Grid.get coordinateAsPair playGrid
@@ -897,8 +897,8 @@ openCell coords playGrid =
         Nothing ->
             playGrid
 
-        Just (GameCell (MineNeighbourCell neighbhours) Opened) ->
-            if neighbhours == calculateFlaggedCellsArroundCoordinate coords playGrid then
+        Just (GameCell (MineNeighbourCell neighbours) Opened) ->
+            if neighbours == calculateFlaggedCellsAroundCoordinate coords playGrid then
                 openSurroundingCells coords playGrid
 
             else
@@ -912,46 +912,46 @@ openCell coords playGrid =
                 ( _, Flagged ) ->
                     playGrid
 
-                ( MineNeighbourCell neighbhours, _ ) ->
-                    Grid.set coordinateAsPair (GameCell (MineNeighbourCell neighbhours) Opened) playGrid
+                ( MineNeighbourCell neighbours, _ ) ->
+                    Grid.set coordinateAsPair (GameCell (MineNeighbourCell neighbours) Opened) playGrid
 
                 ( EmptyCell, _ ) ->
                     Grid.set coordinateAsPair (GameCell EmptyCell Opened) playGrid
                         |> (\nextGrid ->
                                 calculateNeighbourCoordinates coords
-                                    |> (\surroundingCoordinatesAsPair -> List.foldl (\coord grid -> openCell coord grid) nextGrid surroundingCoordinatesAsPair)
+                                    |> (\surroundingCoordinatesAsPair -> List.foldl (\coordinate grid -> openCell coordinate grid) nextGrid surroundingCoordinatesAsPair)
                            )
 
                 ( MineCell, _ ) ->
                     Grid.set coordinateAsPair (GameCell MineCell Opened) playGrid
 
 
-openSurroundingCells : Coordinates -> PlayGameGrid -> PlayGameGrid
-openSurroundingCells coords playGrid =
+openSurroundingCells : Coordinate -> PlayGameGrid -> PlayGameGrid
+openSurroundingCells coordinate playGrid =
     let
-        mapCoordstoCoordsAndMaybeCellPair : Coordinates -> ( Coordinates, Maybe GameCell )
-        mapCoordstoCoordsAndMaybeCellPair neighbourCoords =
-            ( neighbourCoords, Grid.get (coordinatesToPair neighbourCoords) playGrid )
+        mapCoordinateToTupleCoordinateAndMaybeGameCell : Coordinate -> ( Coordinate, Maybe GameCell )
+        mapCoordinateToTupleCoordinateAndMaybeGameCell neighbourCoordinate =
+            ( neighbourCoordinate, Grid.get (coordinateToPair neighbourCoordinate) playGrid )
 
-        foldCoordsCellPair : ( Coordinates, Maybe GameCell ) -> PlayGameGrid -> PlayGameGrid
-        foldCoordsCellPair ( coord, maybeCell ) grid =
+        foldGridOpenUntouchedCellsToGrid : ( Coordinate, Maybe GameCell ) -> PlayGameGrid -> PlayGameGrid
+        foldGridOpenUntouchedCellsToGrid ( coordinateToCheck, maybeCell ) grid =
             case maybeCell of
                 Just (GameCell _ Untouched) ->
-                    openCell coord grid
+                    openCell coordinateToCheck grid
 
                 _ ->
                     grid
     in
-    calculateNeighbourCoordinates coords
-        |> List.map mapCoordstoCoordsAndMaybeCellPair
-        |> List.foldl foldCoordsCellPair playGrid
+    calculateNeighbourCoordinates coordinate
+        |> List.map mapCoordinateToTupleCoordinateAndMaybeGameCell
+        |> List.foldl foldGridOpenUntouchedCellsToGrid playGrid
 
 
-calculateFlaggedCellsArroundCoordinate : Coordinates -> PlayGameGrid -> Int
-calculateFlaggedCellsArroundCoordinate coords grid =
+calculateFlaggedCellsAroundCoordinate : Coordinate -> PlayGameGrid -> Int
+calculateFlaggedCellsAroundCoordinate coords grid =
     calculateNeighbourCoordinates coords
-        |> List.map coordinatesToPair
-        |> List.map (\coordPair -> Grid.get coordPair grid)
+        |> List.map coordinateToPair
+        |> List.map (\coordinateAsPair -> Grid.get coordinateAsPair grid)
         |> List.map
             (\maybeCell ->
                 case maybeCell of
@@ -964,7 +964,7 @@ calculateFlaggedCellsArroundCoordinate coords grid =
         |> List.sum
 
 
-calculateNeighbourCoordinates : Coordinates -> List Coordinates
+calculateNeighbourCoordinates : Coordinate -> List Coordinate
 calculateNeighbourCoordinates coords =
     [ { x = coords.x - 1, y = coords.y - 1 }
     , { x = coords.x - 1, y = coords.y }
@@ -1052,8 +1052,8 @@ minesIndexGenerator remainingMines remainingPossibilities alreadyGenerated =
                             )
 
 
-calculateElapsedTimeMilis : List ( Time.Posix, Time.Posix ) -> Int
-calculateElapsedTimeMilis =
+calculateElapsedTimeMillis : List ( Time.Posix, Time.Posix ) -> Int
+calculateElapsedTimeMillis =
     List.foldl (\( from, to ) summedUp -> (Time.posixToMillis to - Time.posixToMillis from) + summedUp) 0
 
 
@@ -1102,7 +1102,7 @@ getRunningGameStats : GameModel -> Maybe GameStats
 getRunningGameStats gameModel =
     case gameModel.gameBoardStatus of
         RunningGame grid ->
-            calculateElapsedTimeMilis gameModel.gameRunningTimes
+            calculateElapsedTimeMillis gameModel.gameRunningTimes
                 |> combineGridInfosWithElapsedTime (extractMinesAndFlags grid)
                 |> Just
 

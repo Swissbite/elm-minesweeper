@@ -50,7 +50,7 @@ all =
                         List.range 0 (width * height - 1)
                             |> List.filter (\i -> not (Set.member i openingArea))
                 in
-                GameInternal.generateListOfPossibleIndizes (Grid.repeat width height InitGameCell) coords
+                GameInternal.generateListOfPossibleIndices (Grid.repeat width height InitGameCell) coords
                     |> Expect.equal filteredAllowedIndizes
         , fuzz2
             (intRange 0 15)
@@ -75,12 +75,12 @@ all =
                         List.range 0 (width * height - 1)
                             |> List.filter (\i -> not (Set.member i openingArea))
                 in
-                GameInternal.generateListOfPossibleIndizes (Grid.repeat width height InitGameCell) coords
+                GameInternal.generateListOfPossibleIndices (Grid.repeat width height InitGameCell) coords
                     |> Expect.equal filteredAllowedIndizes
         ]
 
 
-calculateSurroundingAreaFields : Coordinates -> Int -> Int -> Set Int
+calculateSurroundingAreaFields : Coordinate -> Int -> Int -> Set Int
 calculateSurroundingAreaFields coords width height =
     List.range (max 0 (coords.x - 1)) (min (width - 1) (coords.x + 1))
         |> List.concatMap (\x -> List.map (\y -> y * width + x) <| List.range (max 0 (coords.y - 1)) (min (height - 1) (coords.y + 1)))

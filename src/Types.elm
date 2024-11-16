@@ -45,9 +45,9 @@ type alias Flags =
 Prefixed in Msg by GameView, so that the update function in Main.elm can make an simple case match and call the update function in Game.elm
 -}
 type GameMsg
-    = ClickedOnInitGameCell InitGameData Coordinates
+    = ClickedOnInitGameCell InitGameData Coordinate
     | StartGame PlayGameGrid
-    | ClickOnGameCell Coordinates
+    | ClickOnGameCell Coordinate
     | ToogleGameCellInteractionMode
     | CreateNewGame PlayGroundDefinition
     | GoToStartPage
@@ -120,7 +120,7 @@ type alias PlayGroundDefinition =
     }
 
 
-type alias Coordinates =
+type alias Coordinate =
     { x : Int
     , y : Int
     }
