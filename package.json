@@ -34,7 +34,7 @@
   "homepage": "https://github.com/Swissbite/elm-minesweeper#readme",
   "devDependencies": {
     "@parcel/config-webextension": "^2.13.1",
-    "@parcel/packager-raw-url": "^2.13.1",
+    "@parcel/packager-raw-url": "^2.13.2",
     "@parcel/transformer-elm": "^2.13.1",
     "@parcel/transformer-webmanifest": "^2.13.1",
     "elm": "^0.19.1-6",
