@@ -22,9 +22,11 @@ on:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         name: Checkout sources
 
       - uses: ./.github/actions/setup-lint-test-build
