@@ -5,13 +5,13 @@ runs:
   steps:
   # Setup node
   - name: Setup node
-    uses: actions/setup-node@v4
+    uses: actions/setup-node@v6
     with:
       node-version-file: '.nvmrc'
       cache: 'npm'
 
   - name: using cache for .elm
-    uses: actions/cache@v4
+    uses: actions/cache@v5
     with:
       path: '~/.elm'
       key: ${{ runner.os }}-elm-${{ hashFiles('./elm-tooling.json') }}
