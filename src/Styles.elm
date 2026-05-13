@@ -47,6 +47,76 @@ minimumCellFontSize =
     16
 
 
+smallBoardThreshold : Int
+smallBoardThreshold =
+    8
+
+
+mediumBoardThreshold : Int
+mediumBoardThreshold =
+    16
+
+
+phoneSmallCellSize : Int
+phoneSmallCellSize =
+    40
+
+
+phoneMediumCellSize : Int
+phoneMediumCellSize =
+    34
+
+
+phoneLargeCellSize : Int
+phoneLargeCellSize =
+    32
+
+
+tabletSmallCellSize : Int
+tabletSmallCellSize =
+    42
+
+
+tabletMediumCellSize : Int
+tabletMediumCellSize =
+    36
+
+
+tabletLargeCellSize : Int
+tabletLargeCellSize =
+    32
+
+
+desktopSmallCellSize : Int
+desktopSmallCellSize =
+    44
+
+
+desktopMediumCellSize : Int
+desktopMediumCellSize =
+    32
+
+
+desktopLargeCellSize : Int
+desktopLargeCellSize =
+    28
+
+
+bigDesktopSmallCellSize : Int
+bigDesktopSmallCellSize =
+    46
+
+
+bigDesktopMediumCellSize : Int
+bigDesktopMediumCellSize =
+    34
+
+
+bigDesktopLargeCellSize : Int
+bigDesktopLargeCellSize =
+    30
+
+
 pillBorderRadius : Int
 pillBorderRadius =
     999
@@ -60,44 +130,44 @@ cellPixelSize device { cols, rows } =
     in
     case device.class of
         Phone ->
-            if longestSide <= 8 then
-                40
+            if longestSide <= smallBoardThreshold then
+                phoneSmallCellSize
 
-            else if longestSide <= 16 then
-                34
+            else if longestSide <= mediumBoardThreshold then
+                phoneMediumCellSize
 
             else
-                32
+                phoneLargeCellSize
 
         Tablet ->
-            if longestSide <= 8 then
-                42
+            if longestSide <= smallBoardThreshold then
+                tabletSmallCellSize
 
-            else if longestSide <= 16 then
-                36
+            else if longestSide <= mediumBoardThreshold then
+                tabletMediumCellSize
 
             else
-                32
+                tabletLargeCellSize
 
         Desktop ->
-            if longestSide <= 8 then
-                44
+            if longestSide <= smallBoardThreshold then
+                desktopSmallCellSize
 
-            else if longestSide <= 16 then
-                32
+            else if longestSide <= mediumBoardThreshold then
+                desktopMediumCellSize
 
             else
-                28
+                desktopLargeCellSize
 
         BigDesktop ->
-            if longestSide <= 8 then
-                46
+            if longestSide <= smallBoardThreshold then
+                bigDesktopSmallCellSize
 
-            else if longestSide <= 16 then
-                34
+            else if longestSide <= mediumBoardThreshold then
+                bigDesktopMediumCellSize
 
             else
-                30
+                bigDesktopLargeCellSize
 
 
 cellWidth : Int -> Element.Length

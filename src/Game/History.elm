@@ -172,6 +172,11 @@ nextOrderDirection query orderBy =
             Ascending
 
 
+padToTwoDigits : Int -> String
+padToTwoDigits value =
+    String.padLeft 2 '0' (String.fromInt value)
+
+
 formatDuration : Int -> String
 formatDuration duration =
     let
@@ -180,14 +185,7 @@ formatDuration duration =
 
         paddedSeconds =
             modBy 60 seconds
-                |> String.fromInt
-                |> (\s ->
-                        if String.length s == 1 then
-                            "0" ++ s
-
-                        else
-                            s
-                   )
+                |> padToTwoDigits
     in
     String.fromInt (seconds // 60) ++ ":" ++ paddedSeconds
 
@@ -236,14 +234,7 @@ formatDate posix =
 
         paddedDay =
             Time.toDay Time.utc posix
-                |> String.fromInt
-                |> (\s ->
-                        if String.length s == 1 then
-                            "0" ++ s
-
-                        else
-                            s
-                   )
+                |> padToTwoDigits
     in
     String.fromInt (Time.toYear Time.utc posix)
         ++ "-"

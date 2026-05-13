@@ -49,6 +49,20 @@ defaultVerticalPadding =
     10
 
 
+horizontalPadding : Int
+horizontalPadding =
+    10
+
+
+verticalPaddingForDevice : Element.DeviceClass -> Int
+verticalPaddingForDevice deviceClass =
+    if deviceClass == Element.Phone then
+        compactVerticalPadding
+
+    else
+        defaultVerticalPadding
+
+
 
 --- PROGRAM ---
 
@@ -216,7 +230,7 @@ navigationView containsGithubPrefixInPath =
     Element.wrappedRow
         [ Element.width Element.fill
         , Background.color Colors.openedCellGray
-        , Element.paddingXY 10 8
+        , Element.paddingXY horizontalPadding (verticalPaddingForDevice Element.Phone)
         , Element.spacingXY 16 8
         ]
         [ Element.el [ Element.alignLeft ] <| Element.text "Elm Minesweeper"
@@ -231,13 +245,7 @@ footerView : Model -> Element Msg
 footerView model =
     Element.wrappedRow
         [ Element.width Element.fill
-        , Element.paddingXY 10
-            (if model.device.class == Element.Phone then
-                compactVerticalPadding
-
-             else
-                defaultVerticalPadding
-            )
+        , Element.paddingXY horizontalPadding (verticalPaddingForDevice model.device.class)
         , Element.spacingXY 20 8
         , Element.spaceEvenly
         ]

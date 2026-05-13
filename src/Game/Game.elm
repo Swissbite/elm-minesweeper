@@ -494,6 +494,16 @@ desktopPauseOverlayFontSize =
     80
 
 
+mobilePauseButtonFontSize : Int
+mobilePauseButtonFontSize =
+    28
+
+
+desktopPauseButtonFontSize : Int
+desktopPauseButtonFontSize =
+    42
+
+
 gameInformationElements : Model -> List (Element GameMsg)
 gameInformationElements model =
     case getRunningGameStats model.game of
@@ -566,10 +576,10 @@ pauseToggleElements model =
             , Border.rounded 10
             , Font.size <|
                 if model.device.class == Phone then
-                    28
+                    mobilePauseButtonFontSize
 
                 else
-                    42
+                    desktopPauseButtonFontSize
             ]
     in
     case ( model.game.gameBoardStatus, model.game.gamePauseResumeState ) of
@@ -623,12 +633,7 @@ gameFinishedElements model =
 
 mobileStatusBarElement : Model -> Element GameMsg
 mobileStatusBarElement model =
-    case gameInformationElements model of
-        [] ->
-            Element.none
-
-        information ->
-            Element.wrappedRow [ Element.width Element.fill, Element.spacing 8 ] information
+    wrapIfNotEmpty (gameInformationElements model)
 
 
 mobileActionBarElement : Model -> Element GameMsg
@@ -637,7 +642,12 @@ mobileActionBarElement model =
         actionElements =
             gameActionElements model ++ gameFinishedElements model
     in
-    if List.isEmpty actionElements then
+    wrapIfNotEmpty actionElements
+
+
+wrapIfNotEmpty : List (Element msg) -> Element msg
+wrapIfNotEmpty elements =
+    if List.isEmpty elements then
         Element.none
 
     else
@@ -723,8 +733,8 @@ initGameCellToElement cellSize initGameGrid =
         Element.el (Styles.untouchedCellStyle cellSize ++ [ Events.onClick <| ClickedOnInitGameCell initGameGrid coords ]) <| Element.text ""
 
 
-gameView : BoardViewConfig -> PlayGameGrid -> (Grid.Grid GameCell -> Grid.Grid (Element GameMsg)) -> Element GameMsg
-gameView _ playGameGrid gridGameToGridElementMapper =
+gameView : PlayGameGrid -> (Grid.Grid GameCell -> Grid.Grid (Element GameMsg)) -> Element GameMsg
+gameView playGameGrid gridGameToGridElementMapper =
     playGameGrid
         |> gridGameToGridElementMapper
         |> Grid.rows
@@ -736,7 +746,7 @@ gameView _ playGameGrid gridGameToGridElementMapper =
 
 runningGameView : BoardViewConfig -> PlayGameGrid -> Element GameMsg
 runningGameView boardConfig playGameGrid =
-    gameView boardConfig playGameGrid <| Grid.indexedMap (runningGameCellToElement boardConfig.cellSize)
+    gameView playGameGrid <| Grid.indexedMap (runningGameCellToElement boardConfig.cellSize)
 
 
 pausedGameView : BoardViewConfig -> PlayGameGrid -> Element GameMsg
@@ -765,7 +775,7 @@ pausedGameView boardConfig playGameGrid =
                     Element.text "Paused"
         ]
     <|
-        gameView boardConfig playGameGrid <|
+        gameView playGameGrid <|
             Grid.map (\_ -> Element.el (Styles.openedCellStyle boardConfig.cellSize) Element.none)
 
 
