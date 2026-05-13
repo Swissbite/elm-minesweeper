@@ -42,6 +42,16 @@ icons =
     }
 
 
+minimumCellFontSize : Int
+minimumCellFontSize =
+    16
+
+
+pillBorderRadius : Int
+pillBorderRadius =
+    999
+
+
 cellPixelSize : Device -> { cols : Int, rows : Int } -> Int
 cellPixelSize device { cols, rows } =
     let
@@ -102,7 +112,7 @@ basicCellStyle size =
     , Border.color Colors.cellBorderColor
     , Border.width 1
     , Element.pointer
-    , Font.size (max 16 (size // 2))
+    , Font.size (max minimumCellFontSize (size // 2))
     , htmlAttribute <| HA.style "touch-action" "manipulation"
     , htmlAttribute <| HA.style "user-select" "none"
     , htmlAttribute <| HA.style "-webkit-tap-highlight-color" "transparent"
@@ -187,6 +197,18 @@ styledGameSelectionButton { onPress, title, subtitle, isPhone } =
                 , el [ Font.color Colors.caputMortuum ] <| text subtitle
                 ]
         }
+
+
+pillBadge : String -> Element msg
+pillBadge label =
+    Element.el
+        [ Background.color Colors.openedCellGray
+        , Border.rounded pillBorderRadius
+        , Element.paddingXY 10 6
+        ]
+    <|
+        Element.el [ Font.semiBold ] <|
+            Element.text label
 
 
 {-| Credits to <https://ellie-app.com/85HbWTjCGWha1>

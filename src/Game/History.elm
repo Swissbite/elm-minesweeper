@@ -111,10 +111,10 @@ mobileHistoryControls query =
                 Element.none
 
             DisplayWon ->
-                historyBadge "Filtered: Won"
+                Styles.pillBadge "Filtered: Won"
 
             DisplayLost ->
-                historyBadge "Filtered: Lost"
+                Styles.pillBadge "Filtered: Lost"
         ]
 
 
@@ -140,38 +140,26 @@ historyCard entry =
         , Border.color Colors.cellBorderColor
         ]
         [ Element.wrappedRow [ Element.width Element.fill, Element.spacing 8 ]
-            [ historyBadge <|
+            [ Styles.pillBadge <|
                 case entry.result of
                     Won ->
                         "Won " ++ String.fromChar Styles.icons.victory
 
                     Lost ->
                         "Lost " ++ String.fromChar Styles.icons.exploded
-            , historyBadge ("Date " ++ formatDate entry.playFinish)
+            , Styles.pillBadge ("Date " ++ formatDate entry.playFinish)
             ]
         , Element.wrappedRow [ Element.width Element.fill, Element.spacing 8 ]
-            [ historyBadge ("Duration " ++ formatDuration entry.duration)
-            , historyBadge
+            [ Styles.pillBadge ("Duration " ++ formatDuration entry.duration)
+            , Styles.pillBadge
                 ("Field "
                     ++ String.fromInt (Grid.width entry.grid)
                     ++ " x "
                     ++ String.fromInt (Grid.height entry.grid)
                 )
-            , historyBadge ("Mines " ++ String.fromInt (countMines entry.grid))
+            , Styles.pillBadge ("Mines " ++ String.fromInt (countMines entry.grid))
             ]
         ]
-
-
-historyBadge : String -> Element msg
-historyBadge label =
-    Element.el
-        [ Background.color Colors.openedCellGray
-        , Border.rounded 999
-        , Element.paddingXY 10 6
-        ]
-    <|
-        Element.el [ Font.semiBold ] <|
-            Element.text label
 
 
 nextOrderDirection : GameHistoryQuery -> GameHistoryOrderBy -> OrderDirection

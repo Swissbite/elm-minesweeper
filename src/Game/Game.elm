@@ -484,16 +484,14 @@ boardViewport boardConfig boardElement =
             boardElement
 
 
-statusBadge : String -> Element GameMsg
-statusBadge label =
-    Element.el
-        [ Background.color Colors.openedCellGray
-        , Border.rounded 999
-        , Element.paddingXY 10 6
-        ]
-    <|
-        Element.el [ Font.bold ] <|
-            Element.text label
+mobilePauseOverlayFontSize : Int
+mobilePauseOverlayFontSize =
+    48
+
+
+desktopPauseOverlayFontSize : Int
+desktopPauseOverlayFontSize =
+    80
 
 
 gameInformationElements : Model -> List (Element GameMsg)
@@ -503,9 +501,9 @@ gameInformationElements model =
             []
 
         Just data ->
-            [ statusBadge <| String.concat [ Styles.icons.stopWatch, " ", millisToString data.elapsedTime ]
-            , statusBadge <| String.concat [ String.fromChar Styles.icons.untouchedBomb, " ", String.fromInt data.mines ]
-            , statusBadge <| String.concat [ String.fromChar Styles.icons.markerFlag, " ", String.fromInt data.flags ]
+            [ Styles.pillBadge <| String.concat [ Styles.icons.stopWatch, " ", millisToString data.elapsedTime ]
+            , Styles.pillBadge <| String.concat [ String.fromChar Styles.icons.untouchedBomb, " ", String.fromInt data.mines ]
+            , Styles.pillBadge <| String.concat [ String.fromChar Styles.icons.markerFlag, " ", String.fromInt data.flags ]
             ]
 
 
@@ -602,7 +600,7 @@ gameFinishedElements : Model -> List (Element GameMsg)
 gameFinishedElements model =
     case model.game.gameBoardStatus of
         FinishedGame playGameGrid gameResult _ ->
-            [ statusBadge <|
+            [ Styles.pillBadge <|
                 case gameResult of
                     Won ->
                         "You won!"
@@ -758,10 +756,10 @@ pausedGameView boardConfig playGameGrid =
                     , Font.extraBold
                     , Font.size <|
                         if boardConfig.isMobile then
-                            48
+                            mobilePauseOverlayFontSize
 
                         else
-                            80
+                            desktopPauseOverlayFontSize
                     ]
                 <|
                     Element.text "Paused"

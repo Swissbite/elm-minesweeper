@@ -39,6 +39,16 @@ githubPagePathPrefix =
     "elm-minesweeper"
 
 
+compactVerticalPadding : Int
+compactVerticalPadding =
+    8
+
+
+defaultVerticalPadding : Int
+defaultVerticalPadding =
+    10
+
+
 
 --- PROGRAM ---
 
@@ -223,10 +233,10 @@ footerView model =
         [ Element.width Element.fill
         , Element.paddingXY 10
             (if model.device.class == Element.Phone then
-                8
+                compactVerticalPadding
 
              else
-                10
+                defaultVerticalPadding
             )
         , Element.spacingXY 20 8
         , Element.spaceEvenly
