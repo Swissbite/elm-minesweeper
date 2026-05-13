@@ -24,7 +24,7 @@ Exposes the basic update / view / subscription functions, so that Main.elm can u
 import Array
 import Browser.Events
 import Colors
-import Element exposing (DeviceClass(..), Element, px)
+import Element exposing (DeviceClass(..), Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
@@ -33,7 +33,9 @@ import Element.Input as Input
 import Element.Lazy as Lazy
 import Game.Internal exposing (..)
 import Grid
+import Html.Attributes as HA
 import Json.Decode as Decode
+import List
 import Random exposing (Generator)
 import Set exposing (Set)
 import Styles exposing (..)
@@ -277,113 +279,58 @@ updateModelByClickOnGameCell coords model =
 view : Model -> Element GameMsg
 view model =
     let
-        gameGridElement : PauseResumeState -> PlayGameGrid -> Element GameMsg
-        gameGridElement pauseResumeState playGrid =
+        boardConfigFromDefinition : PlayGroundDefinition -> BoardViewConfig
+        boardConfigFromDefinition definition =
+            boardViewConfig model definition.cols definition.rows
+
+        boardConfigFromInitGrid : InitGameData -> BoardViewConfig
+        boardConfigFromInitGrid initGrid =
+            boardConfigFromDefinition
+                { cols = Grid.width initGrid.grid
+                , rows = Grid.height initGrid.grid
+                , mines = initGrid.mines
+                }
+
+        boardConfigFromPlayGrid : PlayGameGrid -> BoardViewConfig
+        boardConfigFromPlayGrid playGrid =
+            boardConfigFromDefinition (playGameGridToPlaygroundDefinition playGrid)
+
+        gameGridElement : BoardViewConfig -> PauseResumeState -> PlayGameGrid -> Element GameMsg
+        gameGridElement boardConfig pauseResumeState playGrid =
             case pauseResumeState of
                 Paused ->
-                    Lazy.lazy pausedGameView playGrid
+                    Lazy.lazy2 pausedGameView boardConfig playGrid
 
                 Resumed _ ->
-                    Lazy.lazy runningGameView playGrid
+                    Lazy.lazy2 runningGameView boardConfig playGrid
     in
     case model.game.gameBoardStatus of
         NoGame _ ->
-            Element.column [ Element.width Element.fill, Element.height Element.fill, Element.spacing 10 ] <|
-                case model.device.class of
-                    Phone ->
-                        [ Styles.styledGameSelectionButton
-                            { onPress = Just (CreateNewGame smallPlayground)
-                            , label = Element.text "small"
-                            }
-                        , Styles.styledGameSelectionButton
-                            { onPress = Just (CreateNewGame mediumPlayground)
-                            , label = Element.text "medium"
-                            }
-                        , Styles.styledGameSelectionButton
-                            { onPress = Just (CreateNewGame advancePlayground)
-                            , label = Element.text "advanced"
-                            }
-                        , Styles.styledGameSelectionButton
-                            { onPress = Just (CreateNewGame xxlPlayground)
-                            , label = Element.text "xxl"
-                            }
-                        ]
-
-                    _ ->
-                        [ Element.row
-                            [ Element.centerX, Element.centerY, Element.spacing 10 ]
-                            [ Styles.styledGameSelectionButton
-                                { onPress = Just (CreateNewGame smallPlayground)
-                                , label = Element.text "small"
-                                }
-                            , Styles.styledGameSelectionButton
-                                { onPress = Just (CreateNewGame mediumPlayground)
-                                , label = Element.text "medium"
-                                }
-                            ]
-                        , Element.row
-                            [ Element.centerX, Element.centerY, Element.spacing 10 ]
-                            [ Styles.styledGameSelectionButton
-                                { onPress = Just (CreateNewGame advancePlayground)
-                                , label = Element.text "advanced"
-                                }
-                            , Styles.styledGameSelectionButton
-                                { onPress = Just (CreateNewGame xxlPlayground)
-                                , label = Element.text "xxl"
-                                }
-                            ]
-                        ]
+            gameSelectionView model
 
         WaitOnStart initGameGrid ->
-            Lazy.lazy
-                (\initGrid ->
-                    Element.column
-                        [ Element.width Element.fill
-                        , Element.height Element.fill
-                        , Element.padding 20
-                        ]
-                    <|
-                        case model.device.class of
-                            Phone ->
-                                [ sidebarElement model, initGameGridView initGrid ]
-
-                            Tablet ->
-                                [ sidebarElement model, initGameGridView initGrid ]
-
-                            _ ->
-                                [ Element.row [ Element.centerX, Element.width Element.fill, Element.height Element.fill ] [ initGameGridView initGrid, sidebarElement model ]
-                                ]
-                )
-                initGameGrid
+            let
+                boardConfig =
+                    boardConfigFromInitGrid initGameGrid
+            in
+            gameScreenLayout model boardConfig <|
+                Lazy.lazy2 initGameGridView boardConfig initGameGrid
 
         RunningGame playGrid ->
-            Element.column
-                [ Element.width Element.fill
-                , Element.height Element.fill
-                , Element.padding 20
-                ]
-            <|
-                case model.device.class of
-                    Phone ->
-                        [ sidebarElement model, gameGridElement model.game.gamePauseResumeState playGrid ]
-
-                    Tablet ->
-                        [ sidebarElement model, gameGridElement model.game.gamePauseResumeState playGrid ]
-
-                    _ ->
-                        [ Element.row [ Element.centerX, Element.width Element.fill, Element.height Element.fill ] [ gameGridElement model.game.gamePauseResumeState playGrid, sidebarElement model ]
-                        ]
+            let
+                boardConfig =
+                    boardConfigFromPlayGrid playGrid
+            in
+            gameScreenLayout model boardConfig <|
+                gameGridElement boardConfig model.game.gamePauseResumeState playGrid
 
         FinishedGame playGrid finishedStatus _ ->
-            Element.column
-                [ Element.width Element.fill
-                , Element.height Element.fill
-                , Element.padding 20
-                , Element.inFront <|
-                    sidebarElement model
-                ]
-                [ Lazy.lazy2 finishedGameView playGrid finishedStatus
-                ]
+            let
+                boardConfig =
+                    boardConfigFromPlayGrid playGrid
+            in
+            gameScreenLayout model boardConfig <|
+                Lazy.lazy3 finishedGameView boardConfig playGrid finishedStatus
 
 
 smallPlayground : PlayGroundDefinition
@@ -418,128 +365,308 @@ xxlPlayground =
     }
 
 
+type alias BoardViewConfig =
+    { cellSize : Int
+    , cols : Int
+    , rows : Int
+    , isMobile : Bool
+    }
+
+
+boardViewConfig : Model -> Int -> Int -> BoardViewConfig
+boardViewConfig model cols rows =
+    { cellSize = Styles.cellPixelSize model.device { cols = cols, rows = rows }
+    , cols = cols
+    , rows = rows
+    , isMobile = model.device.class == Phone || model.device.class == Tablet
+    }
+
+
+gameSelectionView : Model -> Element GameMsg
+gameSelectionView model =
+    let
+        isPhone =
+            model.device.class == Phone
+
+        optionView : ( String, PlayGroundDefinition ) -> Element GameMsg
+        optionView ( title, definition ) =
+            Styles.styledGameSelectionButton
+                { onPress = Just (CreateNewGame definition)
+                , title = title
+                , subtitle =
+                    String.fromInt definition.cols
+                        ++ " x "
+                        ++ String.fromInt definition.rows
+                        ++ " • "
+                        ++ String.fromInt definition.mines
+                        ++ " mines"
+                , isPhone = isPhone
+                }
+
+        options =
+            [ ( "Small", smallPlayground )
+            , ( "Medium", mediumPlayground )
+            , ( "Advanced", advancePlayground )
+            , ( "XXL", xxlPlayground )
+            ]
+    in
+    Element.column
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        , Element.padding 16
+        , Element.spacing 16
+        ]
+        [ Element.column [ Element.width Element.fill, Element.spacing 8 ]
+            [ Element.el [ Font.bold, Font.size 28 ] <| Element.text "Choose a board"
+            , Element.paragraph [ Font.color Colors.caputMortuum ]
+                [ Element.text "Mobile keeps touch-friendly cells and lets larger boards scroll when needed." ]
+            ]
+        , (if isPhone then
+            Element.column [ Element.width Element.fill, Element.spacing 12 ]
+
+           else
+            Element.wrappedRow [ Element.width Element.fill, Element.spacing 12 ]
+          )
+            (List.map optionView options)
+        ]
+
+
+gameScreenLayout : Model -> BoardViewConfig -> Element GameMsg -> Element GameMsg
+gameScreenLayout model boardConfig boardElement =
+    if boardConfig.isMobile then
+        Element.column
+            [ Element.width Element.fill
+            , Element.height Element.fill
+            , Element.padding 12
+            , Element.spacing 12
+            ]
+            [ mobileStatusBarElement model
+            , Element.el [ Element.width Element.fill, Element.height Element.fill ] <| boardViewport boardConfig boardElement
+            , mobileActionBarElement model
+            ]
+
+    else
+        Element.row
+            [ Element.width Element.fill
+            , Element.height Element.fill
+            , Element.padding 20
+            , Element.spacing 20
+            ]
+            [ Element.el [ Element.width <| Element.fillPortion 5, Element.height Element.fill ] <| boardViewport boardConfig boardElement
+            , sidebarElement model
+            ]
+
+
+boardViewport : BoardViewConfig -> Element GameMsg -> Element GameMsg
+boardViewport boardConfig boardElement =
+    Element.el
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        , Background.color Colors.white
+        , Border.color Colors.cellBorderColor
+        , Border.width 1
+        , Border.rounded 16
+        , Element.padding 8
+        , Element.htmlAttribute <| HA.style "overflow" "auto"
+        , Element.htmlAttribute <| HA.style "overscroll-behavior" "contain"
+        , Element.htmlAttribute <| HA.style "-webkit-overflow-scrolling" "touch"
+        , Element.htmlAttribute <| HA.style "touch-action" "pan-x pan-y pinch-zoom"
+        ]
+    <|
+        Element.el
+            [ if boardConfig.isMobile then
+                Element.alignLeft
+
+              else
+                Element.centerX
+            , Element.alignTop
+            ]
+            boardElement
+
+
+statusBadge : String -> Element GameMsg
+statusBadge label =
+    Element.el
+        [ Background.color Colors.openedCellGray
+        , Border.rounded 999
+        , Element.paddingXY 10 6
+        ]
+    <|
+        Element.el [ Font.bold ] <|
+            Element.text label
+
+
+gameInformationElements : Model -> List (Element GameMsg)
+gameInformationElements model =
+    case getRunningGameStats model.game of
+        Nothing ->
+            []
+
+        Just data ->
+            [ statusBadge <| String.concat [ Styles.icons.stopWatch, " ", millisToString data.elapsedTime ]
+            , statusBadge <| String.concat [ String.fromChar Styles.icons.untouchedBomb, " ", String.fromInt data.mines ]
+            , statusBadge <| String.concat [ String.fromChar Styles.icons.markerFlag, " ", String.fromInt data.flags ]
+            ]
+
+
+modeSelectorElements : Model -> List (Element GameMsg)
+modeSelectorElements model =
+    case model.game.gameBoardStatus of
+        RunningGame _ ->
+            [ Element.row
+                [ Element.spacing 8
+                , Background.color Colors.openedCellGray
+                , Border.rounded 999
+                , Element.paddingXY 10 6
+                ]
+                [ Element.el [ Font.bold, Element.centerY ] <|
+                    Element.text <|
+                        case model.game.gameInteractionMode of
+                            Reveal ->
+                                "Mode: Reveal"
+
+                            Flag ->
+                                "Mode: Flag"
+                , Lazy.lazy mineToggleElement model.game.gameInteractionMode
+                ]
+            ]
+
+        _ ->
+            []
+
+
+giveUpElements : Model -> List (Element GameMsg)
+giveUpElements model =
+    case model.game.gameBoardStatus of
+        FinishedGame _ _ _ ->
+            []
+
+        RunningGame _ ->
+            [ Input.button [ Background.color Colors.black, Border.solid, Element.paddingXY 12 10, Border.rounded 10, Font.color Colors.gold ]
+                { onPress = Just GoToStartPage
+                , label = Element.text "Give up 💀"
+                }
+            ]
+
+        WaitOnStart _ ->
+            [ Input.button [ Background.color Colors.black, Border.solid, Element.paddingXY 12 10, Border.rounded 10, Font.color Colors.gold ]
+                { onPress = Just GoToStartPage
+                , label = Element.text "Cancel ❌"
+                }
+            ]
+
+        _ ->
+            []
+
+
+pauseToggleElements : Model -> List (Element GameMsg)
+pauseToggleElements model =
+    let
+        buttonAttributes =
+            [ Border.solid
+            , Element.paddingXY 10 6
+            , Border.rounded 10
+            , Font.size <|
+                if model.device.class == Phone then
+                    28
+
+                else
+                    42
+            ]
+    in
+    case ( model.game.gameBoardStatus, model.game.gamePauseResumeState ) of
+        ( RunningGame _, Paused ) ->
+            [ Input.button buttonAttributes
+                { onPress = Just ToogleGamePause
+                , label = Element.text Styles.icons.resume
+                }
+            ]
+
+        ( RunningGame _, Resumed _ ) ->
+            [ Input.button buttonAttributes
+                { onPress = Just ToogleGamePause
+                , label = Element.text Styles.icons.pause
+                }
+            ]
+
+        _ ->
+            []
+
+
+gameActionElements : Model -> List (Element GameMsg)
+gameActionElements model =
+    modeSelectorElements model ++ giveUpElements model ++ pauseToggleElements model
+
+
+gameFinishedElements : Model -> List (Element GameMsg)
+gameFinishedElements model =
+    case model.game.gameBoardStatus of
+        FinishedGame playGameGrid gameResult _ ->
+            [ statusBadge <|
+                case gameResult of
+                    Won ->
+                        "You won!"
+
+                    Lost ->
+                        "You lost!"
+            , Input.button [ Background.color Colors.asparagus, Border.solid, Element.paddingXY 12 10, Border.rounded 10 ]
+                { onPress = Just (CreateNewGame <| playGameGridToPlaygroundDefinition playGameGrid)
+                , label = Element.text "Start new game"
+                }
+            , Input.button [ Background.color Colors.saffron, Border.solid, Element.paddingXY 12 10, Border.rounded 10 ]
+                { onPress = Just GoToStartPage
+                , label = Element.text "Back to overview"
+                }
+            ]
+
+        _ ->
+            []
+
+
+mobileStatusBarElement : Model -> Element GameMsg
+mobileStatusBarElement model =
+    case gameInformationElements model of
+        [] ->
+            Element.none
+
+        information ->
+            Element.wrappedRow [ Element.width Element.fill, Element.spacing 8 ] information
+
+
+mobileActionBarElement : Model -> Element GameMsg
+mobileActionBarElement model =
+    let
+        actionElements =
+            gameActionElements model ++ gameFinishedElements model
+    in
+    if List.isEmpty actionElements then
+        Element.none
+
+    else
+        Element.wrappedRow
+            [ Element.width Element.fill
+            , Element.spacing 8
+            ]
+            actionElements
+
+
 sidebarElement : Model -> Element GameMsg
 sidebarElement model =
-    let
-        toggleElement =
-            case model.game.gameBoardStatus of
-                RunningGame _ ->
-                    Lazy.lazy mineToggleElement model.game.gameInteractionMode
-
-                _ ->
-                    Element.none
-
-        toggleElementLabel =
-            case model.game.gameBoardStatus of
-                RunningGame _ ->
-                    Element.el [ Font.bold ] <| Element.text "Reveal/Flag"
-
-                _ ->
-                    Element.none
-
-        giveUpElement : Element GameMsg
-        giveUpElement =
-            case model.game.gameBoardStatus of
-                FinishedGame _ _ _ ->
-                    Element.none
-
-                _ ->
-                    Input.button [ Background.color Colors.black, Border.solid, Element.padding 10, Border.rounded 10, Font.color Colors.gold ]
-                        { onPress = Just GoToStartPage
-                        , label =
-                            Element.text <|
-                                case model.game.gameBoardStatus of
-                                    RunningGame _ ->
-                                        "Give up 💀"
-
-                                    WaitOnStart _ ->
-                                        "Cancel ❌"
-
-                                    _ ->
-                                        ""
-                        }
-
-        toggleGamePauseElement : Element GameMsg
-        toggleGamePauseElement =
-            case ( model.game.gameBoardStatus, model.game.gamePauseResumeState ) of
-                ( RunningGame _, Paused ) ->
-                    Input.button [ Border.solid, Element.padding 0, Border.rounded 10, Font.size 42 ]
-                        { onPress = Just ToogleGamePause
-                        , label = Element.text Styles.icons.resume
-                        }
-
-                ( RunningGame _, Resumed _ ) ->
-                    Input.button [ Border.solid, Element.padding 0, Border.rounded 10, Font.size 42 ]
-                        { onPress = Just ToogleGamePause
-                        , label = Element.text Styles.icons.pause
-                        }
-
-                _ ->
-                    Element.none
-
-        gameInformationElements : List (Element GameMsg)
-        gameInformationElements =
-            case getRunningGameStats model.game of
-                Nothing ->
-                    []
-
-                Just data ->
-                    [ Element.el [ Font.bold ] <| Element.text <| String.concat [ Styles.icons.stopWatch, " ", millisToString data.elapsedTime ]
-                    , Element.el [ Font.bold ] <| Element.text <| String.concat [ String.fromChar Styles.icons.untouchedBomb, " ", String.fromInt data.mines ]
-                    , Element.el [ Font.bold ] <| Element.text <| String.concat [ String.fromChar Styles.icons.markerFlag, " ", String.fromInt data.flags ]
+    Element.column
+        [ Element.width <| Element.fillPortion 2
+        , Element.alignTop
+        , Element.spacing 12
+        ]
+        (gameInformationElements model
+            ++ gameActionElements model
+            ++ gameFinishedElements model
+            ++ [ Element.column [ Font.bold ]
+                    [ Element.text "Shortcuts:"
+                    , Element.text "T: Toggle Selector"
+                    , Element.text "P: Pause/Resume"
                     ]
-
-        gameFinishedElements =
-            case model.game.gameBoardStatus of
-                FinishedGame playGameGrid gameResult _ ->
-                    [ case gameResult of
-                        Won ->
-                            Element.text "You won!"
-
-                        Lost ->
-                            Element.text "You lost!"
-                    , Input.button [ Background.color Colors.asparagus, Border.solid, Element.padding 10, Border.rounded 10 ]
-                        { onPress = Just (CreateNewGame <| playGameGridToPlaygroundDefinition playGameGrid)
-                        , label = Element.text "Start new game"
-                        }
-                    , Input.button [ Background.color Colors.saffron, Border.solid, Element.padding 10, Border.rounded 10 ]
-                        { onPress = Just GoToStartPage
-                        , label = Element.text "Back to overview"
-                        }
-                    ]
-
-                _ ->
-                    []
-    in
-    gameInformationElements
-        ++ [ toggleElementLabel
-           , toggleElement
-           , giveUpElement
-           , toggleGamePauseElement
-           ]
-        ++ gameFinishedElements
-        ++ (case ( model.device.class == Phone, model.device.class == Tablet ) of
-                ( False, False ) ->
-                    [ Element.column [ Font.bold ] [ Element.text "Shortcuts:", Element.text "T: Toggle Selector", Element.text "P: Pause/Resume" ] ]
-
-                ( _, _ ) ->
-                    []
-           )
-        |> (case model.device.class of
-                Phone ->
-                    Element.wrappedRow [ Element.alignTop, Element.centerX, Element.padding 20, Element.spacing 10 ]
-
-                Tablet ->
-                    Element.wrappedRow [ Element.alignTop, Element.centerX, Element.padding 20, Element.spacing 10 ]
-
-                _ ->
-                    Element.column
-                        [ Element.alignTop
-                        , Element.alignRight
-                        , Element.padding 20
-                        , Element.spacing 10
-                        ]
-           )
+               ]
+        )
 
 
 styledToggleElement : Bool -> Element GameMsg
@@ -573,11 +700,11 @@ mineToggleElement gameInteractionMode =
             }
 
 
-initGameGridView : InitGameData -> Element GameMsg
-initGameGridView initGameGrid =
+initGameGridView : BoardViewConfig -> InitGameData -> Element GameMsg
+initGameGridView boardConfig initGameGrid =
     let
         indexedFn =
-            initGameCellToElement initGameGrid
+            initGameCellToElement boardConfig.cellSize initGameGrid
 
         gridWithElements =
             Grid.indexedMap indexedFn initGameGrid.grid
@@ -585,45 +712,43 @@ initGameGridView initGameGrid =
         gridAsListOfRows =
             Grid.rows gridWithElements |> Array.map Array.toList |> Array.map (\l -> Element.row [] l) |> Array.toList
     in
-    Element.column [ Element.centerX, Element.centerY ] gridAsListOfRows
+    Element.column [ Element.alignTop ] gridAsListOfRows
 
 
-initGameCellToElement : InitGameData -> (Int -> Int -> InitGameCell -> Element GameMsg)
-initGameCellToElement initGameGrid =
+initGameCellToElement : Int -> InitGameData -> (Int -> Int -> InitGameCell -> Element GameMsg)
+initGameCellToElement cellSize initGameGrid =
     \x y _ ->
         let
             coords =
                 Coordinate x y
         in
-        Element.el (Styles.untouchedCellStyle ++ [ Events.onClick <| ClickedOnInitGameCell initGameGrid coords ]) <| Element.text ""
+        Element.el (Styles.untouchedCellStyle cellSize ++ [ Events.onClick <| ClickedOnInitGameCell initGameGrid coords ]) <| Element.text ""
 
 
-gameView : PlayGameGrid -> (Grid.Grid GameCell -> Grid.Grid (Element GameMsg)) -> Element GameMsg
-gameView playGameGrid gridGameToGridElementMapper =
+gameView : BoardViewConfig -> PlayGameGrid -> (Grid.Grid GameCell -> Grid.Grid (Element GameMsg)) -> Element GameMsg
+gameView _ playGameGrid gridGameToGridElementMapper =
     playGameGrid
         |> gridGameToGridElementMapper
         |> Grid.rows
         |> Array.map Array.toList
         |> Array.map (\l -> Element.row [] l)
         |> Array.toList
-        |> Element.column [ Element.centerX, Element.centerY ]
+        |> Element.column [ Element.alignTop ]
 
 
-runningGameView : PlayGameGrid -> Element GameMsg
-runningGameView playGameGrid =
-    gameView playGameGrid <| Grid.indexedMap runningGameCellToElement
+runningGameView : BoardViewConfig -> PlayGameGrid -> Element GameMsg
+runningGameView boardConfig playGameGrid =
+    gameView boardConfig playGameGrid <| Grid.indexedMap (runningGameCellToElement boardConfig.cellSize)
 
 
-pausedGameView : PlayGameGrid -> Element GameMsg
-pausedGameView playGameGrid =
+pausedGameView : BoardViewConfig -> PlayGameGrid -> Element GameMsg
+pausedGameView boardConfig playGameGrid =
     Element.el
         [ Element.width Element.fill
         , Element.inFront <|
             Element.el
-                [ Element.centerX
-                , Element.centerY
-                , Element.width <| px 400
-                , Element.height <| px 400
+                [ Element.width Element.fill
+                , Element.height Element.fill
                 , Background.color <| Element.rgba255 255 0 0 0.5
                 ]
             <|
@@ -631,73 +756,78 @@ pausedGameView playGameGrid =
                     [ Element.centerX
                     , Element.centerY
                     , Font.extraBold
-                    , Font.size 99
+                    , Font.size <|
+                        if boardConfig.isMobile then
+                            48
+
+                        else
+                            80
                     ]
                 <|
                     Element.text "Paused"
         ]
     <|
-        gameView playGameGrid <|
-            Grid.map (\_ -> Element.el Styles.openedCellStyle Element.none)
+        gameView boardConfig playGameGrid <|
+            Grid.map (\_ -> Element.el (Styles.openedCellStyle boardConfig.cellSize) Element.none)
 
 
-runningGameCellToElement : Int -> Int -> GameCell -> Element GameMsg
-runningGameCellToElement x y cell =
+runningGameCellToElement : Int -> Int -> Int -> GameCell -> Element GameMsg
+runningGameCellToElement cellSize x y cell =
     case cell of
         GameCell _ Flagged ->
-            Element.el (Styles.untouchedCellStyle ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.markerFlag
+            Element.el (Styles.untouchedCellStyle cellSize ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.markerFlag
 
         GameCell _ Untouched ->
-            Element.el (Styles.untouchedCellStyle ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) Element.none
+            Element.el (Styles.untouchedCellStyle cellSize ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) Element.none
 
         GameCell EmptyCell Opened ->
-            Element.el Styles.openedCellStyle Element.none
+            Element.el (Styles.openedCellStyle cellSize) Element.none
 
         GameCell MineCell Opened ->
-            Element.el Styles.openedCellStyle <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.exploded
+            Element.el (Styles.openedCellStyle cellSize) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.exploded
 
         GameCell (MineNeighbourCell neighbours) Opened ->
-            Element.el (Styles.openedMineNeighbourCellStyle neighbours ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text (String.fromInt neighbours)
+            Element.el (Styles.openedMineNeighbourCellStyle cellSize neighbours ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text (String.fromInt neighbours)
 
 
-finishedGameView : PlayGameGrid -> GameResult -> Element GameMsg
-finishedGameView playGameGrid _ =
-    Element.column [ Element.centerX, Element.centerY ]
-        [ finishedGridToView playGameGrid
+finishedGameView : BoardViewConfig -> PlayGameGrid -> GameResult -> Element GameMsg
+finishedGameView boardConfig playGameGrid _ =
+    Element.column [ Element.alignTop ]
+        [ finishedGridToView boardConfig playGameGrid
         ]
 
 
-finishedGridToView : PlayGameGrid -> Element GameMsg
-finishedGridToView playGameGrid =
+finishedGridToView : BoardViewConfig -> PlayGameGrid -> Element GameMsg
+finishedGridToView boardConfig playGameGrid =
     playGameGrid
-        |> Grid.map finishedGameCellToElement
+        |> Grid.map (finishedGameCellToElement boardConfig.cellSize)
         |> Grid.rows
         |> Array.map Array.toList
         |> Array.map (\l -> Element.row [] l)
         |> Array.toList
-        |> Element.column [ Element.centerX, Element.centerY ]
+        |> Element.column [ Element.alignTop ]
 
 
-finishedGameCellToElement : GameCell -> Element GameMsg
-finishedGameCellToElement cell =
+finishedGameCellToElement : Int -> GameCell -> Element GameMsg
+finishedGameCellToElement cellSize cell =
     case cell of
         GameCell MineCell Opened ->
-            Element.el Styles.openedCellStyle <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.exploded
+            Element.el (Styles.openedCellStyle cellSize) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.exploded
 
         GameCell MineCell _ ->
-            Element.el Styles.openedCellStyle <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.untouchedBomb
+            Element.el (Styles.openedCellStyle cellSize) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.untouchedBomb
 
         GameCell (MineNeighbourCell neighbours) Opened ->
-            Element.el (Styles.openedMineNeighbourCellStyle neighbours) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text (String.fromInt neighbours)
+            Element.el (Styles.openedMineNeighbourCellStyle cellSize neighbours) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text (String.fromInt neighbours)
 
         GameCell EmptyCell Opened ->
-            Element.el Styles.openedCellStyle Element.none
+            Element.el (Styles.openedCellStyle cellSize) Element.none
 
         GameCell _ Flagged ->
-            Element.el Styles.untouchedCellStyle <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.markerFlag
+            Element.el (Styles.untouchedCellStyle cellSize) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.markerFlag
 
         _ ->
-            Element.el Styles.untouchedCellStyle Element.none
+            Element.el (Styles.untouchedCellStyle cellSize) Element.none
 
 
 

@@ -27,6 +27,7 @@ import Element.Lazy as Lazy
 import ErrorPage404
 import Game.Game as Game
 import Game.History as GameHistory
+import Html.Attributes as HA
 import Tuple
 import Types exposing (..)
 import Url exposing (Url)
@@ -175,11 +176,17 @@ view : Model -> Document Msg
 view m =
     { title = "Elm - Minesweeper"
     , body =
-        [ Element.layout [ Element.width Element.fill, Element.height Element.fill ] <|
+        [ Element.layout
+            [ Element.width Element.fill
+            , Element.height Element.fill
+            , Element.clipX
+            , Element.htmlAttribute <| HA.style "overflow-x" "hidden"
+            ]
+          <|
             Element.column [ Element.width fill, Element.height fill, Element.centerX, Element.spacingXY 0 0 ]
                 [ navigationView m.containsGithubPrefixInPath
                 , Lazy.lazy selectBoardView m
-                , footerView
+                , footerView m
                 ]
         ]
     }
@@ -196,24 +203,59 @@ navigationView containsGithubPrefixInPath =
             else
                 "/"
     in
-    Element.row [ Element.width Element.fill, Background.color Colors.openedCellGray ]
-        [ Element.el [ Element.alignLeft, Element.paddingXY 10 10 ] <| Element.text "Elm Minesweeper"
-        , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = pathWithTrailingSlash ++ "", label = Element.text "Game" }
-        , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = pathWithTrailingSlash ++ "history", label = Element.text "History" }
+    Element.wrappedRow
+        [ Element.width Element.fill
+        , Background.color Colors.openedCellGray
+        , Element.paddingXY 10 8
+        , Element.spacingXY 16 8
+        ]
+        [ Element.el [ Element.alignLeft ] <| Element.text "Elm Minesweeper"
+        , Element.row [ Element.alignRight, Element.spacing 20 ]
+            [ Element.link [] { url = pathWithTrailingSlash ++ "", label = Element.text "Game" }
+            , Element.link [] { url = pathWithTrailingSlash ++ "history", label = Element.text "History" }
+            ]
         ]
 
 
-footerView : Element Msg
-footerView =
-    Element.row
+footerView : Model -> Element Msg
+footerView model =
+    Element.wrappedRow
         [ Element.width Element.fill
-        , Element.alignBottom
-        , Element.paddingXY 10 10
+        , Element.paddingXY 10
+            (if model.device.class == Element.Phone then
+                8
+
+             else
+                10
+            )
+        , Element.spacingXY 20 8
         , Element.spaceEvenly
         ]
         [ Element.el [] <| Element.text "(c) 2026 David Daester"
-        , Element.link [] { url = "https://github.com/Swissbite/elm-minesweeper", label = Element.image [ Element.height <| Element.px 25 ] { src = "./github-mark.svg", description = "GitHub logo" } }
-        , Element.image [] { src = "./agplv3-88x31.png", description = "AGPLv3 license logo" }
+        , Element.link []
+            { url = "https://github.com/Swissbite/elm-minesweeper"
+            , label =
+                Element.image
+                    [ Element.height <|
+                        Element.px <|
+                            if model.device.class == Element.Phone then
+                                22
+
+                            else
+                                25
+                    ]
+                    { src = "./github-mark.svg", description = "GitHub logo" }
+            }
+        , Element.image
+            [ Element.height <|
+                Element.px <|
+                    if model.device.class == Element.Phone then
+                        24
+
+                    else
+                        31
+            ]
+            { src = "./agplv3-88x31.png", description = "AGPLv3 license logo" }
         ]
 
 

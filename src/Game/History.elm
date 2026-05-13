@@ -36,20 +36,232 @@ import Url.Parser.Query as Query
 
 view : Model -> Element GameHistoryMsg
 view model =
-    Element.column [ Element.centerX, Element.height Element.fill, Element.spacing 10 ]
+    let
+        currentQueryParameter : GameHistoryQuery
+        currentQueryParameter =
+            extractQueryParameterFromView model |> extractQueryParameterFromViewWithDefaults
+
+        historyEntries =
+            sortAndFilterListByQueryParameter (extractQueryParameterFromView model) model.playedGameHistory
+    in
+    Element.column [ Element.centerX, Element.width Element.fill, Element.height Element.fill, Element.spacing 12, Element.padding 16 ]
         [ Element.el [ Font.semiBold, Font.size 30, Element.centerX ] <| Element.text "Your play history"
-        , Element.row [ Element.width Element.fill, Element.spacing 10 ]
-            [ Input.button [ Background.color Colors.saffron, Border.solid, Element.padding 10, Border.rounded 10, Element.centerX ]
-                { label = Element.text "Delete lost games"
-                , onPress = Just DeleteLost
-                }
-            , Input.button [ Background.color Colors.tomato, Border.solid, Element.padding 10, Border.rounded 10, Element.centerX ]
-                { label = Element.text "Delete history"
-                , onPress = Just DeleteAll
-                }
-            ]
-        , sortableHistoryTable model
+        , historyActionButtons
+        , if model.device.class == Element.Phone then
+            mobileHistoryControls currentQueryParameter
+
+          else
+            Element.none
+        , if model.device.class == Element.Phone then
+            mobileHistoryList currentQueryParameter historyEntries
+
+          else
+            sortableHistoryTable model
         ]
+
+
+historyActionButtons : Element GameHistoryMsg
+historyActionButtons =
+    Element.wrappedRow [ Element.width Element.fill, Element.spacing 10 ]
+        [ Input.button [ Background.color Colors.saffron, Border.solid, Element.padding 10, Border.rounded 10, Element.centerX ]
+            { label = Element.text "Delete lost games"
+            , onPress = Just DeleteLost
+            }
+        , Input.button [ Background.color Colors.tomato, Border.solid, Element.padding 10, Border.rounded 10, Element.centerX ]
+            { label = Element.text "Delete history"
+            , onPress = Just DeleteAll
+            }
+        ]
+
+
+mobileHistoryControls : GameHistoryQuery -> Element GameHistoryMsg
+mobileHistoryControls query =
+    let
+        sortButton : GameHistoryOrderBy -> String -> Element GameHistoryMsg
+        sortButton orderBy label =
+            Input.button
+                [ Background.color <|
+                    if query.orderBy == orderBy then
+                        Colors.openedCellGray
+
+                    else
+                        Colors.lightGrey
+                , Border.solid
+                , Border.rounded 999
+                , Element.paddingXY 10 6
+                ]
+                { onPress = Just (SetOrderBy orderBy (nextOrderDirection query orderBy))
+                , label =
+                    Element.row [ Element.spacing 4 ]
+                        [ Element.text label
+                        , getOrderIcon query orderBy
+                        ]
+                }
+    in
+    Element.column [ Element.width Element.fill, Element.spacing 10 ]
+        [ Element.wrappedRow [ Element.width Element.fill, Element.spacing 8 ]
+            [ sortButton ByPosix "Date"
+            , sortButton ByDuration "Duration"
+            , sortButton ByFieldSize "Size"
+            , sortButton ByMines "Mines"
+            , sortButton ByResult "Result"
+            ]
+        , case query.displayMode of
+            DisplayAll ->
+                Element.none
+
+            DisplayWon ->
+                historyBadge "Filtered: Won"
+
+            DisplayLost ->
+                historyBadge "Filtered: Lost"
+        ]
+
+
+mobileHistoryList : GameHistoryQuery -> List FinishedGameHistoryEntry -> Element GameHistoryMsg
+mobileHistoryList _ entries =
+    if List.isEmpty entries then
+        Element.el [ Font.color Colors.caputMortuum ] <| Element.text "No history yet."
+
+    else
+        Element.column [ Element.width Element.fill, Element.spacing 12 ]
+            (List.map historyCard entries)
+
+
+historyCard : FinishedGameHistoryEntry -> Element GameHistoryMsg
+historyCard entry =
+    Element.column
+        [ Element.width Element.fill
+        , Element.spacing 10
+        , Element.padding 12
+        , Background.color Colors.lightGrey
+        , Border.rounded 16
+        , Border.width 1
+        , Border.color Colors.cellBorderColor
+        ]
+        [ Element.wrappedRow [ Element.width Element.fill, Element.spacing 8 ]
+            [ historyBadge <|
+                case entry.result of
+                    Won ->
+                        "Won " ++ String.fromChar Styles.icons.victory
+
+                    Lost ->
+                        "Lost " ++ String.fromChar Styles.icons.exploded
+            , historyBadge ("Date " ++ formatDate entry.playFinish)
+            ]
+        , Element.wrappedRow [ Element.width Element.fill, Element.spacing 8 ]
+            [ historyBadge ("Duration " ++ formatDuration entry.duration)
+            , historyBadge
+                ("Field "
+                    ++ String.fromInt (Grid.width entry.grid)
+                    ++ " x "
+                    ++ String.fromInt (Grid.height entry.grid)
+                )
+            , historyBadge ("Mines " ++ String.fromInt (countMines entry.grid))
+            ]
+        ]
+
+
+historyBadge : String -> Element msg
+historyBadge label =
+    Element.el
+        [ Background.color Colors.openedCellGray
+        , Border.rounded 999
+        , Element.paddingXY 10 6
+        ]
+    <|
+        Element.el [ Font.semiBold ] <|
+            Element.text label
+
+
+nextOrderDirection : GameHistoryQuery -> GameHistoryOrderBy -> OrderDirection
+nextOrderDirection query orderBy =
+    case ( query.orderBy == orderBy, query.orderDirection ) of
+        ( True, Ascending ) ->
+            Descending
+
+        _ ->
+            Ascending
+
+
+formatDuration : Int -> String
+formatDuration duration =
+    let
+        seconds =
+            duration // 1000
+
+        paddedSeconds =
+            modBy 60 seconds
+                |> String.fromInt
+                |> (\s ->
+                        if String.length s == 1 then
+                            "0" ++ s
+
+                        else
+                            s
+                   )
+    in
+    String.fromInt (seconds // 60) ++ ":" ++ paddedSeconds
+
+
+formatDate : Time.Posix -> String
+formatDate posix =
+    let
+        toNumberMonthAsString : Time.Month -> String
+        toNumberMonthAsString month =
+            case month of
+                Time.Jan ->
+                    "01"
+
+                Time.Feb ->
+                    "02"
+
+                Time.Mar ->
+                    "03"
+
+                Time.Apr ->
+                    "04"
+
+                Time.May ->
+                    "05"
+
+                Time.Jun ->
+                    "06"
+
+                Time.Jul ->
+                    "07"
+
+                Time.Aug ->
+                    "08"
+
+                Time.Sep ->
+                    "09"
+
+                Time.Oct ->
+                    "10"
+
+                Time.Nov ->
+                    "11"
+
+                Time.Dec ->
+                    "12"
+
+        paddedDay =
+            Time.toDay Time.utc posix
+                |> String.fromInt
+                |> (\s ->
+                        if String.length s == 1 then
+                            "0" ++ s
+
+                        else
+                            s
+                   )
+    in
+    String.fromInt (Time.toYear Time.utc posix)
+        ++ "-"
+        ++ toNumberMonthAsString (Time.toMonth Time.utc posix)
+        ++ "-"
+        ++ paddedDay
 
 
 sortableHistoryTable : Model -> Element GameHistoryMsg
@@ -135,23 +347,7 @@ byDurationColumn query =
             ]
     , width = Element.fill |> Element.minimum 300
     , view =
-        \entry ->
-            Element.row []
-                [ entry.duration // 1000 // 60 |> String.fromInt |> Element.text
-                , Element.text ":"
-                , entry.duration
-                    // 1000
-                    |> modBy 60
-                    |> String.fromInt
-                    |> (\s ->
-                            if String.length s == 1 then
-                                String.append "0" s
-
-                            else
-                                s
-                       )
-                    |> Element.text
-                ]
+        \entry -> Element.text (formatDuration entry.duration)
     }
 
 
@@ -238,64 +434,7 @@ byPosixColumn query =
             , getOrderIcon query ByPosix
             ]
     , width = Element.fill |> Element.minimum 300
-    , view =
-        let
-            toNumberMonthAsString : Time.Month -> String
-            toNumberMonthAsString month =
-                case month of
-                    Time.Jan ->
-                        "01"
-
-                    Time.Feb ->
-                        "02"
-
-                    Time.Mar ->
-                        "03"
-
-                    Time.Apr ->
-                        "04"
-
-                    Time.May ->
-                        "05"
-
-                    Time.Jun ->
-                        "06"
-
-                    Time.Jul ->
-                        "07"
-
-                    Time.Aug ->
-                        "08"
-
-                    Time.Sep ->
-                        "09"
-
-                    Time.Oct ->
-                        "10"
-
-                    Time.Nov ->
-                        "11"
-
-                    Time.Dec ->
-                        "12"
-        in
-        \entry ->
-            Element.row [ Element.centerX, Element.width Element.fill ]
-                [ Time.toYear Time.utc entry.playFinish |> String.fromInt |> Element.text
-                , Element.text "-"
-                , Time.toMonth Time.utc entry.playFinish |> toNumberMonthAsString |> Element.text
-                , Element.text "-"
-                , Time.toDay Time.utc entry.playFinish
-                    |> String.fromInt
-                    |> (\s ->
-                            if String.length s == 1 then
-                                "0" ++ s
-
-                            else
-                                s
-                       )
-                    |> Element.text
-                ]
+    , view = \entry -> Element.row [ Element.centerX, Element.width Element.fill ] [ Element.text (formatDate entry.playFinish) ]
     }
 
 

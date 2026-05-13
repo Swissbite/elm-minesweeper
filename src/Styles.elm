@@ -42,37 +42,89 @@ icons =
     }
 
 
-cellWidth : Element.Length
-cellWidth =
-    Element.px 50
+cellPixelSize : Device -> { cols : Int, rows : Int } -> Int
+cellPixelSize device { cols, rows } =
+    let
+        longestSide =
+            max cols rows
+    in
+    case device.class of
+        Phone ->
+            if longestSide <= 8 then
+                40
+
+            else if longestSide <= 16 then
+                34
+
+            else
+                32
+
+        Tablet ->
+            if longestSide <= 8 then
+                42
+
+            else if longestSide <= 16 then
+                36
+
+            else
+                32
+
+        Desktop ->
+            if longestSide <= 8 then
+                44
+
+            else if longestSide <= 16 then
+                32
+
+            else
+                28
+
+        BigDesktop ->
+            if longestSide <= 8 then
+                46
+
+            else if longestSide <= 16 then
+                34
+
+            else
+                30
 
 
-basicCellStyle : List (Element.Attribute msg)
-basicCellStyle =
-    [ Element.width cellWidth
-    , Element.height cellWidth
+cellWidth : Int -> Element.Length
+cellWidth size =
+    Element.px size
+
+
+basicCellStyle : Int -> List (Element.Attribute msg)
+basicCellStyle size =
+    [ Element.width (cellWidth size)
+    , Element.height (cellWidth size)
     , Border.color Colors.cellBorderColor
     , Border.width 1
     , Element.pointer
+    , Font.size (max 16 (size // 2))
+    , htmlAttribute <| HA.style "touch-action" "manipulation"
+    , htmlAttribute <| HA.style "user-select" "none"
+    , htmlAttribute <| HA.style "-webkit-tap-highlight-color" "transparent"
     ]
 
 
-untouchedCellStyle : List (Element.Attribute msg)
-untouchedCellStyle =
-    basicCellStyle
+untouchedCellStyle : Int -> List (Element.Attribute msg)
+untouchedCellStyle size =
+    basicCellStyle size
         ++ [ Background.color Colors.untouchedCellGray
            ]
 
 
-openedCellStyle : List (Element.Attribute msg)
-openedCellStyle =
-    basicCellStyle
+openedCellStyle : Int -> List (Element.Attribute msg)
+openedCellStyle size =
+    basicCellStyle size
         ++ [ Background.color Colors.openedCellGray
            ]
 
 
-openedMineNeighbourCellStyle : Int -> List (Element.Attribute msg)
-openedMineNeighbourCellStyle number =
+openedMineNeighbourCellStyle : Int -> Int -> List (Element.Attribute msg)
+openedMineNeighbourCellStyle size number =
     let
         color =
             case number of
@@ -103,7 +155,7 @@ openedMineNeighbourCellStyle number =
                 _ ->
                     Colors.black
     in
-    openedCellStyle
+    openedCellStyle size
         ++ [ Font.color color
            , Font.family [ Font.monospace ]
            , Font.extraBold
@@ -111,23 +163,30 @@ openedMineNeighbourCellStyle number =
            ]
 
 
-styledGameSelectionButton : { onPress : Maybe msg, label : Element msg } -> Element msg
-styledGameSelectionButton =
+styledGameSelectionButton : { onPress : Maybe msg, title : String, subtitle : String, isPhone : Bool } -> Element msg
+styledGameSelectionButton { onPress, title, subtitle, isPhone } =
     Input.button
         [ Element.width
-            (fill
-                |> Element.maximum 400
-                |> Element.minimum 300
+            (if isPhone then
+                fill
+
+             else
+                px 240
             )
-        , Element.height
-            (fill
-                |> Element.maximum 400
-                |> Element.minimum 300
-            )
+        , Element.padding 16
         , Background.color Colors.lightGrey
+        , Border.rounded 16
+        , Border.color Colors.cellBorderColor
+        , Border.width 1
         , Element.centerX
-        , Element.centerY
         ]
+        { onPress = onPress
+        , label =
+            column [ Element.width fill, Element.spacing 8 ]
+                [ el [ Font.bold, Font.size 24 ] <| text title
+                , el [ Font.color Colors.caputMortuum ] <| text subtitle
+                ]
+        }
 
 
 {-| Credits to <https://ellie-app.com/85HbWTjCGWha1>
