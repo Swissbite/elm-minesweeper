@@ -426,42 +426,13 @@ gameSelectionView model =
         , let
             deviceClass =
                 model.device.class
-
-            groupedOptions =
-                case deviceClass of
-                    Element.Phone ->
-                        List.map (\opt -> [ opt ]) options
-
-                    Element.Tablet ->
-                        [ List.take 2 options, List.drop 2 options ]
-
-                    _ ->
-                        [ options ]
           in
-          Element.column
+          Element.wrappedRow
             [ Element.centerX
             , Element.spacing 16
-            , if deviceClass == Element.Phone then
-                Element.width Element.fill
-
-              else
-                Element.width Element.shrink
+            , Element.width Element.fill
             ]
-            (List.map
-                (\rowOpts ->
-                    Element.row
-                        [ Element.centerX
-                        , Element.spacing 16
-                        , if deviceClass == Element.Phone then
-                            Element.width Element.fill
-
-                          else
-                            Element.width Element.shrink
-                        ]
-                        (List.map optionView rowOpts)
-                )
-                groupedOptions
-            )
+            (List.map optionView options)
         ]
 
 
