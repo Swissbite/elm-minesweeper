@@ -117,8 +117,21 @@ const output = `{-
 module Content.Pages.Registry exposing (all)
 
 ${imports.join('\n')}
+import Markdown.Block
+import Time
 
 
+all :
+    List
+        { title : String
+        , slug : String
+        , order : Int
+        , published : Bool
+        , description : String
+        , lang : String
+        , updatedAt : Time.Posix
+        , body : List Markdown.Block.Block
+        }
 all =
 ${entries.length === 0 ? '    []\n' : `    [\n${entries.join('\n    , ')}\n    ]\n`}`;
 

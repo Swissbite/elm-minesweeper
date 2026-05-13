@@ -18,8 +18,21 @@
 module Content.Pages.Registry exposing (all)
 
 import Content.Pages.About as Page1
+import Markdown.Block
+import Time
 
 
+all :
+    List
+        { title : String
+        , slug : String
+        , order : Int
+        , published : Bool
+        , description : String
+        , lang : String
+        , updatedAt : Time.Posix
+        , body : List Markdown.Block.Block
+        }
 all =
     [ { title = Page1.content.title
       , slug = Page1.content.slug

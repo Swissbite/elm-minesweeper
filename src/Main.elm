@@ -274,7 +274,7 @@ selectBoardView model =
         Page slug ->
             case Pages.findPublishedBySlug slug of
                 Just page ->
-                    Pages.view model page
+                    Pages.view page
 
                 Nothing ->
                     ErrorPage404.view model

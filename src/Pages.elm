@@ -25,7 +25,6 @@ import Markdown.Renderer
 import Markdown.Renderer.ElmUi
 import Styles
 import Time
-import Types exposing (Model)
 
 
 type alias Page =
@@ -53,8 +52,8 @@ navigationEntries =
         |> List.map (\page -> { title = page.title, slug = page.slug })
 
 
-view : Model -> Page -> Element msg
-view _ page =
+view : Page -> Element msg
+view page =
     Element.column
         [ Element.width fill
         , Element.padding 24
