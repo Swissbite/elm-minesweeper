@@ -19,6 +19,7 @@ module Types exposing (..)
 
 import Browser exposing (UrlRequest)
 import Browser.Navigation exposing (Key)
+import Colors exposing (Theme(..))
 import Element exposing (Device)
 import Grid exposing (Grid)
 import Time
@@ -32,11 +33,6 @@ type Msg
     | Navigation UrlRequest
     | SetScreenSize Int Int
     | ToggleTheme
-
-
-type Theme
-    = Light
-    | Dark
 
 
 type alias Flags =

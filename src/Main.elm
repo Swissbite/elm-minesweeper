@@ -27,6 +27,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Lazy as Lazy
+import Element.Region as Region
 import ErrorPage404
 import Game.Game as Game
 import Game.History as GameHistory
@@ -262,14 +263,14 @@ navigationView model =
     Element.wrappedRow
         [ Element.width Element.fill
         , Background.color (Colors.surface model.theme)
-        , Element.paddingXY horizontalPadding (verticalPaddingForDevice Element.Phone)
+        , Element.paddingXY horizontalPadding (verticalPaddingForDevice model.device.class)
         , Element.spacingXY 16 8
         , Border.color (Colors.cellBorderColor model.theme)
         , Border.widthEach { bottom = 1, top = 0, left = 0, right = 0 }
         ]
         [ Element.el [ Element.alignLeft, Font.bold, Font.size 24 ] <| Element.text "Elm Minesweeper"
         , Element.row [ Element.alignRight, Element.spacing 20 ]
-            [ Input.button []
+            [ Input.button [ Region.description "Toggle dark/light mode" ]
                 { onPress = Just ToggleTheme
                 , label =
                     Element.text <|

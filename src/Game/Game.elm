@@ -370,7 +370,7 @@ type alias BoardViewConfig =
     , cols : Int
     , rows : Int
     , isMobile : Bool
-    , theme : Types.Theme
+    , theme : Colors.Theme
     }
 
 
@@ -708,7 +708,7 @@ sidebarElement model =
         )
 
 
-styledToggleElement : Types.Theme -> Bool -> Element GameMsg
+styledToggleElement : Colors.Theme -> Bool -> Element GameMsg
 styledToggleElement theme =
     Styles.toggleCheckboxWidget
         { offColor = Colors.untouchedCellGray theme
@@ -722,7 +722,7 @@ styledToggleElement theme =
         }
 
 
-mineToggleElement : Types.Theme -> CellClickMode -> Element GameMsg
+mineToggleElement : Colors.Theme -> CellClickMode -> Element GameMsg
 mineToggleElement theme gameInteractionMode =
     Element.el [ Element.centerX, Element.centerY, Element.paddingXY 0 10 ] <|
         Input.checkbox [ Element.centerX, Element.centerY ] <|
@@ -754,7 +754,7 @@ initGameGridView boardConfig initGameGrid =
     Element.column [ Element.alignTop ] gridAsListOfRows
 
 
-initGameCellToElement : Types.Theme -> Int -> InitGameData -> (Int -> Int -> InitGameCell -> Element GameMsg)
+initGameCellToElement : Colors.Theme -> Int -> InitGameData -> (Int -> Int -> InitGameCell -> Element GameMsg)
 initGameCellToElement theme cellSize initGameGrid =
     \x y _ ->
         let
@@ -810,7 +810,7 @@ pausedGameView boardConfig playGameGrid =
             Grid.map (\_ -> Element.el (Styles.openedCellStyle boardConfig.theme boardConfig.cellSize) Element.none)
 
 
-runningGameCellToElement : Types.Theme -> Int -> Int -> Int -> GameCell -> Element GameMsg
+runningGameCellToElement : Colors.Theme -> Int -> Int -> Int -> GameCell -> Element GameMsg
 runningGameCellToElement theme cellSize x y cell =
     case cell of
         GameCell _ Flagged ->
@@ -847,7 +847,7 @@ finishedGridToView boardConfig playGameGrid =
         |> Element.column [ Element.alignTop ]
 
 
-finishedGameCellToElement : Types.Theme -> Int -> GameCell -> Element GameMsg
+finishedGameCellToElement : Colors.Theme -> Int -> GameCell -> Element GameMsg
 finishedGameCellToElement theme cellSize cell =
     case cell of
         GameCell MineCell Opened ->
