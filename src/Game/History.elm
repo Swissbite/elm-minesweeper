@@ -17,7 +17,7 @@
 
 module Game.History exposing (GameHistoryQuery, queryParser, update, view)
 
-import Colors
+import Colors exposing (Theme)
 import Dict
 import Element exposing (Column, Element)
 import Element.Background as Background

@@ -20,7 +20,7 @@ module Main exposing (..)
 import Browser exposing (Document, UrlRequest(..))
 import Browser.Events as Events
 import Browser.Navigation as Navigation exposing (Key)
-import Colors
+import Colors exposing (Theme(..))
 import Element exposing (Element, fill)
 import Element.Background as Background
 import Element.Border as Border
