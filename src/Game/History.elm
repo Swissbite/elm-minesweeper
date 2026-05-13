@@ -46,46 +46,46 @@ view model =
     in
     Element.column [ Element.centerX, Element.width Element.fill, Element.height Element.fill, Element.spacing 12, Element.padding 16 ]
         [ Element.el [ Font.semiBold, Font.size 30, Element.centerX ] <| Element.text "Your play history"
-        , historyActionButtons
-        , if model.device.class == Element.Phone then
-            mobileHistoryControls currentQueryParameter
+        , historyActionButtons model.theme
+        , if model.device.class == Element.Phone || model.device.class == Element.Tablet then
+            mobileHistoryControls model.theme currentQueryParameter
 
           else
             Element.none
-        , if model.device.class == Element.Phone then
-            mobileHistoryList currentQueryParameter historyEntries
+        , if model.device.class == Element.Phone || model.device.class == Element.Tablet then
+            mobileHistoryList model.theme currentQueryParameter historyEntries
 
           else
             sortableHistoryTable model
         ]
 
 
-historyActionButtons : Element GameHistoryMsg
-historyActionButtons =
+historyActionButtons : Theme -> Element GameHistoryMsg
+historyActionButtons theme =
     Element.wrappedRow [ Element.width Element.fill, Element.spacing 10 ]
-        [ Input.button [ Background.color Colors.saffron, Border.solid, Element.padding 10, Border.rounded 10, Element.centerX ]
+        [ Input.button [ Background.color (Colors.warning theme), Border.solid, Element.padding 10, Border.rounded 10, Element.centerX, Font.color Colors.white ]
             { label = Element.text "Delete lost games"
             , onPress = Just DeleteLost
             }
-        , Input.button [ Background.color Colors.tomato, Border.solid, Element.padding 10, Border.rounded 10, Element.centerX ]
+        , Input.button [ Background.color (Colors.danger theme), Border.solid, Element.padding 10, Border.rounded 10, Element.centerX, Font.color Colors.white ]
             { label = Element.text "Delete history"
             , onPress = Just DeleteAll
             }
         ]
 
 
-mobileHistoryControls : GameHistoryQuery -> Element GameHistoryMsg
-mobileHistoryControls query =
+mobileHistoryControls : Theme -> GameHistoryQuery -> Element GameHistoryMsg
+mobileHistoryControls theme query =
     let
         sortButton : GameHistoryOrderBy -> String -> Element GameHistoryMsg
         sortButton orderBy label =
             Input.button
                 [ Background.color <|
                     if query.orderBy == orderBy then
-                        Colors.openedCellGray
+                        Colors.openedCellGray theme
 
                     else
-                        Colors.lightGrey
+                        Colors.untouchedCellGray theme
                 , Border.solid
                 , Border.rounded Styles.pillBorderRadius
                 , Element.paddingXY 10 6
@@ -111,53 +111,53 @@ mobileHistoryControls query =
                 Element.none
 
             DisplayWon ->
-                Styles.pillBadge "Filtered: Won"
+                Styles.pillBadge theme "Filtered: Won"
 
             DisplayLost ->
-                Styles.pillBadge "Filtered: Lost"
+                Styles.pillBadge theme "Filtered: Lost"
         ]
 
 
-mobileHistoryList : GameHistoryQuery -> List FinishedGameHistoryEntry -> Element GameHistoryMsg
-mobileHistoryList _ entries =
+mobileHistoryList : Theme -> GameHistoryQuery -> List FinishedGameHistoryEntry -> Element GameHistoryMsg
+mobileHistoryList theme _ entries =
     if List.isEmpty entries then
-        Element.el [ Font.color Colors.caputMortuum ] <| Element.text "No history yet."
+        Element.el [ Font.color (Colors.textDim theme) ] <| Element.text "No history yet."
 
     else
         Element.column [ Element.width Element.fill, Element.spacing 12 ]
-            (List.map historyCard entries)
+            (List.map (historyCard theme) entries)
 
 
-historyCard : FinishedGameHistoryEntry -> Element GameHistoryMsg
-historyCard entry =
+historyCard : Theme -> FinishedGameHistoryEntry -> Element GameHistoryMsg
+historyCard theme entry =
     Element.column
         [ Element.width Element.fill
         , Element.spacing 10
         , Element.padding 12
-        , Background.color Colors.lightGrey
+        , Background.color (Colors.surface theme)
         , Border.rounded 16
         , Border.width 1
-        , Border.color Colors.cellBorderColor
+        , Border.color (Colors.cellBorderColor theme)
         ]
         [ Element.wrappedRow [ Element.width Element.fill, Element.spacing 8 ]
-            [ Styles.pillBadge <|
+            [ Styles.pillBadge theme <|
                 case entry.result of
                     Won ->
                         "Won " ++ String.fromChar Styles.icons.victory
 
                     Lost ->
                         "Lost " ++ String.fromChar Styles.icons.exploded
-            , Styles.pillBadge ("Date " ++ formatDate entry.playFinish)
+            , Styles.pillBadge theme ("Date " ++ formatDate entry.playFinish)
             ]
         , Element.wrappedRow [ Element.width Element.fill, Element.spacing 8 ]
-            [ Styles.pillBadge ("Duration " ++ formatDuration entry.duration)
-            , Styles.pillBadge
+            [ Styles.pillBadge theme ("Duration " ++ formatDuration entry.duration)
+            , Styles.pillBadge theme
                 ("Field "
                     ++ String.fromInt (Grid.width entry.grid)
                     ++ " x "
                     ++ String.fromInt (Grid.height entry.grid)
                 )
-            , Styles.pillBadge ("Mines " ++ String.fromInt (countMines entry.grid))
+            , Styles.pillBadge theme ("Mines " ++ String.fromInt (countMines entry.grid))
             ]
         ]
 

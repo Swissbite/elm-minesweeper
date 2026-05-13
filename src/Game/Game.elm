@@ -15,7 +15,7 @@
 -}
 
 
-module Game.Game exposing (decodeStoredFinishedGameHistory, initModel, subscriptions, update, view)
+module Game.Game exposing (areAllNoMineFieldsRevealed, decodeStoredFinishedGameHistory, flagCell, initModel, isAMineExploded, openCell, subscriptions, update, view)
 
 {-| Game module for rendering the complete game, as long as the currentView in the model is set to Game.
 Exposes the basic update / view / subscription functions, so that Main.elm can use them.
@@ -370,6 +370,7 @@ type alias BoardViewConfig =
     , cols : Int
     , rows : Int
     , isMobile : Bool
+    , theme : Types.Theme
     }
 
 
@@ -379,6 +380,7 @@ boardViewConfig model cols rows =
     , cols = cols
     , rows = rows
     , isMobile = model.device.class == Phone || model.device.class == Tablet
+    , theme = model.theme
     }
 
 
@@ -390,7 +392,7 @@ gameSelectionView model =
 
         optionView : ( String, PlayGroundDefinition ) -> Element GameMsg
         optionView ( title, definition ) =
-            Styles.styledGameSelectionButton
+            Styles.styledGameSelectionButton model.theme
                 { onPress = Just (CreateNewGame definition)
                 , title = title
                 , subtitle =
@@ -414,20 +416,44 @@ gameSelectionView model =
         [ Element.width Element.fill
         , Element.height Element.fill
         , Element.padding 16
-        , Element.spacing 16
+        , Element.spacing 32
         ]
-        [ Element.column [ Element.width Element.fill, Element.spacing 8 ]
-            [ Element.el [ Font.bold, Font.size 28 ] <| Element.text "Choose a board"
-            , Element.paragraph [ Font.color Colors.caputMortuum ]
+        [ Element.column [ Element.width Element.fill, Element.spacing 12, Font.center ]
+            [ Element.el [ Font.bold, Font.size 32, Element.centerX ] <| Element.text "Choose a board"
+            , Element.paragraph [ Font.color (Colors.textDim model.theme), Element.centerX, Element.width (Element.maximum 500 Element.fill) ]
                 [ Element.text "Mobile keeps touch-friendly cells and lets larger boards scroll when needed." ]
             ]
-        , (if isPhone then
-            Element.column [ Element.width Element.fill, Element.spacing 12 ]
+        , let
+            deviceClass =
+                model.device.class
 
-           else
-            Element.wrappedRow [ Element.width Element.fill, Element.spacing 12 ]
-          )
-            (List.map optionView options)
+            groupedOptions =
+                case deviceClass of
+                    Element.Phone ->
+                        List.map (\opt -> [ opt ]) options
+
+                    Element.Tablet ->
+                        [ List.take 2 options, List.drop 2 options ]
+
+                    _ ->
+                        [ options ]
+          in
+          Element.column
+            [ Element.centerX
+            , Element.spacing 16
+            , if deviceClass == Element.Phone then Element.width Element.fill else Element.width Element.shrink
+            ]
+            (List.map
+                (\rowOpts ->
+                    Element.row
+                        [ Element.centerX
+                        , Element.spacing 16
+                        , if deviceClass == Element.Phone then Element.width Element.fill else Element.width Element.shrink
+                        ]
+                        (List.map optionView rowOpts)
+                )
+                groupedOptions
+            )
         ]
 
 
@@ -462,8 +488,8 @@ boardViewport boardConfig boardElement =
     Element.el
         [ Element.width Element.fill
         , Element.height Element.fill
-        , Background.color Colors.white
-        , Border.color Colors.cellBorderColor
+        , Background.color (Colors.surface boardConfig.theme)
+        , Border.color (Colors.cellBorderColor boardConfig.theme)
         , Border.width 1
         , Border.rounded 16
         , Element.padding 8
@@ -474,11 +500,7 @@ boardViewport boardConfig boardElement =
         ]
     <|
         Element.el
-            [ if boardConfig.isMobile then
-                Element.alignLeft
-
-              else
-                Element.centerX
+            [ Element.centerX
             , Element.alignTop
             ]
             boardElement
@@ -511,9 +533,9 @@ gameInformationElements model =
             []
 
         Just data ->
-            [ Styles.pillBadge <| String.concat [ Styles.icons.stopWatch, " ", millisToString data.elapsedTime ]
-            , Styles.pillBadge <| String.concat [ String.fromChar Styles.icons.untouchedBomb, " ", String.fromInt data.mines ]
-            , Styles.pillBadge <| String.concat [ String.fromChar Styles.icons.markerFlag, " ", String.fromInt data.flags ]
+            [ Styles.pillBadge model.theme <| String.concat [ Styles.icons.stopWatch, " ", millisToString data.elapsedTime ]
+            , Styles.pillBadge model.theme <| String.concat [ String.fromChar Styles.icons.untouchedBomb, " ", String.fromInt data.mines ]
+            , Styles.pillBadge model.theme <| String.concat [ String.fromChar Styles.icons.markerFlag, " ", String.fromInt data.flags ]
             ]
 
 
@@ -523,7 +545,7 @@ modeSelectorElements model =
         RunningGame _ ->
             [ Element.row
                 [ Element.spacing 8
-                , Background.color Colors.openedCellGray
+                , Background.color (Colors.openedCellGray model.theme)
                 , Border.rounded Styles.pillBorderRadius
                 , Element.paddingXY 10 6
                 ]
@@ -535,7 +557,7 @@ modeSelectorElements model =
 
                             Flag ->
                                 "Mode: Flag"
-                , Lazy.lazy mineToggleElement model.game.gameInteractionMode
+                , Lazy.lazy2 mineToggleElement model.theme model.game.gameInteractionMode
                 ]
             ]
 
@@ -550,14 +572,14 @@ giveUpElements model =
             []
 
         RunningGame _ ->
-            [ Input.button [ Background.color Colors.black, Border.solid, Element.paddingXY 12 10, Border.rounded 10, Font.color Colors.gold ]
+            [ Input.button [ Background.color (Colors.surface model.theme), Border.solid, Element.paddingXY 12 10, Border.rounded 10, Font.color (Colors.primary model.theme) ]
                 { onPress = Just GoToStartPage
                 , label = Element.text "Give up 💀"
                 }
             ]
 
         WaitOnStart _ ->
-            [ Input.button [ Background.color Colors.black, Border.solid, Element.paddingXY 12 10, Border.rounded 10, Font.color Colors.gold ]
+            [ Input.button [ Background.color (Colors.surface model.theme), Border.solid, Element.paddingXY 12 10, Border.rounded 10, Font.color (Colors.primary model.theme) ]
                 { onPress = Just GoToStartPage
                 , label = Element.text "Cancel ❌"
                 }
@@ -610,18 +632,18 @@ gameFinishedElements : Model -> List (Element GameMsg)
 gameFinishedElements model =
     case model.game.gameBoardStatus of
         FinishedGame playGameGrid gameResult _ ->
-            [ Styles.pillBadge <|
+            [ Styles.pillBadge model.theme <|
                 case gameResult of
                     Won ->
                         "You won!"
 
                     Lost ->
                         "You lost!"
-            , Input.button [ Background.color Colors.asparagus, Border.solid, Element.paddingXY 12 10, Border.rounded 10 ]
+            , Input.button [ Background.color (Colors.primary model.theme), Border.solid, Element.paddingXY 12 10, Border.rounded 10, Font.color Colors.white ]
                 { onPress = Just (CreateNewGame <| playGameGridToPlaygroundDefinition playGameGrid)
                 , label = Element.text "Start new game"
                 }
-            , Input.button [ Background.color Colors.saffron, Border.solid, Element.paddingXY 12 10, Border.rounded 10 ]
+            , Input.button [ Background.color (Colors.warning model.theme), Border.solid, Element.paddingXY 12 10, Border.rounded 10, Font.color Colors.white ]
                 { onPress = Just GoToStartPage
                 , label = Element.text "Back to overview"
                 }
@@ -653,7 +675,8 @@ wrapIfNotEmpty elements =
     else
         Element.wrappedRow
             [ Element.width Element.fill
-            , Element.spacing 8
+            , Element.spacing 16
+            , Element.spaceEvenly
             ]
             elements
 
@@ -677,11 +700,11 @@ sidebarElement model =
         )
 
 
-styledToggleElement : Bool -> Element GameMsg
-styledToggleElement =
+styledToggleElement : Types.Theme -> Bool -> Element GameMsg
+styledToggleElement theme =
     Styles.toggleCheckboxWidget
-        { offColor = Colors.lightGrey
-        , onColor = Colors.green
+        { offColor = Colors.untouchedCellGray theme
+        , onColor = Colors.primary theme
         , sliderColor = Colors.white
         , toggleWidth = 60
         , toggleHeight = 28
@@ -691,8 +714,8 @@ styledToggleElement =
         }
 
 
-mineToggleElement : CellClickMode -> Element GameMsg
-mineToggleElement gameInteractionMode =
+mineToggleElement : Types.Theme -> CellClickMode -> Element GameMsg
+mineToggleElement theme gameInteractionMode =
     Element.el [ Element.centerX, Element.centerY, Element.paddingXY 0 10 ] <|
         Input.checkbox [ Element.centerX, Element.centerY ] <|
             { onChange = always ToogleGameCellInteractionMode
@@ -704,7 +727,7 @@ mineToggleElement gameInteractionMode =
 
                     Flag ->
                         True
-            , icon = styledToggleElement
+            , icon = styledToggleElement theme
             }
 
 
@@ -712,7 +735,7 @@ initGameGridView : BoardViewConfig -> InitGameData -> Element GameMsg
 initGameGridView boardConfig initGameGrid =
     let
         indexedFn =
-            initGameCellToElement boardConfig.cellSize initGameGrid
+            initGameCellToElement boardConfig.theme boardConfig.cellSize initGameGrid
 
         gridWithElements =
             Grid.indexedMap indexedFn initGameGrid.grid
@@ -723,14 +746,14 @@ initGameGridView boardConfig initGameGrid =
     Element.column [ Element.alignTop ] gridAsListOfRows
 
 
-initGameCellToElement : Int -> InitGameData -> (Int -> Int -> InitGameCell -> Element GameMsg)
-initGameCellToElement cellSize initGameGrid =
+initGameCellToElement : Types.Theme -> Int -> InitGameData -> (Int -> Int -> InitGameCell -> Element GameMsg)
+initGameCellToElement theme cellSize initGameGrid =
     \x y _ ->
         let
             coords =
                 Coordinate x y
         in
-        Element.el (Styles.untouchedCellStyle cellSize ++ [ Events.onClick <| ClickedOnInitGameCell initGameGrid coords ]) <| Element.text ""
+        Element.el (Styles.untouchedCellStyle theme cellSize ++ [ Events.onClick <| ClickedOnInitGameCell initGameGrid coords ]) <| Element.text ""
 
 
 gameView : PlayGameGrid -> (Grid.Grid GameCell -> Grid.Grid (Element GameMsg)) -> Element GameMsg
@@ -746,7 +769,7 @@ gameView playGameGrid gridGameToGridElementMapper =
 
 runningGameView : BoardViewConfig -> PlayGameGrid -> Element GameMsg
 runningGameView boardConfig playGameGrid =
-    gameView playGameGrid <| Grid.indexedMap (runningGameCellToElement boardConfig.cellSize)
+    gameView playGameGrid <| Grid.indexedMap (runningGameCellToElement boardConfig.theme boardConfig.cellSize)
 
 
 pausedGameView : BoardViewConfig -> PlayGameGrid -> Element GameMsg
@@ -776,26 +799,26 @@ pausedGameView boardConfig playGameGrid =
         ]
     <|
         gameView playGameGrid <|
-            Grid.map (\_ -> Element.el (Styles.openedCellStyle boardConfig.cellSize) Element.none)
+            Grid.map (\_ -> Element.el (Styles.openedCellStyle boardConfig.theme boardConfig.cellSize) Element.none)
 
 
-runningGameCellToElement : Int -> Int -> Int -> GameCell -> Element GameMsg
-runningGameCellToElement cellSize x y cell =
+runningGameCellToElement : Types.Theme -> Int -> Int -> Int -> GameCell -> Element GameMsg
+runningGameCellToElement theme cellSize x y cell =
     case cell of
         GameCell _ Flagged ->
-            Element.el (Styles.untouchedCellStyle cellSize ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.markerFlag
+            Element.el (Styles.untouchedCellStyle theme cellSize ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.markerFlag
 
         GameCell _ Untouched ->
-            Element.el (Styles.untouchedCellStyle cellSize ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) Element.none
+            Element.el (Styles.untouchedCellStyle theme cellSize ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) Element.none
 
         GameCell EmptyCell Opened ->
-            Element.el (Styles.openedCellStyle cellSize) Element.none
+            Element.el (Styles.openedCellStyle theme cellSize) Element.none
 
         GameCell MineCell Opened ->
-            Element.el (Styles.openedCellStyle cellSize) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.exploded
+            Element.el (Styles.openedCellStyle theme cellSize) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.exploded
 
         GameCell (MineNeighbourCell neighbours) Opened ->
-            Element.el (Styles.openedMineNeighbourCellStyle cellSize neighbours ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text (String.fromInt neighbours)
+            Element.el (Styles.openedMineNeighbourCellStyle theme cellSize neighbours ++ [ Events.onClick <| ClickOnGameCell { x = x, y = y } ]) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text (String.fromInt neighbours)
 
 
 finishedGameView : BoardViewConfig -> PlayGameGrid -> GameResult -> Element GameMsg
@@ -808,7 +831,7 @@ finishedGameView boardConfig playGameGrid _ =
 finishedGridToView : BoardViewConfig -> PlayGameGrid -> Element GameMsg
 finishedGridToView boardConfig playGameGrid =
     playGameGrid
-        |> Grid.map (finishedGameCellToElement boardConfig.cellSize)
+        |> Grid.map (finishedGameCellToElement boardConfig.theme boardConfig.cellSize)
         |> Grid.rows
         |> Array.map Array.toList
         |> Array.map (\l -> Element.row [] l)
@@ -816,26 +839,26 @@ finishedGridToView boardConfig playGameGrid =
         |> Element.column [ Element.alignTop ]
 
 
-finishedGameCellToElement : Int -> GameCell -> Element GameMsg
-finishedGameCellToElement cellSize cell =
+finishedGameCellToElement : Types.Theme -> Int -> GameCell -> Element GameMsg
+finishedGameCellToElement theme cellSize cell =
     case cell of
         GameCell MineCell Opened ->
-            Element.el (Styles.openedCellStyle cellSize) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.exploded
+            Element.el (Styles.openedCellStyle theme cellSize) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.exploded
 
         GameCell MineCell _ ->
-            Element.el (Styles.openedCellStyle cellSize) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.untouchedBomb
+            Element.el (Styles.openedCellStyle theme cellSize) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.untouchedBomb
 
         GameCell (MineNeighbourCell neighbours) Opened ->
-            Element.el (Styles.openedMineNeighbourCellStyle cellSize neighbours) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text (String.fromInt neighbours)
+            Element.el (Styles.openedMineNeighbourCellStyle theme cellSize neighbours) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text (String.fromInt neighbours)
 
         GameCell EmptyCell Opened ->
-            Element.el (Styles.openedCellStyle cellSize) Element.none
+            Element.el (Styles.openedCellStyle theme cellSize) Element.none
 
         GameCell _ Flagged ->
-            Element.el (Styles.untouchedCellStyle cellSize) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.markerFlag
+            Element.el (Styles.untouchedCellStyle theme cellSize) <| Element.el [ Element.centerX, Element.centerY ] <| Element.text <| String.fromChar Styles.icons.markerFlag
 
         _ ->
-            Element.el (Styles.untouchedCellStyle cellSize) Element.none
+            Element.el (Styles.untouchedCellStyle theme cellSize) Element.none
 
 
 

@@ -19,6 +19,7 @@ module GameTests exposing (..)
 
 import Expect
 import Fuzz exposing (intRange)
+import Element
 import Game.Game as Game
 import Game.Internal as GameInternal
 import Grid
@@ -223,3 +224,89 @@ severalWonLostEntriesEncodedVersion01 =
         ]
     }
     """
+
+gameLogicTests : Test
+gameLogicTests =
+    describe "Game Logic Updates"
+        [ test "Loss Scenario: Clicking a mine results in Lost game state" <|
+            \_ ->
+                let
+                    -- 2x2 grid with mine at 0,0
+                    grid =
+                        Grid.fromList
+                            [ [ GameCell MineCell Untouched, GameCell (MineNeighbourCell 1) Untouched ]
+                            , [ GameCell (MineNeighbourCell 1) Untouched, GameCell EmptyCell Untouched ]
+                            ]
+                            |> Maybe.withDefault (Grid.repeat 2 2 (GameCell EmptyCell Untouched))
+
+                    updatedGrid = Game.openCell { x = 0, y = 0 } grid
+                in
+                Expect.equal True (Game.isAMineExploded updatedGrid)
+
+        , test "Win Scenario: Opening the last safe cell results in Won game state" <|
+            \_ ->
+                let
+                    -- 2x2 grid with mine at 0,0 and all others opened except 0,1
+                    grid =
+                        Grid.fromList
+                            [ [ GameCell MineCell Untouched, GameCell (MineNeighbourCell 1) Untouched ]
+                            , [ GameCell (MineNeighbourCell 1) Opened, GameCell EmptyCell Opened ]
+                            ]
+                            |> Maybe.withDefault (Grid.repeat 2 2 (GameCell EmptyCell Untouched))
+
+                    updatedGrid = Game.openCell { x = 1, y = 0 } grid
+                in
+                Expect.equal True (Game.areAllNoMineFieldsRevealed updatedGrid)
+
+        , test "Flood Fill: Clicking an empty cell opens surrounding cells" <|
+            \_ ->
+                let
+                    -- 3x3 grid with mines on right column, empty on left column
+                    grid =
+                        Grid.fromList
+                            [ [ GameCell EmptyCell Untouched, GameCell (MineNeighbourCell 1) Untouched, GameCell MineCell Untouched ]
+                            , [ GameCell EmptyCell Untouched, GameCell (MineNeighbourCell 1) Untouched, GameCell MineCell Untouched ]
+                            , [ GameCell EmptyCell Untouched, GameCell (MineNeighbourCell 1) Untouched, GameCell MineCell Untouched ]
+                            ]
+                            |> Maybe.withDefault (Grid.repeat 3 3 (GameCell EmptyCell Untouched))
+
+                    updatedGrid = Game.openCell { x = 0, y = 0 } grid
+
+                    cellStatusAt x y =
+                        Grid.get ( x, y ) updatedGrid
+                            |> Maybe.map (\(GameCell _ status) -> status)
+                in
+                Expect.all
+                    [ \_ -> Expect.equal (Just Opened) (cellStatusAt 0 0)
+                    , \_ -> Expect.equal (Just Opened) (cellStatusAt 0 1)
+                    , \_ -> Expect.equal (Just Opened) (cellStatusAt 0 2)
+                    , \_ -> Expect.equal (Just Opened) (cellStatusAt 1 0)
+                    , \_ -> Expect.equal (Just Opened) (cellStatusAt 1 1)
+                    , \_ -> Expect.equal (Just Opened) (cellStatusAt 1 2)
+                    , \_ -> Expect.equal (Just Untouched) (cellStatusAt 2 0)
+                    ]
+                    ()
+
+        , test "Flagging: Flagging a cell in flag mode changes its state to Flagged" <|
+            \_ ->
+                let
+                    grid =
+                        Grid.repeat 2 2 (GameCell EmptyCell Untouched)
+
+                    updatedGrid = Game.flagCell { x = 0, y = 0 } grid
+                in
+                Expect.equal (Just Flagged)
+                    (Grid.get ( 0, 0 ) updatedGrid |> Maybe.map (\(GameCell _ status) -> status))
+
+        , test "Unflagging: Clicking a flagged cell in flag mode changes its state to Untouched" <|
+            \_ ->
+                let
+                    grid =
+                        Grid.repeat 2 2 (GameCell EmptyCell Untouched)
+                            |> Grid.set ( 0, 0 ) (GameCell EmptyCell Flagged)
+
+                    updatedGrid = Game.flagCell { x = 0, y = 0 } grid
+                in
+                Expect.equal (Just Untouched)
+                    (Grid.get ( 0, 0 ) updatedGrid |> Maybe.map (\(GameCell _ status) -> status))
+        ]

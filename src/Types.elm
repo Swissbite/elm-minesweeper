@@ -31,6 +31,12 @@ type Msg
     | GameHistory GameHistoryMsg
     | Navigation UrlRequest
     | SetScreenSize Int Int
+    | ToggleTheme
+
+
+type Theme
+    = Light
+    | Dark
 
 
 type alias Flags =
@@ -38,6 +44,7 @@ type alias Flags =
     , width : Int
     , history : String
     , initPath : String
+    , theme : String
     }
 
 
@@ -90,6 +97,7 @@ type alias Model =
     , device : Device
     , key : Key
     , containsGithubPrefixInPath : Bool
+    , theme : Theme
     }
 
 

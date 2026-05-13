@@ -18,6 +18,7 @@
 module Styles exposing (..)
 
 import Colors
+import Types exposing (Theme)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
@@ -175,76 +176,59 @@ cellWidth size =
     Element.px size
 
 
-basicCellStyle : Int -> List (Element.Attribute msg)
-basicCellStyle size =
+basicCellStyle : Theme -> Int -> List (Element.Attribute msg)
+basicCellStyle theme size =
     [ Element.width (cellWidth size)
     , Element.height (cellWidth size)
-    , Border.color Colors.cellBorderColor
+    , Border.color (Colors.cellBorderColor theme)
     , Border.width 1
     , Element.pointer
     , Font.size (max minimumCellFontSize (size // 2))
+    , Font.color (Colors.textMain theme)
     , htmlAttribute <| HA.style "touch-action" "manipulation"
     , htmlAttribute <| HA.style "user-select" "none"
     , htmlAttribute <| HA.style "-webkit-tap-highlight-color" "transparent"
     ]
 
 
-untouchedCellStyle : Int -> List (Element.Attribute msg)
-untouchedCellStyle size =
-    basicCellStyle size
-        ++ [ Background.color Colors.untouchedCellGray
+untouchedCellStyle : Theme -> Int -> List (Element.Attribute msg)
+untouchedCellStyle theme size =
+    basicCellStyle theme size
+        ++ [ Background.color (Colors.untouchedCellGray theme)
            ]
 
 
-openedCellStyle : Int -> List (Element.Attribute msg)
-openedCellStyle size =
-    basicCellStyle size
-        ++ [ Background.color Colors.openedCellGray
+openedCellStyle : Theme -> Int -> List (Element.Attribute msg)
+openedCellStyle theme size =
+    basicCellStyle theme size
+        ++ [ Background.color (Colors.openedCellGray theme)
            ]
 
 
-openedMineNeighbourCellStyle : Int -> Int -> List (Element.Attribute msg)
-openedMineNeighbourCellStyle size number =
+openedMineNeighbourCellStyle : Theme -> Int -> Int -> List (Element.Attribute msg)
+openedMineNeighbourCellStyle theme size number =
     let
         color =
             case number of
-                1 ->
-                    Colors.saffron
-
-                2 ->
-                    Colors.fieryRose
-
-                3 ->
-                    Colors.cerise
-
-                4 ->
-                    Colors.smitten
-
-                5 ->
-                    Colors.eggplant
-
-                6 ->
-                    Colors.caputMortuum
-
-                7 ->
-                    Colors.asparagus
-
-                8 ->
-                    Colors.babyBlue
-
-                _ ->
-                    Colors.black
+                1 -> Colors.mine1 theme
+                2 -> Colors.mine2 theme
+                3 -> Colors.mine3 theme
+                4 -> Colors.mine4 theme
+                5 -> Colors.mine5 theme
+                6 -> Colors.mine6 theme
+                7 -> Colors.mine7 theme
+                8 -> Colors.mine8 theme
+                _ -> Colors.transparent
     in
-    openedCellStyle size
+    openedCellStyle theme size
         ++ [ Font.color color
-           , Font.family [ Font.monospace ]
+           , Font.family [ Font.sansSerif ]
            , Font.extraBold
-           , Font.glow color 0.2
            ]
 
 
-styledGameSelectionButton : { onPress : Maybe msg, title : String, subtitle : String, isPhone : Bool } -> Element msg
-styledGameSelectionButton { onPress, title, subtitle, isPhone } =
+styledGameSelectionButton : Theme -> { onPress : Maybe msg, title : String, subtitle : String, isPhone : Bool } -> Element msg
+styledGameSelectionButton theme { onPress, title, subtitle, isPhone } =
     Input.button
         [ Element.width
             (if isPhone then
@@ -253,28 +237,33 @@ styledGameSelectionButton { onPress, title, subtitle, isPhone } =
              else
                 px 280
             )
-        , Element.padding 16
-        , Background.color Colors.lightGrey
+        , Element.padding 20
+        , Background.color (Colors.surface theme)
         , Border.rounded 16
-        , Border.color Colors.cellBorderColor
+        , Border.color (Colors.cellBorderColor theme)
         , Border.width 1
         , Element.centerX
+        , Font.color (Colors.textMain theme)
         ]
         { onPress = onPress
         , label =
             column [ Element.width fill, Element.spacing 8 ]
                 [ el [ Font.bold, Font.size 24 ] <| text title
-                , el [ Font.color Colors.caputMortuum ] <| text subtitle
+                , el [ Font.color (Colors.textDim theme) ] <| text subtitle
                 ]
         }
 
 
-pillBadge : String -> Element msg
-pillBadge label =
+pillBadge : Theme -> String -> Element msg
+pillBadge theme label =
     Element.el
-        [ Background.color Colors.openedCellGray
+        [ Background.color (Colors.surface theme)
+        , Border.color (Colors.cellBorderColor theme)
+        , Border.width 1
         , Border.rounded pillBorderRadius
-        , Element.paddingXY 10 6
+        , Element.paddingXY 12 8
+        , Font.color (Colors.textMain theme)
+        , Font.size 16
         ]
     <|
         Element.el [ Font.semiBold ] <|
@@ -306,6 +295,7 @@ toggleCheckboxWidget { offColor, onColor, sliderColor, toggleWidth, toggleHeight
          , width <| px <| toggleWidth
          , height <| px <| toggleHeight
          , Border.rounded <| toggleHeight // 2
+         , htmlAttribute <| HA.style "box-sizing" "border-box"
          , inFront <|
             el [ height fill ] <|
                 el
@@ -316,16 +306,16 @@ toggleCheckboxWidget { offColor, onColor, sliderColor, toggleWidth, toggleHeight
                     , centerY
                     , moveRight pad
                     , htmlAttribute <|
-                        HA.style "transition" ".3s"
+                        HA.style "transition" "transform .3s ease"
                     , htmlAttribute <|
                         if checked then
                             HA.style "transform" <| "translateX(" ++ translation ++ "px)"
 
                         else
-                            HA.class ""
+                            HA.style "transform" <| "translateX(0px)"
                     ]
                 <|
-                    el [ centerX, centerY, Font.size <| toggleHeight // 2, Font.color <| rgb255 150 150 150 ] <|
+                    el [ centerX, centerY, Font.size <| toggleHeight // 2, Font.color <| rgb255 100 100 100 ] <|
                         text <|
                             if checked then
                                 Maybe.withDefault "" <| Maybe.map String.fromChar offSymbol

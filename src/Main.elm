@@ -23,11 +23,15 @@ import Browser.Navigation as Navigation exposing (Key)
 import Colors
 import Element exposing (Element, fill)
 import Element.Background as Background
+import Element.Border as Border
+import Element.Font as Font
+import Element.Input as Input
 import Element.Lazy as Lazy
 import ErrorPage404
 import Game.Game as Game
 import Game.History as GameHistory
 import Html.Attributes as HA
+import Ports
 import Tuple
 import Types exposing (..)
 import Url exposing (Url)
@@ -107,6 +111,18 @@ update msg model =
         SetScreenSize x y ->
             ( { model | device = Element.classifyDevice { width = x, height = y } }, Cmd.none )
 
+        ToggleTheme ->
+            let
+                newTheme =
+                    case model.theme of
+                        Light ->
+                            Dark
+
+                        Dark ->
+                            Light
+            in
+            ( { model | theme = newTheme }, Ports.storeTheme (if newTheme == Light then "light" else "dark") )
+
 
 viewRouteParser : UP.Parser (View -> a) a
 viewRouteParser =
@@ -170,6 +186,7 @@ init flags url key =
             , game = Game.initModel
             , containsGithubPrefixInPath = flags.initPath |> hasGithubPathPrefix
             , playedGameHistory = Game.decodeStoredFinishedGameHistory flags.history
+            , theme = if flags.theme == "light" then Light else Dark
             }
 
         navigationMsg : Msg
@@ -200,28 +217,30 @@ view : Model -> Document Msg
 view m =
     { title = "Elm - Minesweeper"
     , body =
-        [ Element.layout
-            [ Element.width Element.fill
-            , Element.height Element.fill
-            , Element.clipX
-            , Element.htmlAttribute <| HA.style "overflow-x" "hidden"
-            ]
-          <|
-            Element.column [ Element.width fill, Element.height fill, Element.centerX, Element.spacingXY 0 0 ]
-                [ navigationView m.containsGithubPrefixInPath
-                , Element.el [ Element.width Element.fill, Element.height Element.fill ] <| Lazy.lazy selectBoardView m
-                , footerView m
+            [ Element.layout
+                [ Element.width Element.fill
+                , Element.height Element.fill
+                , Element.clipX
+                , Element.htmlAttribute <| HA.style "overflow-x" "hidden"
+                , Background.color (Colors.background m.theme)
+                , Font.color (Colors.textMain m.theme)
                 ]
+              <|
+                Element.column [ Element.width fill, Element.height fill, Element.centerX, Element.spacingXY 0 0 ]
+                    [ navigationView m
+                    , Element.el [ Element.width Element.fill, Element.height Element.fill ] <| Lazy.lazy selectBoardView m
+                    , footerView m
+                    ]
         ]
     }
 
 
-navigationView : Bool -> Element Msg
-navigationView containsGithubPrefixInPath =
+navigationView : Model -> Element Msg
+navigationView model =
     let
         pathWithTrailingSlash : String
         pathWithTrailingSlash =
-            if containsGithubPrefixInPath then
+            if model.containsGithubPrefixInPath then
                 "/" ++ githubPagePathPrefix ++ "/"
 
             else
@@ -229,14 +248,27 @@ navigationView containsGithubPrefixInPath =
     in
     Element.wrappedRow
         [ Element.width Element.fill
-        , Background.color Colors.openedCellGray
+        , Background.color (Colors.surface model.theme)
         , Element.paddingXY horizontalPadding (verticalPaddingForDevice Element.Phone)
         , Element.spacingXY 16 8
+        , Border.color (Colors.cellBorderColor model.theme)
+        , Border.widthEach { bottom = 1, top = 0, left = 0, right = 0 }
         ]
-        [ Element.el [ Element.alignLeft ] <| Element.text "Elm Minesweeper"
+        [ Element.el [ Element.alignLeft, Font.bold, Font.size 24 ] <| Element.text "Elm Minesweeper"
         , Element.row [ Element.alignRight, Element.spacing 20 ]
-            [ Element.link [] { url = pathWithTrailingSlash ++ "", label = Element.text "Game" }
-            , Element.link [] { url = pathWithTrailingSlash ++ "history", label = Element.text "History" }
+            [ Input.button []
+                { onPress = Just ToggleTheme
+                , label =
+                    Element.text <|
+                        case model.theme of
+                            Light ->
+                                "🌙"
+
+                            Dark ->
+                                "☀️"
+                }
+            , Element.link [ Font.color (Colors.textMain model.theme) ] { url = pathWithTrailingSlash ++ "", label = Element.text "Game" }
+            , Element.link [ Font.color (Colors.textMain model.theme) ] { url = pathWithTrailingSlash ++ "history", label = Element.text "History" }
             ]
         ]
 
@@ -249,20 +281,21 @@ footerView model =
         , Element.spacingXY 20 8
         , Element.spaceEvenly
         ]
-        [ Element.el [] <| Element.text "© 2026 David Daester"
+        [ Element.el [ Font.color (Colors.textDim model.theme) ] <| Element.text "© 2026 David Daester"
         , Element.link []
             { url = "https://github.com/Swissbite/elm-minesweeper"
             , label =
-                Element.image
-                    [ Element.height <|
-                        Element.px <|
-                            if model.device.class == Element.Phone then
-                                22
+                Element.el [ Background.color Colors.white, Border.rounded 16, Element.padding 2 ] <|
+                    Element.image
+                        [ Element.height <|
+                            Element.px <|
+                                if model.device.class == Element.Phone then
+                                    22
 
-                            else
-                                25
-                    ]
-                    { src = "./github-mark.svg", description = "GitHub logo" }
+                                else
+                                    25
+                        ]
+                        { src = "./github-mark.svg", description = "GitHub logo" }
             }
         , Element.link []
             { url = "https://www.gnu.org/licenses/agpl-3.0.html"
