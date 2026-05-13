@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 
 const repoRoot = path.resolve(__dirname, '..');
 const contentRoot = path.join(repoRoot, 'content', 'pages');
@@ -119,7 +120,21 @@ ${imports.join('\n')}
 
 
 all =
-${entries.length === 0 ? '    []\n' : `    [ ${entries.join('\n    , ')}\n    ]\n`}`;
+${entries.length === 0 ? '    []\n' : `    [\n${entries.join('\n    , ')}\n    ]\n`}`;
 
 fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 fs.writeFileSync(outputPath, output);
+
+const elmFormatCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const elmFormat = spawnSync(
+  elmFormatCommand,
+  ['elm-format', '--elm-version=0.19', '--yes', outputPath],
+  {
+    cwd: repoRoot,
+    encoding: 'utf8'
+  }
+);
+
+if (elmFormat.status !== 0 && elmFormat.error && elmFormat.error.code !== 'ENOENT') {
+  throw elmFormat.error;
+}

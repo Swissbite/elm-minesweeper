@@ -21,13 +21,13 @@ import Content.Pages.About as Page1
 
 
 all =
-    [     { title = Page1.content.title
-    , slug = Page1.content.slug
-    , order = Page1.content.order
-    , published = Page1.content.published
-    , description = Page1.content.description
-    , lang = Page1.content.lang
-    , updatedAt = Page1.content.updatedAt
-    , body = Page1.content.body
-    }
+    [ { title = Page1.content.title
+      , slug = Page1.content.slug
+      , order = Page1.content.order
+      , published = Page1.content.published
+      , description = Page1.content.description
+      , lang = Page1.content.lang
+      , updatedAt = Page1.content.updatedAt
+      , body = Page1.content.body
+      }
     ]
