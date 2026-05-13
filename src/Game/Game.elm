@@ -655,7 +655,7 @@ wrapIfNotEmpty elements =
             [ Element.width Element.fill
             , Element.spacing 8
             ]
-            actionElements
+            elements
 
 
 sidebarElement : Model -> Element GameMsg
