@@ -18,13 +18,13 @@
 module Styles exposing (..)
 
 import Colors
-import Types exposing (Theme)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Html.Attributes as HA
+import Types exposing (Theme)
 
 
 icons : { markerFlag : Char, untouchedBomb : Char, exploded : Char, stopWatch : String, victory : Char, downSign : Char, upSign : Char, world : Char, calendar : String, pause : String, resume : String }
@@ -210,15 +210,32 @@ openedMineNeighbourCellStyle theme size number =
     let
         color =
             case number of
-                1 -> Colors.mine1 theme
-                2 -> Colors.mine2 theme
-                3 -> Colors.mine3 theme
-                4 -> Colors.mine4 theme
-                5 -> Colors.mine5 theme
-                6 -> Colors.mine6 theme
-                7 -> Colors.mine7 theme
-                8 -> Colors.mine8 theme
-                _ -> Colors.transparent
+                1 ->
+                    Colors.mine1 theme
+
+                2 ->
+                    Colors.mine2 theme
+
+                3 ->
+                    Colors.mine3 theme
+
+                4 ->
+                    Colors.mine4 theme
+
+                5 ->
+                    Colors.mine5 theme
+
+                6 ->
+                    Colors.mine6 theme
+
+                7 ->
+                    Colors.mine7 theme
+
+                8 ->
+                    Colors.mine8 theme
+
+                _ ->
+                    Colors.transparent
     in
     openedCellStyle theme size
         ++ [ Font.color color

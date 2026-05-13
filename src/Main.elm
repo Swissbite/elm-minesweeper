@@ -121,7 +121,15 @@ update msg model =
                         Dark ->
                             Light
             in
-            ( { model | theme = newTheme }, Ports.storeTheme (if newTheme == Light then "light" else "dark") )
+            ( { model | theme = newTheme }
+            , Ports.storeTheme
+                (if newTheme == Light then
+                    "light"
+
+                 else
+                    "dark"
+                )
+            )
 
 
 viewRouteParser : UP.Parser (View -> a) a
@@ -186,7 +194,12 @@ init flags url key =
             , game = Game.initModel
             , containsGithubPrefixInPath = flags.initPath |> hasGithubPathPrefix
             , playedGameHistory = Game.decodeStoredFinishedGameHistory flags.history
-            , theme = if flags.theme == "light" then Light else Dark
+            , theme =
+                if flags.theme == "light" then
+                    Light
+
+                else
+                    Dark
             }
 
         navigationMsg : Msg
@@ -217,20 +230,20 @@ view : Model -> Document Msg
 view m =
     { title = "Elm - Minesweeper"
     , body =
-            [ Element.layout
-                [ Element.width Element.fill
-                , Element.height Element.fill
-                , Element.clipX
-                , Element.htmlAttribute <| HA.style "overflow-x" "hidden"
-                , Background.color (Colors.background m.theme)
-                , Font.color (Colors.textMain m.theme)
+        [ Element.layout
+            [ Element.width Element.fill
+            , Element.height Element.fill
+            , Element.clipX
+            , Element.htmlAttribute <| HA.style "overflow-x" "hidden"
+            , Background.color (Colors.background m.theme)
+            , Font.color (Colors.textMain m.theme)
+            ]
+          <|
+            Element.column [ Element.width fill, Element.height fill, Element.centerX, Element.spacingXY 0 0 ]
+                [ navigationView m
+                , Element.el [ Element.width Element.fill, Element.height Element.fill ] <| Lazy.lazy selectBoardView m
+                , footerView m
                 ]
-              <|
-                Element.column [ Element.width fill, Element.height fill, Element.centerX, Element.spacingXY 0 0 ]
-                    [ navigationView m
-                    , Element.el [ Element.width Element.fill, Element.height Element.fill ] <| Lazy.lazy selectBoardView m
-                    , footerView m
-                    ]
         ]
     }
 

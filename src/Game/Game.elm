@@ -441,14 +441,22 @@ gameSelectionView model =
           Element.column
             [ Element.centerX
             , Element.spacing 16
-            , if deviceClass == Element.Phone then Element.width Element.fill else Element.width Element.shrink
+            , if deviceClass == Element.Phone then
+                Element.width Element.fill
+
+              else
+                Element.width Element.shrink
             ]
             (List.map
                 (\rowOpts ->
                     Element.row
                         [ Element.centerX
                         , Element.spacing 16
-                        , if deviceClass == Element.Phone then Element.width Element.fill else Element.width Element.shrink
+                        , if deviceClass == Element.Phone then
+                            Element.width Element.fill
+
+                          else
+                            Element.width Element.shrink
                         ]
                         (List.map optionView rowOpts)
                 )
