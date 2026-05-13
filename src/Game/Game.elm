@@ -430,7 +430,7 @@ gameSelectionView model =
           Element.wrappedRow
             [ Element.centerX
             , Element.spacing 16
-            , Element.width Element.fill
+            , Element.width (Element.maximum 576 Element.fill)
             ]
             (List.map optionView options)
         ]
