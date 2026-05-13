@@ -209,7 +209,7 @@ view m =
           <|
             Element.column [ Element.width fill, Element.height fill, Element.centerX, Element.spacingXY 0 0 ]
                 [ navigationView m.containsGithubPrefixInPath
-                , Lazy.lazy selectBoardView m
+                , Element.el [ Element.width Element.fill, Element.height Element.fill ] <| Lazy.lazy selectBoardView m
                 , footerView m
                 ]
         ]
