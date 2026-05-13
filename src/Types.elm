@@ -105,6 +105,7 @@ type alias GameModel =
 type View
     = Game
     | History GameHistoryDisplayMode GameHistoryOrderBy OrderDirection
+    | Page String
     | Error404
 
 

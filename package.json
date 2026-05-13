@@ -7,9 +7,10 @@
   },
   "scripts": {
     "parc": "parcel",
-    "build": "parcel build public/**/*.{html,jpg,png,svg}",
-    "start": "parcel public/**/*.{html,jpg,png,svg}",
-    "make": "elm make",
+    "content:generate": "node ./scripts/generate-content.js",
+    "build": "npm run content:generate && parcel build public/**/*.{html,jpg,png,svg}",
+    "start": "npm run content:generate && parcel public/**/*.{html,jpg,png,svg}",
+    "make": "npm run content:generate && elm make",
     "repl": "elm repl",
     "reactor": "elm reactor",
     "test": "elm-test",

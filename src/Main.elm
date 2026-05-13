@@ -27,6 +27,7 @@ import Element.Lazy as Lazy
 import ErrorPage404
 import Game.Game as Game
 import Game.History as GameHistory
+import Pages
 import Tuple
 import Types exposing (..)
 import Url exposing (Url)
@@ -90,7 +91,19 @@ viewRouteParser =
         , UP.map Game (UP.s githubPagePathPrefix)
         , UP.map gameHistoryQueryToView (UP.s "history" <?> GameHistory.queryParser)
         , UP.map gameHistoryQueryToView (UP.s githubPagePathPrefix </> UP.s "history" <?> GameHistory.queryParser)
+        , UP.map pageSlugToView UP.string
+        , UP.map pageSlugToView (UP.s githubPagePathPrefix </> UP.string)
         ]
+
+
+pageSlugToView : String -> View
+pageSlugToView slug =
+    case Pages.findPublishedBySlug slug of
+        Just _ ->
+            Page slug
+
+        Nothing ->
+            Error404
 
 
 gameHistoryQueryToView : GameHistory.GameHistoryQuery -> View
@@ -173,7 +186,7 @@ subscriptions model =
 
 view : Model -> Document Msg
 view m =
-    { title = "Elm - Minesweeper"
+    { title = viewTitle m.currentView
     , body =
         [ Element.layout [ Element.width Element.fill, Element.height Element.fill ] <|
             Element.column [ Element.width fill, Element.height fill, Element.centerX, Element.spacingXY 0 0 ]
@@ -183,6 +196,24 @@ view m =
                 ]
         ]
     }
+
+
+viewTitle : View -> String
+viewTitle currentView =
+    case currentView of
+        Game ->
+            "Elm - Minesweeper"
+
+        History _ _ _ ->
+            "Elm - Minesweeper History"
+
+        Page slug ->
+            Pages.findPublishedBySlug slug
+                |> Maybe.map (\page -> page.title ++ " - Elm Minesweeper")
+                |> Maybe.withDefault "Elm - Minesweeper"
+
+        Error404 ->
+            "Elm - Minesweeper 404"
 
 
 navigationView : Bool -> Element Msg
@@ -196,11 +227,20 @@ navigationView containsGithubPrefixInPath =
             else
                 "/"
     in
-    Element.row [ Element.width Element.fill, Background.color Colors.openedCellGray ]
-        [ Element.el [ Element.alignLeft, Element.paddingXY 10 10 ] <| Element.text "Elm Minesweeper"
-        , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = pathWithTrailingSlash ++ "", label = Element.text "Game" }
-        , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = pathWithTrailingSlash ++ "history", label = Element.text "History" }
-        ]
+    Element.wrappedRow [ Element.width Element.fill, Background.color Colors.openedCellGray ]
+        ([ Element.el [ Element.alignLeft, Element.paddingXY 10 10 ] <| Element.text "Elm Minesweeper"
+         , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = pathWithTrailingSlash, label = Element.text "Game" }
+         , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = pathWithTrailingSlash ++ "history", label = Element.text "History" }
+         ]
+            ++ List.map
+                (\page ->
+                    Element.link [ Element.alignRight, Element.paddingXY 10 10 ]
+                        { url = pathWithTrailingSlash ++ page.slug
+                        , label = Element.text page.title
+                        }
+                )
+                Pages.navigationEntries
+        )
 
 
 footerView : Element Msg
@@ -230,6 +270,14 @@ selectBoardView model =
         History _ _ _ ->
             GameHistory.view model
                 |> Element.map GameHistory
+
+        Page slug ->
+            case Pages.findPublishedBySlug slug of
+                Just page ->
+                    Pages.view model page
+
+                Nothing ->
+                    ErrorPage404.view model
 
 
 navigationHeader : Model -> Element Msg

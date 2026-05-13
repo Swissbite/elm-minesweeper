@@ -11,6 +11,7 @@ and to wrap my head around functional programming at it's purest.
 - [Technical Specification](SPEC.md)
 - [Set up the project](#setup-the-project)
 - [Project structure](#project-structure)
+- [Content pages](#content-pages)
 
 ## The goal
 The goal of this **side project** is to have a working minesweeper web application (as a thousand other in the web)
@@ -74,6 +75,24 @@ To simplify lookups as a developer, I split it in three main files:
 - [Main.elm](./src/Main.elm): The main startup application. Responsible for initialize the application. Coordinates update subscription and view between the different elements.
 - [Game/Game.elm](./src/Game/Game.elm):Has its own msg type, GameMsg. Responsible for the complite minesweeper game flow. Extracted into own module to be able to add additional views like an About view or other stuff.
 - [Game/History.elm](./src/Game/History.elm): The game history of lost / won games. Sortable.
+
+## Content pages
+
+Static pages live in [`content/pages`](./content/pages) as markdown files with frontmatter.
+
+Required frontmatter schema:
+- `title`
+- `slug`
+- `order`
+- `published`
+- `description`
+- `lang`
+- `updatedAt`
+
+The build pipeline runs `npm run content:generate`, which:
+1. turns markdown content into Elm modules via `elm-frontmatter`
+2. regenerates the static pages registry for routing and navigation
+3. keeps game routes ahead of generated page routes
 
 ## License
 Elm Minesweeper is licensed under the [GNU Affero General Public License version 3](LICENSE) or later.
