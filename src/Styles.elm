@@ -251,7 +251,7 @@ styledGameSelectionButton { onPress, title, subtitle, isPhone } =
                 fill
 
              else
-                px 240
+                px 280
             )
         , Element.padding 16
         , Background.color Colors.lightGrey

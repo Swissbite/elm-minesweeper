@@ -249,7 +249,7 @@ footerView model =
         , Element.spacingXY 20 8
         , Element.spaceEvenly
         ]
-        [ Element.el [] <| Element.text "(c) 2026 David Daester"
+        [ Element.el [] <| Element.text "© 2026 David Daester"
         , Element.link []
             { url = "https://github.com/Swissbite/elm-minesweeper"
             , label =
@@ -264,16 +264,27 @@ footerView model =
                     ]
                     { src = "./github-mark.svg", description = "GitHub logo" }
             }
-        , Element.image
-            [ Element.height <|
-                Element.px <|
-                    if model.device.class == Element.Phone then
-                        24
+        , Element.link []
+            { url = "https://www.gnu.org/licenses/agpl-3.0.html"
+            , label =
+                Element.image
+                    [ Element.height <|
+                        Element.px <|
+                            if model.device.class == Element.Phone then
+                                24
 
-                    else
-                        31
-            ]
-            { src = "./agplv3-88x31.png", description = "AGPLv3 license logo" }
+                            else
+                                31
+                    , Element.width <|
+                        Element.px <|
+                            if model.device.class == Element.Phone then
+                                68
+
+                            else
+                                88
+                    ]
+                    { src = "./agplv3-88x31.png", description = "AGPLv3 license logo" }
+            }
         ]
 
 
