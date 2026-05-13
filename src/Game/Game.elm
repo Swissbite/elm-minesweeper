@@ -524,7 +524,7 @@ modeSelectorElements model =
             [ Element.row
                 [ Element.spacing 8
                 , Background.color Colors.openedCellGray
-                , Border.rounded 999
+                , Border.rounded Styles.pillBorderRadius
                 , Element.paddingXY 10 6
                 ]
                 [ Element.el [ Font.bold, Element.centerY ] <|

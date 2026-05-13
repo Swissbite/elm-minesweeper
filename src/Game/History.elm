@@ -87,7 +87,7 @@ mobileHistoryControls query =
                     else
                         Colors.lightGrey
                 , Border.solid
-                , Border.rounded 999
+                , Border.rounded Styles.pillBorderRadius
                 , Element.paddingXY 10 6
                 ]
                 { onPress = Just (SetOrderBy orderBy (nextOrderDirection query orderBy))
