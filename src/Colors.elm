@@ -17,7 +17,7 @@
 
 module Colors exposing (background, black, cellBorderColor, danger, mine1, mine2, mine3, mine4, mine5, mine6, mine7, mine8, openedCellGray, primary, surface, textDim, textMain, transparent, untouchedCellGray, warning, white)
 
-import Element exposing (Color, rgb, rgb255, rgba)
+import Element exposing (Color, rgb255, rgba)
 import Theme exposing (Theme(..))
 
 
@@ -33,7 +33,7 @@ black =
 
 white : Color
 white =
-    rgb 1 1 1
+    rgb255 255 255 255
 
 
 background : Theme -> Color
@@ -55,7 +55,7 @@ surface : Theme -> Color
 surface theme =
     case theme of
         Light ->
-            rgb 1 1 1
+            rgb255 255 255 255
 
         -- #FFFFFF
         Dark ->

@@ -187,3 +187,6 @@ npm run build           # Test production build
 - **Type safety**: Elm catches most bugs at compile time. Trust the compiler.
 - **Module exports**: Check the module docstring or top-level `exposing` to understand what's public.
 - **Current task context**: Review the active PR and recent commits to align with ongoing work.
+
+### AI Code Review Gotchas
+- **Elm-UI `rgb255`**: The function `rgb255` takes exactly 3 arguments (`Int -> Int -> Int -> Color`). Do not hallucinate that `rgb255 255 255 255` has four arguments. The first `255` is part of the function name `rgb255`.
