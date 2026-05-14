@@ -9,6 +9,7 @@ and to wrap my head around functional programming at it's purest.
 ## Table of Content
 - [The goal](#the-goal)
 - [Technical Specification](SPEC.md)
+- [Changelog / Releases](CHANGELOG.md)
 - [Set up the project](#setup-the-project)
 - [Project structure](#project-structure)
 
