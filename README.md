@@ -68,11 +68,14 @@ On Microsoft Windows, you may consider to use the dev environments on Docker for
 
 Currently, I'm following [Structuring Web Apps](https://guide.elm-lang.org/webapps/structure.html) and the [Live of a file](https://youtu.be/XpDsk374LDE)
 
-To simplify lookups as a developer, I split it in three main files:
+To simplify lookups as a developer, I split it into several key files:
 - [Types.elm](./src/Types.elm): All types and type aliases. ***No*** functions, no helpers, no transformers.
-- [Styles.elm](./src/Styles.elm): Make styles reusable. Define colors, icons, predefined elements (like the toogle element). But does not hold any model related code. Styles has zero dependencies to [Types.elm](./src/Types.elm)
-- [Main.elm](./src/Main.elm): The main startup application. Responsible for initialize the application. Coordinates update subscription and view between the different elements.
-- [Game/Game.elm](./src/Game/Game.elm):Has its own msg type, GameMsg. Responsible for the complite minesweeper game flow. Extracted into own module to be able to add additional views like an About view or other stuff.
+- [Theme.elm](./src/Theme.elm): Contains the Theme type. Extracted to prevent circular dependencies between `Types`, `Styles` and `Colors`.
+- [Colors.elm](./src/Colors.elm): Centralized color palette.
+- [Styles.elm](./src/Styles.elm): Make styles reusable. Define icons, predefined elements (like the toggle element). But does not hold any model related code. Styles has zero dependencies to [Types.elm](./src/Types.elm).
+- [Main.elm](./src/Main.elm): The main startup application. Responsible for initializing the application. Coordinates update subscriptions and views between the different elements.
+- [Game/Game.elm](./src/Game/Game.elm): Has its own msg type, GameMsg. Responsible for the complete minesweeper game flow. Extracted into own module to be able to add additional views like an About view or other stuff.
+- [Game/Internal.elm](./src/Game/Internal.elm): Shared game types, grid helpers, and JSON encoders/decoders for game state.
 - [Game/History.elm](./src/Game/History.elm): The game history of lost / won games. Sortable.
 
 ## License
