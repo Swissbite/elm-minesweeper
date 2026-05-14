@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased / Current
+## v1.1.0 - Theming & Mobile Support (May 2026)
 - **Theming**: Added a new dynamic dark/light theme switch.
 - **Mobile Support**: Improved touch targets and responsive UI layout for smaller devices (phones and tablets). Minimum touch targets enforced to 44px for accessibility.
 - **Architecture Refactoring**: Better separation of concerns (e.g., extracting `Theme` module, organizing game logic into `Internal.elm`).
