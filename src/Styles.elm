@@ -17,7 +17,8 @@
 
 module Styles exposing (..)
 
-import Colors exposing (Theme)
+import Colors
+import Types exposing (Theme)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
@@ -64,27 +65,27 @@ phoneSmallCellSize =
 
 phoneMediumCellSize : Int
 phoneMediumCellSize =
-    34
+    44
 
 
 phoneLargeCellSize : Int
 phoneLargeCellSize =
-    32
+    44
 
 
 tabletSmallCellSize : Int
 tabletSmallCellSize =
-    42
+    44
 
 
 tabletMediumCellSize : Int
 tabletMediumCellSize =
-    36
+    44
 
 
 tabletLargeCellSize : Int
 tabletLargeCellSize =
-    32
+    44
 
 
 desktopSmallCellSize : Int

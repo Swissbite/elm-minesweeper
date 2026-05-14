@@ -15,7 +15,7 @@
 -}
 
 
-module Game.Game exposing (areAllNoMineFieldsRevealed, decodeStoredFinishedGameHistory, flagCell, initModel, isAMineExploded, openCell, subscriptions, update, view)
+module Game.Game exposing (decodeStoredFinishedGameHistory, initModel, subscriptions, update, view)
 
 {-| Game module for rendering the complete game, as long as the currentView in the model is set to Game.
 Exposes the basic update / view / subscription functions, so that Main.elm can use them.
@@ -370,7 +370,7 @@ type alias BoardViewConfig =
     , cols : Int
     , rows : Int
     , isMobile : Bool
-    , theme : Colors.Theme
+    , theme : Theme
     }
 
 
@@ -685,7 +685,7 @@ sidebarElement model =
         )
 
 
-styledToggleElement : Colors.Theme -> Bool -> Element GameMsg
+styledToggleElement : Theme -> Bool -> Element GameMsg
 styledToggleElement theme =
     Styles.toggleCheckboxWidget
         { offColor = Colors.untouchedCellGray theme
@@ -699,7 +699,7 @@ styledToggleElement theme =
         }
 
 
-mineToggleElement : Colors.Theme -> CellClickMode -> Element GameMsg
+mineToggleElement : Theme -> CellClickMode -> Element GameMsg
 mineToggleElement theme gameInteractionMode =
     Element.el [ Element.centerX, Element.centerY, Element.paddingXY 0 10 ] <|
         Input.checkbox [ Element.centerX, Element.centerY ] <|
@@ -731,7 +731,7 @@ initGameGridView boardConfig initGameGrid =
     Element.column [ Element.alignTop ] gridAsListOfRows
 
 
-initGameCellToElement : Colors.Theme -> Int -> InitGameData -> (Int -> Int -> InitGameCell -> Element GameMsg)
+initGameCellToElement : Theme -> Int -> InitGameData -> (Int -> Int -> InitGameCell -> Element GameMsg)
 initGameCellToElement theme cellSize initGameGrid =
     \x y _ ->
         let
@@ -787,7 +787,7 @@ pausedGameView boardConfig playGameGrid =
             Grid.map (\_ -> Element.el (Styles.openedCellStyle boardConfig.theme boardConfig.cellSize) Element.none)
 
 
-runningGameCellToElement : Colors.Theme -> Int -> Int -> Int -> GameCell -> Element GameMsg
+runningGameCellToElement : Theme -> Int -> Int -> Int -> GameCell -> Element GameMsg
 runningGameCellToElement theme cellSize x y cell =
     case cell of
         GameCell _ Flagged ->
@@ -824,7 +824,7 @@ finishedGridToView boardConfig playGameGrid =
         |> Element.column [ Element.alignTop ]
 
 
-finishedGameCellToElement : Colors.Theme -> Int -> GameCell -> Element GameMsg
+finishedGameCellToElement : Theme -> Int -> GameCell -> Element GameMsg
 finishedGameCellToElement theme cellSize cell =
     case cell of
         GameCell MineCell Opened ->
@@ -938,11 +938,6 @@ generatePlayGameGrid initGameGrid coords =
             )
 
 
-coordinateToPair : Coordinate -> ( Int, Int )
-coordinateToPair coords =
-    ( coords.x, coords.y )
-
-
 createPlayGameGrid : Int -> Int -> List ( Int, Int ) -> PlayGameGrid
 createPlayGameGrid width height mineCoordinates =
     let
@@ -1002,168 +997,6 @@ createPlayGameGrid width height mineCoordinates =
     in
     placeMines grid mineCoordinates
         |> (\minedGrid -> Grid.indexedMap (indexedMapFn minedGrid) minedGrid)
-
-
-flagCell : Coordinate -> PlayGameGrid -> PlayGameGrid
-flagCell coords playGrid =
-    coordinateToPair coords
-        |> (\c ->
-                Grid.get c playGrid
-                    |> (\cell ->
-                            case cell of
-                                Just (GameCell gameCell Flagged) ->
-                                    Grid.set c (GameCell gameCell Untouched) playGrid
-
-                                Just (GameCell gameCell Untouched) ->
-                                    Grid.set c (GameCell gameCell Flagged) playGrid
-
-                                Just (GameCell (MineNeighbourCell neighbours) Opened) ->
-                                    if neighbours == calculateFlaggedCellsAroundCoordinate coords playGrid then
-                                        openSurroundingCells coords playGrid
-
-                                    else
-                                        playGrid
-
-                                _ ->
-                                    playGrid
-                       )
-           )
-
-
-openCell : Coordinate -> PlayGameGrid -> PlayGameGrid
-openCell coords playGrid =
-    let
-        coordinateAsPair =
-            coordinateToPair coords
-
-        cell =
-            Grid.get coordinateAsPair playGrid
-    in
-    case cell of
-        Nothing ->
-            playGrid
-
-        Just (GameCell (MineNeighbourCell neighbours) Opened) ->
-            if neighbours == calculateFlaggedCellsAroundCoordinate coords playGrid then
-                openSurroundingCells coords playGrid
-
-            else
-                playGrid
-
-        Just (GameCell cellType cellStatus) ->
-            case ( cellType, cellStatus ) of
-                ( _, Opened ) ->
-                    playGrid
-
-                ( _, Flagged ) ->
-                    playGrid
-
-                ( MineNeighbourCell neighbours, _ ) ->
-                    Grid.set coordinateAsPair (GameCell (MineNeighbourCell neighbours) Opened) playGrid
-
-                ( EmptyCell, _ ) ->
-                    Grid.set coordinateAsPair (GameCell EmptyCell Opened) playGrid
-                        |> (\nextGrid ->
-                                calculateNeighbourCoordinates coords
-                                    |> (\surroundingCoordinatesAsPair -> List.foldl (\coordinate grid -> openCell coordinate grid) nextGrid surroundingCoordinatesAsPair)
-                           )
-
-                ( MineCell, _ ) ->
-                    Grid.set coordinateAsPair (GameCell MineCell Opened) playGrid
-
-
-openSurroundingCells : Coordinate -> PlayGameGrid -> PlayGameGrid
-openSurroundingCells coordinate playGrid =
-    let
-        mapCoordinateToTupleCoordinateAndMaybeGameCell : Coordinate -> ( Coordinate, Maybe GameCell )
-        mapCoordinateToTupleCoordinateAndMaybeGameCell neighbourCoordinate =
-            ( neighbourCoordinate, Grid.get (coordinateToPair neighbourCoordinate) playGrid )
-
-        foldGridOpenUntouchedCellsToGrid : ( Coordinate, Maybe GameCell ) -> PlayGameGrid -> PlayGameGrid
-        foldGridOpenUntouchedCellsToGrid ( coordinateToCheck, maybeCell ) grid =
-            case maybeCell of
-                Just (GameCell _ Untouched) ->
-                    openCell coordinateToCheck grid
-
-                _ ->
-                    grid
-    in
-    calculateNeighbourCoordinates coordinate
-        |> List.map mapCoordinateToTupleCoordinateAndMaybeGameCell
-        |> List.foldl foldGridOpenUntouchedCellsToGrid playGrid
-
-
-calculateFlaggedCellsAroundCoordinate : Coordinate -> PlayGameGrid -> Int
-calculateFlaggedCellsAroundCoordinate coords grid =
-    calculateNeighbourCoordinates coords
-        |> List.map coordinateToPair
-        |> List.map (\coordinateAsPair -> Grid.get coordinateAsPair grid)
-        |> List.map
-            (\maybeCell ->
-                case maybeCell of
-                    Just (GameCell _ Flagged) ->
-                        1
-
-                    _ ->
-                        0
-            )
-        |> List.sum
-
-
-calculateNeighbourCoordinates : Coordinate -> List Coordinate
-calculateNeighbourCoordinates coords =
-    [ { x = coords.x - 1, y = coords.y - 1 }
-    , { x = coords.x - 1, y = coords.y }
-    , { x = coords.x - 1, y = coords.y + 1 }
-    , { x = coords.x, y = coords.y - 1 }
-    , { x = coords.x, y = coords.y + 1 }
-    , { x = coords.x + 1, y = coords.y - 1 }
-    , { x = coords.x + 1, y = coords.y }
-    , { x = coords.x + 1, y = coords.y + 1 }
-    ]
-
-
-isAMineExploded : PlayGameGrid -> Bool
-isAMineExploded =
-    let
-        isExplodedMine : GameCell -> Bool -> Bool
-        isExplodedMine cell exploded =
-            case cell of
-                GameCell MineCell Opened ->
-                    True
-
-                _ ->
-                    exploded
-    in
-    Grid.foldl isExplodedMine False
-
-
-areAllNoMineFieldsRevealed : PlayGameGrid -> Bool
-areAllNoMineFieldsRevealed =
-    let
-        isMissingFieldOpen : GameCell -> Bool -> Bool
-        isMissingFieldOpen cell allRevealed =
-            case cell of
-                GameCell EmptyCell state ->
-                    case state of
-                        Opened ->
-                            allRevealed
-
-                        _ ->
-                            False
-
-                GameCell (MineNeighbourCell _) state ->
-                    case state of
-                        Opened ->
-                            allRevealed
-
-                        _ ->
-                            False
-
-                _ ->
-                    allRevealed
-    in
-    Grid.foldl isMissingFieldOpen True
 
 
 minesIndexGenerator : Int -> List Int -> Generator (Set Int) -> Generator (Set Int)

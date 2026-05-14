@@ -20,7 +20,7 @@ module Main exposing (..)
 import Browser exposing (Document, UrlRequest(..))
 import Browser.Events as Events
 import Browser.Navigation as Navigation exposing (Key)
-import Colors exposing (Theme(..))
+import Colors
 import Element exposing (Element, fill)
 import Element.Background as Background
 import Element.Border as Border
@@ -270,7 +270,7 @@ navigationView model =
         ]
         [ Element.el [ Element.alignLeft, Font.bold, Font.size 24 ] <| Element.text "Elm Minesweeper"
         , Element.row [ Element.alignRight, Element.spacing 20 ]
-            [ Input.button [ Region.description "Toggle dark/light mode" ]
+            [ Input.button [ Region.description "Toggle dark/light mode", Element.padding 12 ]
                 { onPress = Just ToggleTheme
                 , label =
                     Element.text <|
@@ -281,8 +281,8 @@ navigationView model =
                             Dark ->
                                 "☀️"
                 }
-            , Element.link [ Font.color (Colors.textMain model.theme) ] { url = pathWithTrailingSlash ++ "", label = Element.text "Game" }
-            , Element.link [ Font.color (Colors.textMain model.theme) ] { url = pathWithTrailingSlash ++ "history", label = Element.text "History" }
+            , Element.link [ Font.color (Colors.textMain model.theme), Element.padding 12 ] { url = pathWithTrailingSlash ++ "", label = Element.text "Game" }
+            , Element.link [ Font.color (Colors.textMain model.theme), Element.padding 12 ] { url = pathWithTrailingSlash ++ "history", label = Element.text "History" }
             ]
         ]
 

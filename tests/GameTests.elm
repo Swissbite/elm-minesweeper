@@ -17,7 +17,6 @@
 
 module GameTests exposing (..)
 
-import Element
 import Expect
 import Fuzz exposing (intRange)
 import Game.Game as Game
@@ -241,9 +240,9 @@ gameLogicTests =
                             |> Maybe.withDefault (Grid.repeat 2 2 (GameCell EmptyCell Untouched))
 
                     updatedGrid =
-                        Game.openCell { x = 0, y = 0 } grid
+                        GameInternal.openCell { x = 0, y = 0 } grid
                 in
-                Expect.equal True (Game.isAMineExploded updatedGrid)
+                Expect.equal True (GameInternal.isAMineExploded updatedGrid)
         , test "Win Scenario: Opening the last safe cell results in Won game state" <|
             \_ ->
                 let
@@ -256,9 +255,9 @@ gameLogicTests =
                             |> Maybe.withDefault (Grid.repeat 2 2 (GameCell EmptyCell Untouched))
 
                     updatedGrid =
-                        Game.openCell { x = 1, y = 0 } grid
+                        GameInternal.openCell { x = 1, y = 0 } grid
                 in
-                Expect.equal True (Game.areAllNoMineFieldsRevealed updatedGrid)
+                Expect.equal True (GameInternal.areAllNoMineFieldsRevealed updatedGrid)
         , test "Flood Fill: Clicking an empty cell opens surrounding cells" <|
             \_ ->
                 let
@@ -272,7 +271,7 @@ gameLogicTests =
                             |> Maybe.withDefault (Grid.repeat 3 3 (GameCell EmptyCell Untouched))
 
                     updatedGrid =
-                        Game.openCell { x = 0, y = 0 } grid
+                        GameInternal.openCell { x = 0, y = 0 } grid
 
                     cellStatusAt x y =
                         Grid.get ( x, y ) updatedGrid
@@ -295,7 +294,7 @@ gameLogicTests =
                         Grid.repeat 2 2 (GameCell EmptyCell Untouched)
 
                     updatedGrid =
-                        Game.flagCell { x = 0, y = 0 } grid
+                        GameInternal.flagCell { x = 0, y = 0 } grid
                 in
                 Expect.equal (Just Flagged)
                     (Grid.get ( 0, 0 ) updatedGrid |> Maybe.map (\(GameCell _ status) -> status))
@@ -307,7 +306,7 @@ gameLogicTests =
                             |> Grid.set ( 0, 0 ) (GameCell EmptyCell Flagged)
 
                     updatedGrid =
-                        Game.flagCell { x = 0, y = 0 } grid
+                        GameInternal.flagCell { x = 0, y = 0 } grid
                 in
                 Expect.equal (Just Untouched)
                     (Grid.get ( 0, 0 ) updatedGrid |> Maybe.map (\(GameCell _ status) -> status))

@@ -19,7 +19,6 @@ module Types exposing (..)
 
 import Browser exposing (UrlRequest)
 import Browser.Navigation exposing (Key)
-import Colors exposing (Theme(..))
 import Element exposing (Device)
 import Grid exposing (Grid)
 import Time
@@ -95,6 +94,11 @@ type alias Model =
     , containsGithubPrefixInPath : Bool
     , theme : Theme
     }
+
+
+type Theme
+    = Light
+    | Dark
 
 
 type alias GameModel =
