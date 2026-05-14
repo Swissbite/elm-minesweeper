@@ -59,7 +59,7 @@ initModel =
 
 decodeStoredFinishedGameHistory : String -> List FinishedGameHistoryEntry
 decodeStoredFinishedGameHistory string =
-    Decode.decodeString deocdeFinishedGameHistory string
+    Decode.decodeString decodeFinishedGameHistory string
         |> Result.withDefault []
 
 

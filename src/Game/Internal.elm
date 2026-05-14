@@ -71,8 +71,8 @@ generateListOfPossibleIndices initGrid clickedOn =
         |> Grid.foldr foldFn []
 
 
-deocdeFinishedGameHistory : Decoder (List FinishedGameHistoryEntry)
-deocdeFinishedGameHistory =
+decodeFinishedGameHistory : Decoder (List FinishedGameHistoryEntry)
+decodeFinishedGameHistory =
     Decode.map (\history -> history.entries)
         (Decode.oneOf
             [ decodeVersion1GameHistory
