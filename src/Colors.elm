@@ -18,7 +18,7 @@
 module Colors exposing (background, black, cellBorderColor, danger, mine1, mine2, mine3, mine4, mine5, mine6, mine7, mine8, openedCellGray, primary, surface, textDim, textMain, transparent, untouchedCellGray, warning, white)
 
 import Element exposing (Color, rgb255, rgba)
-import Types exposing (Theme(..))
+import Theme exposing (Theme(..))
 
 
 transparent : Color

@@ -39,6 +39,7 @@ import List
 import Random exposing (Generator)
 import Set exposing (Set)
 import Styles exposing (..)
+import Theme exposing (Theme)
 import Time
 import Types exposing (..)
 

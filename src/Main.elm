@@ -33,6 +33,7 @@ import Game.Game as Game
 import Game.History as GameHistory
 import Html.Attributes as HA
 import Ports
+import Theme exposing (Theme(..))
 import Tuple
 import Types exposing (..)
 import Url exposing (Url)

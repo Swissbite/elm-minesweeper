@@ -29,6 +29,7 @@ import Game.Internal exposing (..)
 import Grid
 import List
 import Styles
+import Theme exposing (Theme)
 import Time
 import Types exposing (..)
 import Url.Parser.Query as Query
