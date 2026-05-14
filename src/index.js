@@ -19,10 +19,16 @@ import { Elm, Main } from './Main.elm';
 import * as serviceWorker from './serviceWorker';
 
 const localStoreFinishedGameHistoryKey = 'finishedGameHistory';
+const localStoreThemeKey = 'themePreference';
 
 const storedFinishedGameHistory = localStorage.getItem(localStoreFinishedGameHistoryKey);
 const finishedGameHistory = storedFinishedGameHistory ? JSON.parse(storedFinishedGameHistory) : "[]";
 const pathname = window.location.pathname;
+
+let themePref = localStorage.getItem(localStoreThemeKey);
+if (!themePref) {
+  themePref = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
 
 const app = Elm.Main.init({
   node: document.getElementById('root'),
@@ -30,7 +36,8 @@ const app = Elm.Main.init({
     history: finishedGameHistory,
     height: window.innerHeight,
     width: window.innerWidth,
-    initPath : pathname
+    initPath : pathname,
+    theme: themePref
   }
 });
 
@@ -38,8 +45,20 @@ const app = Elm.Main.init({
 app.ports.storeFinishedGameHistory.subscribe(function(finishedGameHistory) {
   if (finishedGameHistory.length > 0) {
     const historyAsJson = JSON.stringify(finishedGameHistory);
-    localStorage.setItem(localStoreFinishedGameHistoryKey, historyAsJson);
+    try {
+      localStorage.setItem(localStoreFinishedGameHistoryKey, historyAsJson);
+    } catch (e) {
+      console.warn("Could not save game history to local storage", e);
+    }
   }
+});
+
+app.ports.storeTheme.subscribe(function(theme) {
+    try {
+      localStorage.setItem(localStoreThemeKey, theme);
+    } catch (e) {
+      console.warn("Could not save theme to local storage", e);
+    }
 });
 
 // If you want your app to work offline and load faster, you can change

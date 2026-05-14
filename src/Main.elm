@@ -23,10 +23,16 @@ import Browser.Navigation as Navigation exposing (Key)
 import Colors
 import Element exposing (Element, fill)
 import Element.Background as Background
+import Element.Border as Border
+import Element.Font as Font
+import Element.Input as Input
 import Element.Lazy as Lazy
+import Element.Region as Region
 import ErrorPage404
 import Game.Game as Game
 import Game.History as GameHistory
+import Html.Attributes as HA
+import Ports
 import Tuple
 import Types exposing (..)
 import Url exposing (Url)
@@ -36,6 +42,30 @@ import Url.Parser as UP exposing ((</>), (<?>))
 githubPagePathPrefix : String
 githubPagePathPrefix =
     "elm-minesweeper"
+
+
+compactVerticalPadding : Int
+compactVerticalPadding =
+    8
+
+
+defaultVerticalPadding : Int
+defaultVerticalPadding =
+    10
+
+
+horizontalPadding : Int
+horizontalPadding =
+    10
+
+
+verticalPaddingForDevice : Element.DeviceClass -> Int
+verticalPaddingForDevice deviceClass =
+    if deviceClass == Element.Phone then
+        compactVerticalPadding
+
+    else
+        defaultVerticalPadding
 
 
 
@@ -81,6 +111,26 @@ update msg model =
 
         SetScreenSize x y ->
             ( { model | device = Element.classifyDevice { width = x, height = y } }, Cmd.none )
+
+        ToggleTheme ->
+            let
+                newTheme =
+                    case model.theme of
+                        Light ->
+                            Dark
+
+                        Dark ->
+                            Light
+            in
+            ( { model | theme = newTheme }
+            , Ports.storeTheme
+                (if newTheme == Light then
+                    "light"
+
+                 else
+                    "dark"
+                )
+            )
 
 
 viewRouteParser : UP.Parser (View -> a) a
@@ -145,6 +195,12 @@ init flags url key =
             , game = Game.initModel
             , containsGithubPrefixInPath = flags.initPath |> hasGithubPathPrefix
             , playedGameHistory = Game.decodeStoredFinishedGameHistory flags.history
+            , theme =
+                if flags.theme == "light" then
+                    Light
+
+                else
+                    Dark
             }
 
         navigationMsg : Msg
@@ -175,45 +231,107 @@ view : Model -> Document Msg
 view m =
     { title = "Elm - Minesweeper"
     , body =
-        [ Element.layout [ Element.width Element.fill, Element.height Element.fill ] <|
+        [ Element.layout
+            [ Element.width Element.fill
+            , Element.height Element.fill
+            , Element.clipX
+            , Element.htmlAttribute <| HA.style "overflow-x" "hidden"
+            , Background.color (Colors.background m.theme)
+            , Font.color (Colors.textMain m.theme)
+            ]
+          <|
             Element.column [ Element.width fill, Element.height fill, Element.centerX, Element.spacingXY 0 0 ]
-                [ navigationView m.containsGithubPrefixInPath
-                , Lazy.lazy selectBoardView m
-                , footerView
+                [ navigationView m
+                , Element.el [ Element.width Element.fill, Element.height Element.fill ] <| Lazy.lazy selectBoardView m
+                , footerView m
                 ]
         ]
     }
 
 
-navigationView : Bool -> Element Msg
-navigationView containsGithubPrefixInPath =
+navigationView : Model -> Element Msg
+navigationView model =
     let
         pathWithTrailingSlash : String
         pathWithTrailingSlash =
-            if containsGithubPrefixInPath then
+            if model.containsGithubPrefixInPath then
                 "/" ++ githubPagePathPrefix ++ "/"
 
             else
                 "/"
     in
-    Element.row [ Element.width Element.fill, Background.color Colors.openedCellGray ]
-        [ Element.el [ Element.alignLeft, Element.paddingXY 10 10 ] <| Element.text "Elm Minesweeper"
-        , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = pathWithTrailingSlash ++ "", label = Element.text "Game" }
-        , Element.link [ Element.alignRight, Element.paddingXY 10 10 ] { url = pathWithTrailingSlash ++ "history", label = Element.text "History" }
+    Element.wrappedRow
+        [ Element.width Element.fill
+        , Background.color (Colors.surface model.theme)
+        , Element.paddingXY horizontalPadding (verticalPaddingForDevice model.device.class)
+        , Element.spacingXY 16 8
+        , Border.color (Colors.cellBorderColor model.theme)
+        , Border.widthEach { bottom = 1, top = 0, left = 0, right = 0 }
+        ]
+        [ Element.el [ Element.alignLeft, Font.bold, Font.size 24 ] <| Element.text "Elm Minesweeper"
+        , Element.row [ Element.alignRight, Element.spacing 20 ]
+            [ Input.button [ Region.description "Toggle dark/light mode", Element.padding 12 ]
+                { onPress = Just ToggleTheme
+                , label =
+                    Element.text <|
+                        case model.theme of
+                            Light ->
+                                "🌙"
+
+                            Dark ->
+                                "☀️"
+                }
+            , Element.link [ Font.color (Colors.textMain model.theme), Element.padding 12 ] { url = pathWithTrailingSlash ++ "", label = Element.text "Game" }
+            , Element.link [ Font.color (Colors.textMain model.theme), Element.padding 12 ] { url = pathWithTrailingSlash ++ "history", label = Element.text "History" }
+            ]
         ]
 
 
-footerView : Element Msg
-footerView =
-    Element.row
+footerView : Model -> Element Msg
+footerView model =
+    Element.wrappedRow
         [ Element.width Element.fill
-        , Element.alignBottom
-        , Element.paddingXY 10 10
+        , Element.paddingXY horizontalPadding (verticalPaddingForDevice model.device.class)
+        , Element.spacingXY 20 8
         , Element.spaceEvenly
         ]
-        [ Element.el [] <| Element.text "(c) 2026 David Daester"
-        , Element.link [] { url = "https://github.com/Swissbite/elm-minesweeper", label = Element.image [ Element.height <| Element.px 25 ] { src = "./github-mark.svg", description = "GitHub logo" } }
-        , Element.image [] { src = "./agplv3-88x31.png", description = "AGPLv3 license logo" }
+        [ Element.el [ Font.color (Colors.textDim model.theme) ] <| Element.text "© 2026 David Daester"
+        , Element.link []
+            { url = "https://github.com/Swissbite/elm-minesweeper"
+            , label =
+                Element.el [ Background.color Colors.white, Border.rounded 16, Element.padding 2 ] <|
+                    Element.image
+                        [ Element.height <|
+                            Element.px <|
+                                if model.device.class == Element.Phone then
+                                    22
+
+                                else
+                                    25
+                        ]
+                        { src = "./github-mark.svg", description = "GitHub logo" }
+            }
+        , Element.link []
+            { url = "https://www.gnu.org/licenses/agpl-3.0.html"
+            , label =
+                Element.image
+                    [ Element.height <|
+                        Element.px <|
+                            if model.device.class == Element.Phone then
+                                24
+
+                            else
+                                31
+                    , Element.width <|
+                        Element.px <|
+                            if model.device.class == Element.Phone then
+                                68
+
+                            else
+                                88
+                    ]
+                    { src = "./agplv3-88x31.png", description = "AGPLv3 license logo" }
+            }
         ]
 
 

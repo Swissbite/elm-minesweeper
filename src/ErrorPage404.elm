@@ -26,11 +26,11 @@ import Types exposing (Model)
 
 
 view : Model -> Element msg
-view _ =
+view model =
     Element.column [ Element.width Element.fill, Element.height Element.fill, Background.image "./white-smoke-wallpaper-abstract-desktop-background.jpg" ]
         [ Element.textColumn [ Element.centerX, Element.centerY, Element.width Element.fill ]
             [ Element.paragraph [ Element.centerX, Element.centerY, Font.size 200, Element.padding 20 ] [ Element.text <| String.fromChar Styles.icons.exploded ]
             , Element.paragraph [ Element.centerX, Element.centerY, Font.color Colors.white, Element.padding 20 ] [ Element.text "Error 404 - Dangerous zone. Maybe you did not see the warnings. Follow the route back." ]
             ]
-        , Element.paragraph [ Element.alignBottom, Element.alignRight, Element.width Element.fill, Font.color Colors.lightGrey ] [ Element.link [ Element.alignRight ] { url = "https://www.freepik.com/free-photo/white-smoke-wallpaper-abstract-desktop-background_18416635.htm", label = Element.text "Background image created by rawpixel.com on Freepik" } ]
+        , Element.paragraph [ Element.alignBottom, Element.alignRight, Element.width Element.fill, Font.color (Colors.textDim model.theme) ] [ Element.link [ Element.alignRight ] { url = "https://www.freepik.com/free-photo/white-smoke-wallpaper-abstract-desktop-background_18416635.htm", label = Element.text "Background image created by rawpixel.com on Freepik" } ]
         ]

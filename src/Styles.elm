@@ -24,6 +24,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Html.Attributes as HA
+import Types exposing (Theme)
 
 
 icons : { markerFlag : Char, untouchedBomb : Char, exploded : Char, stopWatch : String, victory : Char, downSign : Char, upSign : Char, world : Char, calendar : String, pause : String, resume : String }
@@ -42,92 +43,248 @@ icons =
     }
 
 
-cellWidth : Element.Length
-cellWidth =
-    Element.px 50
+minimumCellFontSize : Int
+minimumCellFontSize =
+    16
 
 
-basicCellStyle : List (Element.Attribute msg)
-basicCellStyle =
-    [ Element.width cellWidth
-    , Element.height cellWidth
-    , Border.color Colors.cellBorderColor
+smallBoardThreshold : Int
+smallBoardThreshold =
+    8
+
+
+mediumBoardThreshold : Int
+mediumBoardThreshold =
+    16
+
+
+phoneSmallCellSize : Int
+phoneSmallCellSize =
+    44
+
+
+phoneMediumCellSize : Int
+phoneMediumCellSize =
+    44
+
+
+phoneLargeCellSize : Int
+phoneLargeCellSize =
+    44
+
+
+tabletSmallCellSize : Int
+tabletSmallCellSize =
+    44
+
+
+tabletMediumCellSize : Int
+tabletMediumCellSize =
+    44
+
+
+tabletLargeCellSize : Int
+tabletLargeCellSize =
+    44
+
+
+desktopSmallCellSize : Int
+desktopSmallCellSize =
+    44
+
+
+desktopMediumCellSize : Int
+desktopMediumCellSize =
+    32
+
+
+desktopLargeCellSize : Int
+desktopLargeCellSize =
+    28
+
+
+bigDesktopSmallCellSize : Int
+bigDesktopSmallCellSize =
+    46
+
+
+bigDesktopMediumCellSize : Int
+bigDesktopMediumCellSize =
+    34
+
+
+bigDesktopLargeCellSize : Int
+bigDesktopLargeCellSize =
+    30
+
+
+pillBorderRadius : Int
+pillBorderRadius =
+    999
+
+
+cellPixelSize : Device -> { cols : Int, rows : Int } -> Int
+cellPixelSize device { cols, rows } =
+    let
+        longestSide =
+            max cols rows
+    in
+    case device.class of
+        Phone ->
+            if longestSide <= smallBoardThreshold then
+                phoneSmallCellSize
+
+            else if longestSide <= mediumBoardThreshold then
+                phoneMediumCellSize
+
+            else
+                phoneLargeCellSize
+
+        Tablet ->
+            if longestSide <= smallBoardThreshold then
+                tabletSmallCellSize
+
+            else if longestSide <= mediumBoardThreshold then
+                tabletMediumCellSize
+
+            else
+                tabletLargeCellSize
+
+        Desktop ->
+            if longestSide <= smallBoardThreshold then
+                desktopSmallCellSize
+
+            else if longestSide <= mediumBoardThreshold then
+                desktopMediumCellSize
+
+            else
+                desktopLargeCellSize
+
+        BigDesktop ->
+            if longestSide <= smallBoardThreshold then
+                bigDesktopSmallCellSize
+
+            else if longestSide <= mediumBoardThreshold then
+                bigDesktopMediumCellSize
+
+            else
+                bigDesktopLargeCellSize
+
+
+cellWidth : Int -> Element.Length
+cellWidth size =
+    Element.px size
+
+
+basicCellStyle : Theme -> Int -> List (Element.Attribute msg)
+basicCellStyle theme size =
+    [ Element.width (cellWidth size)
+    , Element.height (cellWidth size)
+    , Border.color (Colors.cellBorderColor theme)
     , Border.width 1
     , Element.pointer
+    , Font.size (max minimumCellFontSize (size // 2))
+    , Font.color (Colors.textMain theme)
+    , htmlAttribute <| HA.style "touch-action" "manipulation"
+    , htmlAttribute <| HA.style "user-select" "none"
+    , htmlAttribute <| HA.style "-webkit-tap-highlight-color" "transparent"
     ]
 
 
-untouchedCellStyle : List (Element.Attribute msg)
-untouchedCellStyle =
-    basicCellStyle
-        ++ [ Background.color Colors.untouchedCellGray
+untouchedCellStyle : Theme -> Int -> List (Element.Attribute msg)
+untouchedCellStyle theme size =
+    basicCellStyle theme size
+        ++ [ Background.color (Colors.untouchedCellGray theme)
            ]
 
 
-openedCellStyle : List (Element.Attribute msg)
-openedCellStyle =
-    basicCellStyle
-        ++ [ Background.color Colors.openedCellGray
+openedCellStyle : Theme -> Int -> List (Element.Attribute msg)
+openedCellStyle theme size =
+    basicCellStyle theme size
+        ++ [ Background.color (Colors.openedCellGray theme)
            ]
 
 
-openedMineNeighbourCellStyle : Int -> List (Element.Attribute msg)
-openedMineNeighbourCellStyle number =
+openedMineNeighbourCellStyle : Theme -> Int -> Int -> List (Element.Attribute msg)
+openedMineNeighbourCellStyle theme size number =
     let
         color =
             case number of
                 1 ->
-                    Colors.saffron
+                    Colors.mine1 theme
 
                 2 ->
-                    Colors.fieryRose
+                    Colors.mine2 theme
 
                 3 ->
-                    Colors.cerise
+                    Colors.mine3 theme
 
                 4 ->
-                    Colors.smitten
+                    Colors.mine4 theme
 
                 5 ->
-                    Colors.eggplant
+                    Colors.mine5 theme
 
                 6 ->
-                    Colors.caputMortuum
+                    Colors.mine6 theme
 
                 7 ->
-                    Colors.asparagus
+                    Colors.mine7 theme
 
                 8 ->
-                    Colors.babyBlue
+                    Colors.mine8 theme
 
                 _ ->
-                    Colors.black
+                    Colors.transparent
     in
-    openedCellStyle
+    openedCellStyle theme size
         ++ [ Font.color color
-           , Font.family [ Font.monospace ]
+           , Font.family [ Font.sansSerif ]
            , Font.extraBold
-           , Font.glow color 0.2
            ]
 
 
-styledGameSelectionButton : { onPress : Maybe msg, label : Element msg } -> Element msg
-styledGameSelectionButton =
+styledGameSelectionButton : Theme -> { onPress : Maybe msg, title : String, subtitle : String, isPhone : Bool } -> Element msg
+styledGameSelectionButton theme { onPress, title, subtitle, isPhone } =
     Input.button
         [ Element.width
-            (fill
-                |> Element.maximum 400
-                |> Element.minimum 300
+            (if isPhone then
+                fill
+
+             else
+                px 280
             )
-        , Element.height
-            (fill
-                |> Element.maximum 400
-                |> Element.minimum 300
-            )
-        , Background.color Colors.lightGrey
+        , Element.padding 20
+        , Background.color (Colors.surface theme)
+        , Border.rounded 16
+        , Border.color (Colors.cellBorderColor theme)
+        , Border.width 1
         , Element.centerX
-        , Element.centerY
+        , Font.color (Colors.textMain theme)
         ]
+        { onPress = onPress
+        , label =
+            column [ Element.width fill, Element.spacing 8 ]
+                [ el [ Font.bold, Font.size 24 ] <| text title
+                , el [ Font.color (Colors.textDim theme) ] <| text subtitle
+                ]
+        }
+
+
+pillBadge : Theme -> String -> Element msg
+pillBadge theme label =
+    Element.el
+        [ Background.color (Colors.surface theme)
+        , Border.color (Colors.cellBorderColor theme)
+        , Border.width 1
+        , Border.rounded pillBorderRadius
+        , Element.paddingXY 12 8
+        , Font.color (Colors.textMain theme)
+        , Font.size 16
+        ]
+    <|
+        Element.el [ Font.semiBold ] <|
+            Element.text label
 
 
 {-| Credits to <https://ellie-app.com/85HbWTjCGWha1>
@@ -155,6 +312,7 @@ toggleCheckboxWidget { offColor, onColor, sliderColor, toggleWidth, toggleHeight
          , width <| px <| toggleWidth
          , height <| px <| toggleHeight
          , Border.rounded <| toggleHeight // 2
+         , htmlAttribute <| HA.style "box-sizing" "border-box"
          , inFront <|
             el [ height fill ] <|
                 el
@@ -165,16 +323,16 @@ toggleCheckboxWidget { offColor, onColor, sliderColor, toggleWidth, toggleHeight
                     , centerY
                     , moveRight pad
                     , htmlAttribute <|
-                        HA.style "transition" ".3s"
+                        HA.style "transition" "transform .3s ease"
                     , htmlAttribute <|
                         if checked then
                             HA.style "transform" <| "translateX(" ++ translation ++ "px)"
 
                         else
-                            HA.class ""
+                            HA.style "transform" <| "translateX(0px)"
                     ]
                 <|
-                    el [ centerX, centerY, Font.size <| toggleHeight // 2, Font.color <| rgb255 150 150 150 ] <|
+                    el [ centerX, centerY, Font.size <| toggleHeight // 2, Font.color <| rgb255 100 100 100 ] <|
                         text <|
                             if checked then
                                 Maybe.withDefault "" <| Maybe.map String.fromChar offSymbol
