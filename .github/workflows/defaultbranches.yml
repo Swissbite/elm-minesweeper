@@ -6,13 +6,13 @@ name: Automated test elm-minesweeper
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
   push:
-    branches: 
+    branches:
       - feature/*
       - hotfix/*
       - release/*
-    
+
   pull_request:
-    branches: 
+    branches:
       - main
 
   # Allows you to run this workflow manually from the Actions tab
@@ -22,10 +22,7 @@ on:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-
       - uses: actions/checkout@v6
         name: Checkout sources
 
