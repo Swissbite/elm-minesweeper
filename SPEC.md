@@ -7,7 +7,7 @@ The goal of this project is to provide a fully functional, visually polished Min
 **The application must run entirely in the browser.**
 - **No Backend:** All logic, state management, and persistence must happen on the client side.
 - **Static Hosting:** The build output consists of static assets (HTML, JS, CSS, images) suitable for hosting on GitHub Pages or any static file server.
-- **Persistence:** User history and settings are stored locally in the browser's `localStorage`.
+- **Persistence:** User history and settings are stored locally in the browser's `localStorage` (with graceful degradation if unavailable).
 
 ## 2. Technical Stack
 - **Language:** Elm 0.19.1
@@ -39,6 +39,8 @@ The goal of this project is to provide a fully functional, visually polished Min
 
 ## 4. UI/UX Requirements
 - **Responsive Design:** Adapts between Mobile (Phone/Tablet) and Desktop layouts using `Element.classifyDevice`.
+- **Accessibility & Touch:** Minimum touch targets enforced to 44px for touch interfaces.
+- **Theming:** Dynamic dark/light theme switch support.
 - **Game History:** A dedicated view to browse past games, filterable by result (Won/Lost) and sortable by duration, date, or difficulty.
 - **Visual Feedback:** Interactive feedback for cell hovering, clicking, and state changes (Reveal vs. Flag mode).
 
@@ -55,6 +57,7 @@ Data is persisted as a JSON string in `localStorage` under the key `finishedGame
 - `src/Main.elm`: Application entry, routing, and top-level update loop.
 - `src/index.js`: JS bootstrap, `localStorage` bridge, and port subscriptions.
 - `src/Types.elm`: Global type definitions (Model, Msg, GameState).
+- `src/Theme.elm`: Theming types and definitions (dark/light mode).
 - `src/Styles.elm`: UI component definitions and reusable styling attributes.
 - `src/Colors.elm`: Standardized color palette.
 
