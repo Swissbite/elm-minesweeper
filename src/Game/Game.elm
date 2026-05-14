@@ -423,11 +423,7 @@ gameSelectionView model =
             , Element.paragraph [ Font.color (Colors.textDim model.theme), Element.centerX, Element.width (Element.maximum 500 Element.fill) ]
                 [ Element.text "Mobile keeps touch-friendly cells and lets larger boards scroll when needed." ]
             ]
-        , let
-            deviceClass =
-                model.device.class
-          in
-          Element.wrappedRow
+        , Element.wrappedRow
             [ Element.centerX
             , Element.spacing 16
             , Element.width (Element.maximum 576 Element.fill)

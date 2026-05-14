@@ -45,12 +45,20 @@ const app = Elm.Main.init({
 app.ports.storeFinishedGameHistory.subscribe(function(finishedGameHistory) {
   if (finishedGameHistory.length > 0) {
     const historyAsJson = JSON.stringify(finishedGameHistory);
-    localStorage.setItem(localStoreFinishedGameHistoryKey, historyAsJson);
+    try {
+      localStorage.setItem(localStoreFinishedGameHistoryKey, historyAsJson);
+    } catch (e) {
+      console.warn("Could not save game history to local storage", e);
+    }
   }
 });
 
 app.ports.storeTheme.subscribe(function(theme) {
-    localStorage.setItem(localStoreThemeKey, theme);
+    try {
+      localStorage.setItem(localStoreThemeKey, theme);
+    } catch (e) {
+      console.warn("Could not save theme to local storage", e);
+    }
 });
 
 // If you want your app to work offline and load faster, you can change

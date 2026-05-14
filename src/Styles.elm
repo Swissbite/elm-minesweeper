@@ -60,7 +60,7 @@ mediumBoardThreshold =
 
 phoneSmallCellSize : Int
 phoneSmallCellSize =
-    40
+    44
 
 
 phoneMediumCellSize : Int
