@@ -458,7 +458,7 @@ gameScreenLayout model boardConfig boardElement =
             , Element.spacing 20
             ]
             [ Element.el
-                [ Element.width <| Element.fillPortion 5
+                [ Element.width Element.fill
                 , Element.height Element.fill
                 , Element.htmlAttribute <| HA.style "min-width" "0"
                 ]
@@ -669,7 +669,7 @@ wrapIfNotEmpty elements =
 sidebarElement : Model -> Element GameMsg
 sidebarElement model =
     Element.column
-        [ Element.width (Element.fillPortion 2 |> Element.minimum 220)
+        [ Element.width Element.shrink
         , Element.alignTop
         , Element.spacing 12
         ]
