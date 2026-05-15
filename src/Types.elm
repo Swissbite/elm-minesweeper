@@ -87,7 +87,7 @@ type OrderDirection
 
 
 type alias Model =
-    { game : GameModel
+    { game : Maybe GameModel
     , playedGameHistory : List FinishedGameHistoryEntry
     , currentView : View
     , device : Device
@@ -107,7 +107,8 @@ type alias GameModel =
 
 
 type View
-    = Game
+    = GameSelection
+    | Game
     | History GameHistoryDisplayMode GameHistoryOrderBy OrderDirection
     | Error404
 
@@ -148,12 +149,6 @@ type GameBoardStatus
     = WaitOnStart InitGameData
     | RunningGame PlayGameGrid
     | FinishedGame PlayGameGrid GameResult Int
-    | NoGame NoGameMode
-
-
-type NoGameMode
-    = PreSelect
-    | Custom
 
 
 type alias InitGameData =

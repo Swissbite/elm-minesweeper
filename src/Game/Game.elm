@@ -44,9 +44,9 @@ import Time
 import Types exposing (..)
 
 
-initModel : GameModel
-initModel =
-    { gameBoardStatus = NoGame PreSelect
+initModel : PlayGroundDefinition -> GameModel
+initModel definition =
+    { gameBoardStatus = WaitOnStart <| createInitGameGrid definition
     , gameInteractionMode = Reveal
     , gameRunningTimes = []
     , gamePauseResumeState = Paused
@@ -64,9 +64,9 @@ decodeStoredFinishedGameHistory string =
         |> Result.withDefault []
 
 
-subscriptions : Model -> Sub GameMsg
-subscriptions m =
-    case ( m.currentView, m.game.gameBoardStatus ) of
+subscriptions : Model -> GameModel -> Sub GameMsg
+subscriptions m gameModel =
+    case ( m.currentView, gameModel.gameBoardStatus ) of
         ( Game, RunningGame _ ) ->
             Sub.batch
                 [ Time.every 200 (\posix -> ClockTick posix)
@@ -106,44 +106,29 @@ toKeyEventMsg eventKeyString =
 ----- UPDATE -----
 
 
-update : GameMsg -> Model -> ( Model, Cmd GameMsg )
-update gameMsg model =
+update : GameMsg -> GameModel -> Model -> ( Model, Cmd GameMsg )
+update gameMsg gameModel model =
     case gameMsg of
         NoUpdate ->
             ( model, Cmd.none )
 
         GoToStartPage ->
-            let
-                gameModel =
-                    model.game
-            in
-            ( { model | game = { gameModel | gameBoardStatus = NoGame PreSelect } }, Cmd.none )
+            ( model, Cmd.none )
 
         ClickedOnInitGameCell initGame coords ->
             ( model, generatePlayGameGrid initGame coords |> Random.generate StartGame )
 
         StartGame playGrid ->
-            let
-                gameModel =
-                    model.game
-            in
-            ( { model | game = { gameModel | gameBoardStatus = RunningGame playGrid, gameRunningTimes = [], gamePauseResumeState = Resumed 1 } }, Cmd.none )
+            ( { model | game = Just { gameModel | gameBoardStatus = RunningGame playGrid, gameRunningTimes = [], gamePauseResumeState = Resumed 1 } }, Cmd.none )
 
-        CreateNewGame playgroundDefinition ->
-            let
-                gameModel =
-                    model.game
-            in
-            ( { model | game = { gameModel | gameBoardStatus = WaitOnStart <| createInitGameGrid playgroundDefinition, gameInteractionMode = Reveal } }, Cmd.none )
+        CreateNewGame _ ->
+            ( model, Cmd.none )
 
         ClickOnGameCell coords ->
-            updateModelByClickOnGameCell coords model
+            updateModelByClickOnGameCell coords gameModel model
 
         ToogleGameCellInteractionMode ->
             let
-                gameModel =
-                    model.game
-
                 nextMode =
                     case gameModel.gameInteractionMode of
                         Reveal ->
@@ -152,13 +137,13 @@ update gameMsg model =
                         Flag ->
                             Reveal
             in
-            ( { model | game = { gameModel | gameInteractionMode = nextMode } }, Cmd.none )
+            ( { model | game = Just { gameModel | gameInteractionMode = nextMode } }, Cmd.none )
 
         ToogleGamePause ->
-            ( togglePause model, Cmd.none )
+            ( togglePause gameModel model, Cmd.none )
 
         ClockTick posix ->
-            updateTimePlayGame model posix
+            updateTimePlayGame gameModel model posix
 
         NavigationEvent to ->
             case ( model.currentView, to ) of
@@ -166,40 +151,33 @@ update gameMsg model =
                     ( model, Cmd.none )
 
                 ( Game, _ ) ->
-                    ( togglePause model, Cmd.none )
+                    ( togglePause gameModel model, Cmd.none )
 
                 ( _, Game ) ->
-                    ( togglePause model, Cmd.none )
+                    ( togglePause gameModel model, Cmd.none )
 
                 ( _, _ ) ->
                     ( model, Cmd.none )
 
 
-togglePause : Model -> Model
-togglePause model =
-    let
-        gameModel =
-            model.game
-    in
+togglePause : GameModel -> Model -> Model
+togglePause gameModel model =
     case ( gameModel.gameBoardStatus, gameModel.gamePauseResumeState ) of
         ( RunningGame _, Paused ) ->
-            { model | game = { gameModel | gamePauseResumeState = Resumed (List.length gameModel.gameRunningTimes + 1) } }
+            { model | game = Just { gameModel | gamePauseResumeState = Resumed (List.length gameModel.gameRunningTimes + 1) } }
 
         ( RunningGame _, Resumed _ ) ->
-            { model | game = { gameModel | gamePauseResumeState = Paused } }
+            { model | game = Just { gameModel | gamePauseResumeState = Paused } }
 
         _ ->
             model
 
 
-updateTimePlayGame : Model -> Time.Posix -> ( Model, Cmd GameMsg )
-updateTimePlayGame model time =
-    case ( model.game.gameBoardStatus, model.game.gamePauseResumeState ) of
+updateTimePlayGame : GameModel -> Model -> Time.Posix -> ( Model, Cmd GameMsg )
+updateTimePlayGame gameModel model time =
+    case ( gameModel.gameBoardStatus, gameModel.gamePauseResumeState ) of
         ( RunningGame _, Resumed timesResume ) ->
             let
-                gameModel =
-                    model.game
-
                 shouldReplaceHead =
                     List.length gameModel.gameRunningTimes == timesResume
 
@@ -213,22 +191,19 @@ updateTimePlayGame model time =
                                 ( start, time ) :: xs
 
                     else
-                        ( time, time ) :: model.game.gameRunningTimes
+                        ( time, time ) :: gameModel.gameRunningTimes
             in
-            ( { model | game = { gameModel | gameRunningTimes = newList, lastClockTick = time } }, Cmd.none )
+            ( { model | game = Just { gameModel | gameRunningTimes = newList, lastClockTick = time } }, Cmd.none )
 
         _ ->
             ( model, Cmd.none )
 
 
-updateModelByClickOnGameCell : Coordinate -> Model -> ( Model, Cmd GameMsg )
-updateModelByClickOnGameCell coords model =
-    case ( model.game.gamePauseResumeState, model.game.gameBoardStatus ) of
+updateModelByClickOnGameCell : Coordinate -> GameModel -> Model -> ( Model, Cmd GameMsg )
+updateModelByClickOnGameCell coords gameModel model =
+    case ( gameModel.gamePauseResumeState, gameModel.gameBoardStatus ) of
         ( Resumed _, RunningGame playGrid ) ->
             let
-                gameModel =
-                    model.game
-
                 updatedPlayGrid : PlayGameGrid
                 updatedPlayGrid =
                     case gameModel.gameInteractionMode of
@@ -267,7 +242,7 @@ updateModelByClickOnGameCell coords model =
                         _ ->
                             model.playedGameHistory
             in
-            ( { model | game = { gameModel | gameBoardStatus = nextGameBoardStatus }, playedGameHistory = nextHistoryList }, saveFinishedGameHistory nextHistoryList )
+            ( { model | game = Just { gameModel | gameBoardStatus = nextGameBoardStatus }, playedGameHistory = nextHistoryList }, saveFinishedGameHistory nextHistoryList )
 
         _ ->
             ( model, Cmd.none )
@@ -277,8 +252,8 @@ updateModelByClickOnGameCell coords model =
 ----- VIEW for Game -----
 
 
-view : Model -> Element GameMsg
-view model =
+view : Model -> GameModel -> Element GameMsg
+view model gameModel =
     let
         boardConfigFromDefinition : PlayGroundDefinition -> BoardViewConfig
         boardConfigFromDefinition definition =
@@ -305,16 +280,13 @@ view model =
                 Resumed _ ->
                     Lazy.lazy2 runningGameView boardConfig playGrid
     in
-    case model.game.gameBoardStatus of
-        NoGame _ ->
-            gameSelectionView model
-
+    case gameModel.gameBoardStatus of
         WaitOnStart initGameGrid ->
             let
                 boardConfig =
                     boardConfigFromInitGrid initGameGrid
             in
-            gameScreenLayout model boardConfig <|
+            gameScreenLayout model gameModel boardConfig <|
                 Lazy.lazy2 initGameGridView boardConfig initGameGrid
 
         RunningGame playGrid ->
@@ -322,48 +294,16 @@ view model =
                 boardConfig =
                     boardConfigFromPlayGrid playGrid
             in
-            gameScreenLayout model boardConfig <|
-                gameGridElement boardConfig model.game.gamePauseResumeState playGrid
+            gameScreenLayout model gameModel boardConfig <|
+                gameGridElement boardConfig gameModel.gamePauseResumeState playGrid
 
         FinishedGame playGrid finishedStatus _ ->
             let
                 boardConfig =
                     boardConfigFromPlayGrid playGrid
             in
-            gameScreenLayout model boardConfig <|
+            gameScreenLayout model gameModel boardConfig <|
                 Lazy.lazy3 finishedGameView boardConfig playGrid finishedStatus
-
-
-smallPlayground : PlayGroundDefinition
-smallPlayground =
-    { cols = 8
-    , rows = 8
-    , mines = 10
-    }
-
-
-mediumPlayground : PlayGroundDefinition
-mediumPlayground =
-    { cols = 16
-    , rows = 16
-    , mines = 40
-    }
-
-
-advancePlayground : PlayGroundDefinition
-advancePlayground =
-    { cols = 30
-    , rows = 16
-    , mines = 99
-    }
-
-
-xxlPlayground : PlayGroundDefinition
-xxlPlayground =
-    { cols = 30
-    , rows = 30
-    , mines = 200
-    }
 
 
 type alias BoardViewConfig =
@@ -385,56 +325,8 @@ boardViewConfig model cols rows =
     }
 
 
-gameSelectionView : Model -> Element GameMsg
-gameSelectionView model =
-    let
-        isPhone =
-            model.device.class == Phone
-
-        optionView : ( String, PlayGroundDefinition ) -> Element GameMsg
-        optionView ( title, definition ) =
-            Styles.styledGameSelectionButton model.theme
-                { onPress = Just (CreateNewGame definition)
-                , title = title
-                , subtitle =
-                    String.fromInt definition.cols
-                        ++ " x "
-                        ++ String.fromInt definition.rows
-                        ++ " • "
-                        ++ String.fromInt definition.mines
-                        ++ " mines"
-                , isPhone = isPhone
-                }
-
-        options =
-            [ ( "Small", smallPlayground )
-            , ( "Medium", mediumPlayground )
-            , ( "Advanced", advancePlayground )
-            , ( "XXL", xxlPlayground )
-            ]
-    in
-    Element.column
-        [ Element.width Element.fill
-        , Element.height Element.fill
-        , Element.padding 16
-        , Element.spacing 32
-        ]
-        [ Element.column [ Element.width Element.fill, Element.spacing 12, Font.center ]
-            [ Element.el [ Font.bold, Font.size 32, Element.centerX ] <| Element.text "Choose a board"
-            , Element.paragraph [ Font.color (Colors.textDim model.theme), Element.centerX, Element.width (Element.maximum 500 Element.fill) ]
-                [ Element.text "Mobile keeps touch-friendly cells and lets larger boards scroll when needed." ]
-            ]
-        , Element.wrappedRow
-            [ Element.centerX
-            , Element.spacing 16
-            , Element.width (Element.maximum 576 Element.fill)
-            ]
-            (List.map optionView options)
-        ]
-
-
-gameScreenLayout : Model -> BoardViewConfig -> Element GameMsg -> Element GameMsg
-gameScreenLayout model boardConfig boardElement =
+gameScreenLayout : Model -> GameModel -> BoardViewConfig -> Element GameMsg -> Element GameMsg
+gameScreenLayout model gameModel boardConfig boardElement =
     if boardConfig.isMobile then
         Element.column
             [ Element.width Element.fill
@@ -442,9 +334,9 @@ gameScreenLayout model boardConfig boardElement =
             , Element.padding 12
             , Element.spacing 12
             ]
-            [ mobileStatusBarElement model
+            [ mobileStatusBarElement model gameModel
             , Element.el [ Element.width Element.fill, Element.height Element.fill ] <| boardViewport boardConfig boardElement
-            , mobileActionBarElement model
+            , mobileActionBarElement model gameModel
             ]
 
     else
@@ -461,7 +353,7 @@ gameScreenLayout model boardConfig boardElement =
                 ]
               <|
                 boardViewport boardConfig boardElement
-            , sidebarElement model
+            , sidebarElement model gameModel
             ]
 
 
@@ -508,9 +400,9 @@ desktopPauseButtonFontSize =
     42
 
 
-gameInformationElements : Model -> List (Element GameMsg)
-gameInformationElements model =
-    case getRunningGameStats model.game of
+gameInformationElements : Model -> GameModel -> List (Element GameMsg)
+gameInformationElements model gameModel =
+    case getRunningGameStats gameModel of
         Nothing ->
             []
 
@@ -521,9 +413,9 @@ gameInformationElements model =
             ]
 
 
-modeSelectorElements : Model -> List (Element GameMsg)
-modeSelectorElements model =
-    case model.game.gameBoardStatus of
+modeSelectorElements : Model -> GameModel -> List (Element GameMsg)
+modeSelectorElements model gameModel =
+    case gameModel.gameBoardStatus of
         RunningGame _ ->
             [ Element.row
                 [ Element.spacing 8
@@ -531,15 +423,15 @@ modeSelectorElements model =
                 , Border.rounded Styles.pillBorderRadius
                 , Element.paddingXY 10 6
                 ]
-                [ Element.el [ Font.bold, Element.centerY ] <|
+                [ Element.el [ Font.bold, Element.centerY, Element.width (Element.px 130) ] <|
                     Element.text <|
-                        case model.game.gameInteractionMode of
+                        case gameModel.gameInteractionMode of
                             Reveal ->
                                 "Mode: Reveal"
 
                             Flag ->
                                 "Mode: Flag"
-                , Lazy.lazy2 mineToggleElement model.theme model.game.gameInteractionMode
+                , Lazy.lazy2 mineToggleElement model.theme gameModel.gameInteractionMode
                 ]
             ]
 
@@ -547,9 +439,9 @@ modeSelectorElements model =
             []
 
 
-giveUpElements : Model -> List (Element GameMsg)
-giveUpElements model =
-    case model.game.gameBoardStatus of
+giveUpElements : Model -> GameModel -> List (Element GameMsg)
+giveUpElements model gameModel =
+    case gameModel.gameBoardStatus of
         FinishedGame _ _ _ ->
             []
 
@@ -567,12 +459,9 @@ giveUpElements model =
                 }
             ]
 
-        _ ->
-            []
 
-
-pauseToggleElements : Model -> List (Element GameMsg)
-pauseToggleElements model =
+pauseToggleElements : Model -> GameModel -> List (Element GameMsg)
+pauseToggleElements model gameModel =
     let
         buttonAttributes =
             [ Border.solid
@@ -586,7 +475,7 @@ pauseToggleElements model =
                     desktopPauseButtonFontSize
             ]
     in
-    case ( model.game.gameBoardStatus, model.game.gamePauseResumeState ) of
+    case ( gameModel.gameBoardStatus, gameModel.gamePauseResumeState ) of
         ( RunningGame _, Paused ) ->
             [ Input.button buttonAttributes
                 { onPress = Just ToogleGamePause
@@ -605,14 +494,14 @@ pauseToggleElements model =
             []
 
 
-gameActionElements : Model -> List (Element GameMsg)
-gameActionElements model =
-    modeSelectorElements model ++ giveUpElements model ++ pauseToggleElements model
+gameActionElements : Model -> GameModel -> List (Element GameMsg)
+gameActionElements model gameModel =
+    modeSelectorElements model gameModel ++ giveUpElements model gameModel ++ pauseToggleElements model gameModel
 
 
-gameFinishedElements : Model -> List (Element GameMsg)
-gameFinishedElements model =
-    case model.game.gameBoardStatus of
+gameFinishedElements : Model -> GameModel -> List (Element GameMsg)
+gameFinishedElements model gameModel =
+    case gameModel.gameBoardStatus of
         FinishedGame playGameGrid gameResult _ ->
             [ Styles.pillBadge model.theme <|
                 case gameResult of
@@ -635,16 +524,16 @@ gameFinishedElements model =
             []
 
 
-mobileStatusBarElement : Model -> Element GameMsg
-mobileStatusBarElement model =
-    wrapIfNotEmpty (gameInformationElements model)
+mobileStatusBarElement : Model -> GameModel -> Element GameMsg
+mobileStatusBarElement model gameModel =
+    wrapIfNotEmpty (gameInformationElements model gameModel)
 
 
-mobileActionBarElement : Model -> Element GameMsg
-mobileActionBarElement model =
+mobileActionBarElement : Model -> GameModel -> Element GameMsg
+mobileActionBarElement model gameModel =
     let
         actionElements =
-            gameActionElements model ++ gameFinishedElements model
+            gameActionElements model gameModel ++ gameFinishedElements model gameModel
     in
     wrapIfNotEmpty actionElements
 
@@ -663,16 +552,16 @@ wrapIfNotEmpty elements =
             elements
 
 
-sidebarElement : Model -> Element GameMsg
-sidebarElement model =
+sidebarElement : Model -> GameModel -> Element GameMsg
+sidebarElement model gameModel =
     Element.column
         [ Element.width Element.shrink
         , Element.alignTop
         , Element.spacing 12
         ]
-        (gameInformationElements model
-            ++ gameActionElements model
-            ++ gameFinishedElements model
+        (gameInformationElements model gameModel
+            ++ gameActionElements model gameModel
+            ++ gameFinishedElements model gameModel
             ++ [ Element.column [ Font.bold ]
                     [ Element.text "Shortcuts:"
                     , Element.text "T: Toggle Selector"
@@ -1092,9 +981,6 @@ getRunningGameStats gameModel =
                 , flags = 0
                 , elapsedTime = 0
                 }
-
-        _ ->
-            Nothing
 
 
 type alias GameStats =

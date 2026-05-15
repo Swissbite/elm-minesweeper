@@ -31,6 +31,7 @@ import Element.Region as Region
 import ErrorPage404
 import Game.Game as Game
 import Game.History as GameHistory
+import Game.Selection as GameSelection
 import Html.Attributes as HA
 import Ports
 import Theme exposing (Theme(..))
@@ -100,8 +101,55 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GameView gameMsg ->
-            Game.update gameMsg model
-                |> Tuple.mapSecond (Cmd.map GameView)
+            case gameMsg of
+                CreateNewGame definition ->
+                    let
+                        newGameModel =
+                            Game.initModel definition
+
+                        newModel =
+                            { model | currentView = Game, game = Just newGameModel }
+                    in
+                    ( newModel
+                    , if model.currentView /= Game then
+                        Navigation.pushUrl newModel.key
+                            (if newModel.containsGithubPrefixInPath then
+                                "/" ++ githubPagePathPrefix ++ "/game"
+
+                             else
+                                "/game"
+                            )
+
+                      else
+                        Cmd.none
+                    )
+
+                GoToStartPage ->
+                    let
+                        newModel =
+                            { model | currentView = GameSelection, game = Nothing }
+                    in
+                    ( newModel
+                    , Navigation.pushUrl newModel.key
+                        (if newModel.containsGithubPrefixInPath then
+                            "/" ++ githubPagePathPrefix ++ "/"
+
+                         else
+                            "/"
+                        )
+                    )
+
+                _ ->
+                    case model.game of
+                        Just gameModel ->
+                            let
+                                ( newModel, cmd ) =
+                                    Game.update gameMsg gameModel model
+                            in
+                            ( newModel, Cmd.map GameView cmd )
+
+                        Nothing ->
+                            ( model, Cmd.none )
 
         GameHistory gameHistoryMsg ->
             GameHistory.update gameHistoryMsg model
@@ -137,8 +185,10 @@ update msg model =
 viewRouteParser : UP.Parser (View -> a) a
 viewRouteParser =
     UP.oneOf
-        [ UP.map Game UP.top
-        , UP.map Game (UP.s githubPagePathPrefix)
+        [ UP.map GameSelection UP.top
+        , UP.map GameSelection (UP.s githubPagePathPrefix)
+        , UP.map Game (UP.s "game")
+        , UP.map Game (UP.s githubPagePathPrefix </> UP.s "game")
         , UP.map gameHistoryQueryToView (UP.s "history" <?> GameHistory.queryParser)
         , UP.map gameHistoryQueryToView (UP.s githubPagePathPrefix </> UP.s "history" <?> GameHistory.queryParser)
         ]
@@ -166,15 +216,35 @@ navigationHandling request model =
                             ( model, Cmd.none )
 
                         else
-                            Game.update (NavigationEvent parsedView) model
-                                |> Tuple.mapBoth
-                                    (\m -> { m | currentView = parsedView })
-                                    (\cmd ->
-                                        Cmd.batch
-                                            [ Cmd.map GameView cmd
-                                            , Navigation.pushUrl model.key (Url.toString url)
-                                            ]
+                            case ( parsedView, model.game ) of
+                                ( Game, Nothing ) ->
+                                    ( { model | currentView = GameSelection }
+                                    , Navigation.replaceUrl model.key
+                                        (if model.containsGithubPrefixInPath then
+                                            "/" ++ githubPagePathPrefix ++ "/"
+
+                                         else
+                                            "/"
+                                        )
                                     )
+
+                                _ ->
+                                    case model.game of
+                                        Just gameModel ->
+                                            Game.update (NavigationEvent parsedView) gameModel model
+                                                |> Tuple.mapBoth
+                                                    (\newModel -> { newModel | currentView = parsedView })
+                                                    (\cmd ->
+                                                        Cmd.batch
+                                                            [ Cmd.map GameView cmd
+                                                            , Navigation.pushUrl model.key (Url.toString url)
+                                                            ]
+                                                    )
+
+                                        Nothing ->
+                                            ( { model | currentView = parsedView }
+                                            , Navigation.pushUrl model.key (Url.toString url)
+                                            )
                    )
 
         External url ->
@@ -192,8 +262,8 @@ init flags url key =
                     { width = flags.width
                     , height = flags.height
                     }
-            , currentView = Game
-            , game = Game.initModel
+            , currentView = GameSelection
+            , game = Nothing
             , containsGithubPrefixInPath = flags.initPath |> hasGithubPathPrefix
             , playedGameHistory = Game.decodeStoredFinishedGameHistory flags.history
             , theme =
@@ -219,7 +289,12 @@ hasGithubPathPrefix initPath =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ Sub.map GameView (Game.subscriptions model)
+        [ case model.game of
+            Just gameModel ->
+                Sub.map GameView (Game.subscriptions model gameModel)
+
+            Nothing ->
+                Sub.none
         , Events.onResize (\values -> SetScreenSize values)
         ]
 
@@ -260,6 +335,14 @@ navigationView model =
 
             else
                 "/"
+
+        gameLinkPath =
+            case model.game of
+                Nothing ->
+                    pathWithTrailingSlash
+
+                Just _ ->
+                    pathWithTrailingSlash ++ "game"
     in
     Element.wrappedRow
         [ Element.width Element.fill
@@ -282,7 +365,7 @@ navigationView model =
                             Dark ->
                                 "☀️"
                 }
-            , Element.link [ Font.color (Colors.textMain model.theme), Element.padding 12 ] { url = pathWithTrailingSlash ++ "", label = Element.text "Game" }
+            , Element.link [ Font.color (Colors.textMain model.theme), Element.padding 12 ] { url = gameLinkPath, label = Element.text "Game" }
             , Element.link [ Font.color (Colors.textMain model.theme), Element.padding 12 ] { url = pathWithTrailingSlash ++ "history", label = Element.text "History" }
             ]
         ]
@@ -339,9 +422,18 @@ footerView model =
 selectBoardView : Model -> Element Msg
 selectBoardView model =
     case model.currentView of
-        Game ->
-            Game.view model
+        GameSelection ->
+            GameSelection.view model
                 |> Element.map GameView
+
+        Game ->
+            case model.game of
+                Just gameModel ->
+                    Game.view model gameModel
+                        |> Element.map GameView
+
+                Nothing ->
+                    Element.none
 
         Error404 ->
             ErrorPage404.view model
