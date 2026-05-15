@@ -93,7 +93,7 @@ view model =
         [ Element.column [ Element.width Element.fill, Element.spacing 12, Font.center ]
             [ Element.el [ Font.bold, Font.size 32, Element.centerX ] <| Element.text "Choose a board"
             , Element.paragraph [ Font.color (Colors.textDim model.theme), Element.centerX, Element.width (Element.maximum 500 Element.fill) ]
-                [ Element.text "Mobile keeps touch-friendly cells and lets larger boards scroll when needed." ]
+                [ Element.text "Select a difficulty level to start playing. Larger boards contain more mines and offer a greater challenge." ]
             ]
         , Element.wrappedRow
             [ Element.centerX
