@@ -280,16 +280,13 @@ view model gameModel =
                 Resumed _ ->
                     Lazy.lazy2 runningGameView boardConfig playGrid
     in
-    case model.game.gameBoardStatus of
-        NoGame _ ->
-            Element.none
-
+    case gameModel.gameBoardStatus of
         WaitOnStart initGameGrid ->
             let
                 boardConfig =
                     boardConfigFromInitGrid initGameGrid
             in
-            gameScreenLayout model boardConfig <|
+            gameScreenLayout model gameModel boardConfig <|
                 Lazy.lazy2 initGameGridView boardConfig initGameGrid
 
         RunningGame playGrid ->
@@ -297,15 +294,15 @@ view model gameModel =
                 boardConfig =
                     boardConfigFromPlayGrid playGrid
             in
-            gameScreenLayout model boardConfig <|
-                gameGridElement boardConfig model.game.gamePauseResumeState playGrid
+            gameScreenLayout model gameModel boardConfig <|
+                gameGridElement boardConfig gameModel.gamePauseResumeState playGrid
 
         FinishedGame playGrid finishedStatus _ ->
             let
                 boardConfig =
                     boardConfigFromPlayGrid playGrid
             in
-            gameScreenLayout model boardConfig <|
+            gameScreenLayout model gameModel boardConfig <|
                 Lazy.lazy3 finishedGameView boardConfig playGrid finishedStatus
 
 
@@ -337,9 +334,9 @@ gameScreenLayout model gameModel boardConfig boardElement =
             , Element.padding 12
             , Element.spacing 12
             ]
-            [ mobileStatusBarElement model
+            [ mobileStatusBarElement model gameModel
             , Element.el [ Element.width Element.fill, Element.height Element.fill ] <| boardViewport boardConfig boardElement
-            , mobileActionBarElement model
+            , mobileActionBarElement model gameModel
             ]
 
     else
@@ -356,7 +353,7 @@ gameScreenLayout model gameModel boardConfig boardElement =
                 ]
               <|
                 boardViewport boardConfig boardElement
-            , sidebarElement model
+            , sidebarElement model gameModel
             ]
 
 
@@ -428,13 +425,13 @@ modeSelectorElements model gameModel =
                 ]
                 [ Element.el [ Font.bold, Element.centerY, Element.width (Element.px 130) ] <|
                     Element.text <|
-                        case model.game.gameInteractionMode of
+                        case gameModel.gameInteractionMode of
                             Reveal ->
                                 "Mode: Reveal"
 
                             Flag ->
                                 "Mode: Flag"
-                , Lazy.lazy2 mineToggleElement model.theme model.game.gameInteractionMode
+                , Lazy.lazy2 mineToggleElement model.theme gameModel.gameInteractionMode
                 ]
             ]
 
@@ -478,7 +475,7 @@ pauseToggleElements model gameModel =
                     desktopPauseButtonFontSize
             ]
     in
-    case ( model.game.gameBoardStatus, model.game.gamePauseResumeState ) of
+    case ( gameModel.gameBoardStatus, gameModel.gamePauseResumeState ) of
         ( RunningGame _, Paused ) ->
             [ Input.button buttonAttributes
                 { onPress = Just ToogleGamePause
