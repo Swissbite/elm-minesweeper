@@ -242,7 +242,7 @@ init flags url key =
                     , height = flags.height
                     }
             , currentView = GameSelection
-            , game = Game.initModel
+            , game = Nothing
             , containsGithubPrefixInPath = flags.initPath |> hasGithubPathPrefix
             , playedGameHistory = Game.decodeStoredFinishedGameHistory flags.history
             , theme =

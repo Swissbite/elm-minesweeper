@@ -87,7 +87,7 @@ type OrderDirection
 
 
 type alias Model =
-    { game : GameModel
+    { game : Maybe GameModel
     , playedGameHistory : List FinishedGameHistoryEntry
     , currentView : View
     , device : Device
