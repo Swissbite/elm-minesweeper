@@ -49,10 +49,16 @@ The project follows **Elm best practices** from the [Structuring Web Apps](https
 3. **[Main.elm](../../src/Main.elm)** — Application coordinator
    - Entry point (`main : Program Flags Model Msg`)
    - URL routing via `Url.Parser`
-   - Delegates game logic to `Game.Game` and history to `Game.History`
+   - Delegates game selection to `Game.Selection`, active gameplay to `Game.Game`, and history to `Game.History`
+   - Manages the `Maybe GameModel` lifecycle (creates/destroys the game model)
    - Handles screen size subscriptions
 
 ### Feature Modules
+
+- **[Game/Selection.elm](../../src/Game/Selection.elm)** — Game selection view
+  - Exposes: `view`
+  - Lets the player choose a difficulty/board size before a game starts
+  - Uses `GameMsg` (`CreateNewGame`) to trigger game initialisation in `Main.elm`
 
 - **[Game/Game.elm](../../src/Game/Game.elm)** — Core minesweeper game logic
   - Exposes: `initModel`, `update`, `view`, `subscriptions`

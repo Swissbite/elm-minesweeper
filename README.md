@@ -75,7 +75,8 @@ To simplify lookups as a developer, I split it into several key files:
 - [Colors.elm](./src/Colors.elm): Centralized color palette.
 - [Styles.elm](./src/Styles.elm): Make styles reusable. Define icons, predefined elements (like the toggle element). But does not hold any model related code. Styles has zero dependencies to [Types.elm](./src/Types.elm).
 - [Main.elm](./src/Main.elm): The main startup application. Responsible for initializing the application. Coordinates update subscriptions and views between the different elements.
-- [Game/Game.elm](./src/Game/Game.elm): Has its own msg type, GameMsg. Responsible for the complete minesweeper game flow. Extracted into own module to be able to add additional views like an About view or other stuff.
+- [Game/Selection.elm](./src/Game/Selection.elm): The game selection screen. Lets the player pick a difficulty/board size before starting a game.
+- [Game/Game.elm](./src/Game/Game.elm): Has its own msg type, GameMsg. Responsible for the active minesweeper game flow (waiting, running, finished). Decoupled from selection logic.
 - [Game/Internal.elm](./src/Game/Internal.elm): Shared game types, grid helpers, and JSON encoders/decoders for game state.
 - [Game/History.elm](./src/Game/History.elm): The game history of lost / won games. Sortable.
 
