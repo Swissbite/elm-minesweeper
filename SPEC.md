@@ -62,12 +62,12 @@ Data is persisted as a JSON string in `localStorage` under the key `finishedGame
 - `src/Colors.elm`: Standardized color palette.
 
 ### Game Logic
-- `src/Game/Game.elm`: Main game view and update logic.
+- `src/Game/Selection.elm`: Game selection view — lets the player choose a difficulty/board size.
+- `src/Game/Game.elm`: Active game view and update logic (waiting, running, and finished states).
 - `src/Game/Internal.elm`: Grid generation, JSON encoding/decoding, and time formatting.
 - `src/Game/History.elm`: History view and filtering/sorting logic.
 
 ### Infrastructure
 - `src/Ports.elm`: Elm-to-JS communication for persistence.
-- `src/StaticHelper.elm`: Configuration for deployment paths (GitHub Pages prefix).
 - `public/`: Static assets (index.html, manifest, icons, background images).
 - `tests/GameTests.elm`: Test suite for grid logic and decoders.
