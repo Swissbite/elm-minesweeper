@@ -1013,9 +1013,6 @@ getRunningGameStats gameModel =
                 , elapsedTime = 0
                 }
 
-        _ ->
-            Nothing
-
 
 type alias GameStats =
     { mines : Int

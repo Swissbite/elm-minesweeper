@@ -149,12 +149,6 @@ type GameBoardStatus
     = WaitOnStart InitGameData
     | RunningGame PlayGameGrid
     | FinishedGame PlayGameGrid GameResult Int
-    | NoGame NoGameMode
-
-
-type NoGameMode
-    = PreSelect
-    | Custom
 
 
 type alias InitGameData =
