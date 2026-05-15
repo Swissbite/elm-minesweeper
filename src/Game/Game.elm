@@ -307,13 +307,7 @@ view model =
     in
     case model.game.gameBoardStatus of
         NoGame _ ->
-            Element.column [ Element.centerX, Element.centerY, Element.spacing 20 ]
-                [ Element.text "No active game"
-                , Input.button [ Background.color (Colors.primary model.theme), Border.solid, Element.paddingXY 12 10, Border.rounded 10, Font.color Colors.white ]
-                    { onPress = Just GoToStartPage
-                    , label = Element.text "Select a board"
-                    }
-                ]
+            Element.none
 
         WaitOnStart initGameGrid ->
             let

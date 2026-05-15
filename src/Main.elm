@@ -202,15 +202,28 @@ navigationHandling request model =
                             ( model, Cmd.none )
 
                         else
-                            Game.update (NavigationEvent parsedView) model
-                                |> Tuple.mapBoth
-                                    (\m -> { m | currentView = parsedView })
-                                    (\cmd ->
-                                        Cmd.batch
-                                            [ Cmd.map GameView cmd
-                                            , Navigation.pushUrl model.key (Url.toString url)
-                                            ]
+                            case ( parsedView, model.game.gameBoardStatus ) of
+                                ( Game, NoGame _ ) ->
+                                    ( { model | currentView = GameSelection }
+                                    , Navigation.replaceUrl model.key
+                                        (if model.containsGithubPrefixInPath then
+                                            "/" ++ githubPagePathPrefix ++ "/"
+
+                                         else
+                                            "/"
+                                        )
                                     )
+
+                                _ ->
+                                    Game.update (NavigationEvent parsedView) model
+                                        |> Tuple.mapBoth
+                                            (\m -> { m | currentView = parsedView })
+                                            (\cmd ->
+                                                Cmd.batch
+                                                    [ Cmd.map GameView cmd
+                                                    , Navigation.pushUrl model.key (Url.toString url)
+                                                    ]
+                                            )
                    )
 
         External url ->
