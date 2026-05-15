@@ -457,7 +457,7 @@ modeSelectorElements model =
                 , Border.rounded Styles.pillBorderRadius
                 , Element.paddingXY 10 6
                 ]
-                [ Element.el [ Font.bold, Element.centerY ] <|
+                [ Element.el [ Font.bold, Element.centerY, Element.width (Element.px 115) ] <|
                     Element.text <|
                         case model.game.gameInteractionMode of
                             Reveal ->
