@@ -40,8 +40,8 @@ mediumPlayground =
     }
 
 
-advancePlayground : PlayGroundDefinition
-advancePlayground =
+advancedPlayground : PlayGroundDefinition
+advancedPlayground =
     { cols = 30
     , rows = 16
     , mines = 99
@@ -80,7 +80,7 @@ view model =
         options =
             [ ( "Small", smallPlayground )
             , ( "Medium", mediumPlayground )
-            , ( "Advanced", advancePlayground )
+            , ( "Advanced", advancedPlayground )
             , ( "XXL", xxlPlayground )
             ]
     in
