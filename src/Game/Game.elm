@@ -307,7 +307,13 @@ view model =
     in
     case model.game.gameBoardStatus of
         NoGame _ ->
-            gameSelectionView model
+            Element.column [ Element.centerX, Element.centerY, Element.spacing 20 ]
+                [ Element.text "No active game"
+                , Input.button [ Background.color (Colors.primary model.theme), Border.solid, Element.paddingXY 12 10, Border.rounded 10, Font.color Colors.white ]
+                    { onPress = Just GoToStartPage
+                    , label = Element.text "Select a board"
+                    }
+                ]
 
         WaitOnStart initGameGrid ->
             let
@@ -334,38 +340,6 @@ view model =
                 Lazy.lazy3 finishedGameView boardConfig playGrid finishedStatus
 
 
-smallPlayground : PlayGroundDefinition
-smallPlayground =
-    { cols = 8
-    , rows = 8
-    , mines = 10
-    }
-
-
-mediumPlayground : PlayGroundDefinition
-mediumPlayground =
-    { cols = 16
-    , rows = 16
-    , mines = 40
-    }
-
-
-advancePlayground : PlayGroundDefinition
-advancePlayground =
-    { cols = 30
-    , rows = 16
-    , mines = 99
-    }
-
-
-xxlPlayground : PlayGroundDefinition
-xxlPlayground =
-    { cols = 30
-    , rows = 30
-    , mines = 200
-    }
-
-
 type alias BoardViewConfig =
     { cellSize : Int
     , cols : Int
@@ -383,54 +357,6 @@ boardViewConfig model cols rows =
     , isMobile = model.device.class == Phone || model.device.class == Tablet
     , theme = model.theme
     }
-
-
-gameSelectionView : Model -> Element GameMsg
-gameSelectionView model =
-    let
-        isPhone =
-            model.device.class == Phone
-
-        optionView : ( String, PlayGroundDefinition ) -> Element GameMsg
-        optionView ( title, definition ) =
-            Styles.styledGameSelectionButton model.theme
-                { onPress = Just (CreateNewGame definition)
-                , title = title
-                , subtitle =
-                    String.fromInt definition.cols
-                        ++ " x "
-                        ++ String.fromInt definition.rows
-                        ++ " • "
-                        ++ String.fromInt definition.mines
-                        ++ " mines"
-                , isPhone = isPhone
-                }
-
-        options =
-            [ ( "Small", smallPlayground )
-            , ( "Medium", mediumPlayground )
-            , ( "Advanced", advancePlayground )
-            , ( "XXL", xxlPlayground )
-            ]
-    in
-    Element.column
-        [ Element.width Element.fill
-        , Element.height Element.fill
-        , Element.padding 16
-        , Element.spacing 32
-        ]
-        [ Element.column [ Element.width Element.fill, Element.spacing 12, Font.center ]
-            [ Element.el [ Font.bold, Font.size 32, Element.centerX ] <| Element.text "Choose a board"
-            , Element.paragraph [ Font.color (Colors.textDim model.theme), Element.centerX, Element.width (Element.maximum 500 Element.fill) ]
-                [ Element.text "Mobile keeps touch-friendly cells and lets larger boards scroll when needed." ]
-            ]
-        , Element.wrappedRow
-            [ Element.centerX
-            , Element.spacing 16
-            , Element.width (Element.maximum 576 Element.fill)
-            ]
-            (List.map optionView options)
-        ]
 
 
 gameScreenLayout : Model -> BoardViewConfig -> Element GameMsg -> Element GameMsg

@@ -107,7 +107,8 @@ type alias GameModel =
 
 
 type View
-    = Game
+    = GameSelection
+    | Game
     | History GameHistoryDisplayMode GameHistoryOrderBy OrderDirection
     | Error404
 

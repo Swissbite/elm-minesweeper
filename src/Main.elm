@@ -31,6 +31,7 @@ import Element.Region as Region
 import ErrorPage404
 import Game.Game as Game
 import Game.History as GameHistory
+import Game.Selection as GameSelection
 import Html.Attributes as HA
 import Ports
 import Theme exposing (Theme(..))
@@ -100,8 +101,41 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GameView gameMsg ->
-            Game.update gameMsg model
-                |> Tuple.mapSecond (Cmd.map GameView)
+            let
+                ( newModel, cmd ) =
+                    Game.update gameMsg model
+            in
+            case gameMsg of
+                CreateNewGame _ ->
+                    ( { newModel | currentView = Game }
+                    , Cmd.batch
+                        [ Cmd.map GameView cmd
+                        , Navigation.pushUrl newModel.key
+                            (if newModel.containsGithubPrefixInPath then
+                                "/" ++ githubPagePathPrefix ++ "/game"
+
+                             else
+                                "/game"
+                            )
+                        ]
+                    )
+
+                GoToStartPage ->
+                    ( { newModel | currentView = GameSelection }
+                    , Cmd.batch
+                        [ Cmd.map GameView cmd
+                        , Navigation.pushUrl newModel.key
+                            (if newModel.containsGithubPrefixInPath then
+                                "/" ++ githubPagePathPrefix ++ "/"
+
+                             else
+                                "/"
+                            )
+                        ]
+                    )
+
+                _ ->
+                    ( newModel, Cmd.map GameView cmd )
 
         GameHistory gameHistoryMsg ->
             GameHistory.update gameHistoryMsg model
@@ -137,8 +171,10 @@ update msg model =
 viewRouteParser : UP.Parser (View -> a) a
 viewRouteParser =
     UP.oneOf
-        [ UP.map Game UP.top
-        , UP.map Game (UP.s githubPagePathPrefix)
+        [ UP.map GameSelection UP.top
+        , UP.map GameSelection (UP.s githubPagePathPrefix)
+        , UP.map Game (UP.s "game")
+        , UP.map Game (UP.s githubPagePathPrefix </> UP.s "game")
         , UP.map gameHistoryQueryToView (UP.s "history" <?> GameHistory.queryParser)
         , UP.map gameHistoryQueryToView (UP.s githubPagePathPrefix </> UP.s "history" <?> GameHistory.queryParser)
         ]
@@ -192,7 +228,7 @@ init flags url key =
                     { width = flags.width
                     , height = flags.height
                     }
-            , currentView = Game
+            , currentView = GameSelection
             , game = Game.initModel
             , containsGithubPrefixInPath = flags.initPath |> hasGithubPathPrefix
             , playedGameHistory = Game.decodeStoredFinishedGameHistory flags.history
@@ -260,6 +296,14 @@ navigationView model =
 
             else
                 "/"
+
+        gameLinkPath =
+            case model.game.gameBoardStatus of
+                NoGame _ ->
+                    pathWithTrailingSlash
+
+                _ ->
+                    pathWithTrailingSlash ++ "game"
     in
     Element.wrappedRow
         [ Element.width Element.fill
@@ -282,7 +326,7 @@ navigationView model =
                             Dark ->
                                 "☀️"
                 }
-            , Element.link [ Font.color (Colors.textMain model.theme), Element.padding 12 ] { url = pathWithTrailingSlash ++ "", label = Element.text "Game" }
+            , Element.link [ Font.color (Colors.textMain model.theme), Element.padding 12 ] { url = gameLinkPath, label = Element.text "Game" }
             , Element.link [ Font.color (Colors.textMain model.theme), Element.padding 12 ] { url = pathWithTrailingSlash ++ "history", label = Element.text "History" }
             ]
         ]
@@ -339,6 +383,10 @@ footerView model =
 selectBoardView : Model -> Element Msg
 selectBoardView model =
     case model.currentView of
+        GameSelection ->
+            GameSelection.view model
+                |> Element.map GameView
+
         Game ->
             Game.view model
                 |> Element.map GameView
