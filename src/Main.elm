@@ -111,13 +111,17 @@ update msg model =
                             { model | currentView = Game, game = Just newGameModel }
                     in
                     ( newModel
-                    , Navigation.pushUrl newModel.key
-                        (if newModel.containsGithubPrefixInPath then
-                            "/" ++ githubPagePathPrefix ++ "/game"
+                    , if model.currentView /= Game then
+                        Navigation.pushUrl newModel.key
+                            (if newModel.containsGithubPrefixInPath then
+                                "/" ++ githubPagePathPrefix ++ "/game"
 
-                         else
-                            "/game"
-                        )
+                             else
+                                "/game"
+                            )
+
+                      else
+                        Cmd.none
                     )
 
                 GoToStartPage ->
