@@ -271,6 +271,27 @@ styledGameSelectionButton theme { onPress, title, subtitle, isPhone } =
         }
 
 
+styledResumeGameButton : Theme -> { onPress : Maybe msg, title : String, subtitle : String } -> Element msg
+styledResumeGameButton theme { onPress, title, subtitle } =
+    Input.button
+        [ Element.width fill
+        , Element.padding 20
+        , Background.color (Colors.surface theme)
+        , Border.rounded 16
+        , Border.color (Colors.primary theme)
+        , Border.width 2
+        , Element.centerX
+        , Font.color (Colors.textMain theme)
+        ]
+        { onPress = onPress
+        , label =
+            column [ Element.width fill, Element.spacing 8 ]
+                [ el [ Font.bold, Font.size 24 ] <| text (icons.resume ++ " " ++ title)
+                , el [ Font.color (Colors.textDim theme) ] <| text subtitle
+                ]
+        }
+
+
 pillBadge : Theme -> String -> Element msg
 pillBadge theme label =
     Element.el

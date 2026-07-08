@@ -15,7 +15,7 @@
 -}
 
 
-module Game.Game exposing (decodeStoredFinishedGameHistory, initModel, subscriptions, update, view)
+module Game.Game exposing (decodeStoredFinishedGameHistory, decodeStoredRunningGame, initModel, resumeGame, subscriptions, update, view)
 
 {-| Game module for rendering the complete game, as long as the currentView in the model is set to Game.
 Exposes the basic update / view / subscription functions, so that Main.elm can use them.
@@ -62,6 +62,26 @@ decodeStoredFinishedGameHistory : String -> List FinishedGameHistoryEntry
 decodeStoredFinishedGameHistory string =
     Decode.decodeString decodeFinishedGameHistory string
         |> Result.withDefault []
+
+
+decodeStoredRunningGame : String -> String -> Maybe GameModel
+decodeStoredRunningGame browserSalt string =
+    Decode.decodeString (decodeRunningGameEnvelope browserSalt) string
+        |> Result.toMaybe
+
+
+{-| Resumes a paused running game by opening a fresh time segment. The Resumed
+counter must stay one ahead of the recorded segments so that the next ClockTick
+starts a new segment instead of extending the last one (see updateTimePlayGame).
+-}
+resumeGame : GameModel -> GameModel
+resumeGame gameModel =
+    case ( gameModel.gameBoardStatus, gameModel.gamePauseResumeState ) of
+        ( RunningGame _, Paused ) ->
+            { gameModel | gamePauseResumeState = Resumed (List.length gameModel.gameRunningTimes + 1) }
+
+        _ ->
+            gameModel
 
 
 subscriptions : Model -> GameModel -> Sub GameMsg
@@ -119,9 +139,16 @@ update gameMsg gameModel model =
             ( model, generatePlayGameGrid initGame coords |> Random.generate StartGame )
 
         StartGame playGrid ->
-            ( { model | game = Just { gameModel | gameBoardStatus = RunningGame playGrid, gameRunningTimes = [], gamePauseResumeState = Resumed 1 } }, Cmd.none )
+            let
+                newGameModel =
+                    { gameModel | gameBoardStatus = RunningGame playGrid, gameRunningTimes = [], gamePauseResumeState = Resumed 1 }
+            in
+            ( { model | game = Just newGameModel }, saveRunningGame model.runningGameSalt newGameModel )
 
         CreateNewGame _ ->
+            ( model, Cmd.none )
+
+        ResumeSavedGame ->
             ( model, Cmd.none )
 
         ClickOnGameCell coords ->
@@ -140,7 +167,11 @@ update gameMsg gameModel model =
             ( { model | game = Just { gameModel | gameInteractionMode = nextMode } }, Cmd.none )
 
         ToogleGamePause ->
-            ( togglePause gameModel model, Cmd.none )
+            let
+                newModel =
+                    togglePause gameModel model
+            in
+            ( newModel, saveRunningGameOf newModel )
 
         ClockTick posix ->
             updateTimePlayGame gameModel model posix
@@ -151,7 +182,11 @@ update gameMsg gameModel model =
                     ( model, Cmd.none )
 
                 ( Game, _ ) ->
-                    ( togglePause gameModel model, Cmd.none )
+                    let
+                        newModel =
+                            togglePause gameModel model
+                    in
+                    ( newModel, saveRunningGameOf newModel )
 
                 ( _, Game ) ->
                     ( togglePause gameModel model, Cmd.none )
@@ -160,11 +195,20 @@ update gameMsg gameModel model =
                     ( model, Cmd.none )
 
 
+{-| Persists the current running game of the top level model, if there is one.
+-}
+saveRunningGameOf : Model -> Cmd GameMsg
+saveRunningGameOf model =
+    model.game
+        |> Maybe.map (saveRunningGame model.runningGameSalt)
+        |> Maybe.withDefault Cmd.none
+
+
 togglePause : GameModel -> Model -> Model
 togglePause gameModel model =
     case ( gameModel.gameBoardStatus, gameModel.gamePauseResumeState ) of
         ( RunningGame _, Paused ) ->
-            { model | game = Just { gameModel | gamePauseResumeState = Resumed (List.length gameModel.gameRunningTimes + 1) } }
+            { model | game = Just (resumeGame gameModel) }
 
         ( RunningGame _, Resumed _ ) ->
             { model | game = Just { gameModel | gamePauseResumeState = Paused } }
@@ -192,8 +236,11 @@ updateTimePlayGame gameModel model time =
 
                     else
                         ( time, time ) :: gameModel.gameRunningTimes
+
+                newGameModel =
+                    { gameModel | gameRunningTimes = newList, lastClockTick = time }
             in
-            ( { model | game = Just { gameModel | gameRunningTimes = newList, lastClockTick = time } }, Cmd.none )
+            ( { model | game = Just newGameModel }, saveRunningGame model.runningGameSalt newGameModel )
 
         _ ->
             ( model, Cmd.none )
@@ -241,8 +288,19 @@ updateModelByClickOnGameCell coords gameModel model =
 
                         _ ->
                             model.playedGameHistory
+
+                nextGameModel =
+                    { gameModel | gameBoardStatus = nextGameBoardStatus }
+
+                persistCmd =
+                    case nextGameBoardStatus of
+                        FinishedGame _ _ _ ->
+                            Cmd.batch [ saveFinishedGameHistory nextHistoryList, clearRunningGame ]
+
+                        _ ->
+                            saveRunningGame model.runningGameSalt nextGameModel
             in
-            ( { model | game = Just { gameModel | gameBoardStatus = nextGameBoardStatus }, playedGameHistory = nextHistoryList }, saveFinishedGameHistory nextHistoryList )
+            ( { model | game = Just nextGameModel, playedGameHistory = nextHistoryList }, persistCmd )
 
         _ ->
             ( model, Cmd.none )
@@ -747,24 +805,6 @@ createInitGameGrid definition =
     }
 
 
-playGameGridToPlaygroundDefinition : PlayGameGrid -> PlayGroundDefinition
-playGameGridToPlaygroundDefinition grid =
-    let
-        foldLFn : GameCell -> Int -> Int
-        foldLFn cell count =
-            case cell of
-                GameCell MineCell _ ->
-                    count + 1
-
-                _ ->
-                    count
-    in
-    { cols = Grid.width grid
-    , rows = Grid.height grid
-    , mines = Grid.foldl foldLFn 0 grid
-    }
-
-
 sanitizePlaygroundDefinition : PlayGroundDefinition -> PlayGroundDefinition
 sanitizePlaygroundDefinition definition =
     let
@@ -915,11 +955,6 @@ minesIndexGenerator remainingMines remainingPossibilities alreadyGenerated =
                                 in
                                 minesIndexGenerator newRemainingMines newRemainingPossibilities (Random.constant set)
                             )
-
-
-calculateElapsedTimeMillis : List ( Time.Posix, Time.Posix ) -> Int
-calculateElapsedTimeMillis =
-    List.foldl (\( from, to ) summedUp -> (Time.posixToMillis to - Time.posixToMillis from) + summedUp) 0
 
 
 appendGenerator : Generator (Set Int) -> Generator Int -> Generator (Set Int)

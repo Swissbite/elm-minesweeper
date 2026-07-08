@@ -41,6 +41,8 @@ type alias Flags =
     , history : String
     , initPath : String
     , theme : String
+    , runningGame : String
+    , runningGameSalt : String
     }
 
 
@@ -53,6 +55,7 @@ type GameMsg
     | ClickOnGameCell Coordinate
     | ToogleGameCellInteractionMode
     | CreateNewGame PlayGroundDefinition
+    | ResumeSavedGame
     | GoToStartPage
     | ClockTick Time.Posix
     | ToogleGamePause
@@ -88,12 +91,14 @@ type OrderDirection
 
 type alias Model =
     { game : Maybe GameModel
+    , savedGame : Maybe GameModel
     , playedGameHistory : List FinishedGameHistoryEntry
     , currentView : View
     , device : Device
     , key : Key
     , containsGithubPrefixInPath : Bool
     , theme : Theme
+    , runningGameSalt : String
     }
 
 

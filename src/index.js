@@ -20,6 +20,8 @@ import * as serviceWorker from './serviceWorker';
 
 const localStoreFinishedGameHistoryKey = 'finishedGameHistory';
 const localStoreThemeKey = 'themePreference';
+const localStoreRunningGameKey = 'runningGame';
+const localStoreRunningGameSaltKey = 'runningGameSalt';
 
 const storedFinishedGameHistory = localStorage.getItem(localStoreFinishedGameHistoryKey);
 const finishedGameHistory = storedFinishedGameHistory ? JSON.parse(storedFinishedGameHistory) : "[]";
@@ -30,6 +32,34 @@ if (!themePref) {
   themePref = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
+// Random per-browser salt for the running game checksum. Generated once on
+// first start; without it a stored running game cannot be validated, so a
+// missing or unwritable salt simply invalidates any existing save.
+function generateRunningGameSalt() {
+  const words = new Uint32Array(4);
+  if (window.crypto && window.crypto.getRandomValues) {
+    window.crypto.getRandomValues(words);
+  } else {
+    for (let i = 0; i < words.length; i++) {
+      words[i] = Math.floor(Math.random() * 4294967296);
+    }
+  }
+  return Array.from(words).map((word) => word.toString(16).padStart(8, '0')).join('');
+}
+
+let runningGame = "";
+let runningGameSalt = "";
+try {
+  runningGame = localStorage.getItem(localStoreRunningGameKey) || "";
+  runningGameSalt = localStorage.getItem(localStoreRunningGameSaltKey) || "";
+  if (!runningGameSalt) {
+    runningGameSalt = generateRunningGameSalt();
+    localStorage.setItem(localStoreRunningGameSaltKey, runningGameSalt);
+  }
+} catch (e) {
+  console.warn("Could not read the running game from local storage", e);
+}
+
 const app = Elm.Main.init({
   node: document.getElementById('root'),
   flags: {
@@ -37,7 +67,9 @@ const app = Elm.Main.init({
     height: window.innerHeight,
     width: window.innerWidth,
     initPath : pathname,
-    theme: themePref
+    theme: themePref,
+    runningGame: runningGame,
+    runningGameSalt: runningGameSalt
   }
 });
 
@@ -50,6 +82,22 @@ app.ports.storeFinishedGameHistory.subscribe(function(finishedGameHistory) {
     } catch (e) {
       console.warn("Could not save game history to local storage", e);
     }
+  }
+});
+
+app.ports.storeRunningGame.subscribe(function(runningGameAsJson) {
+  try {
+    localStorage.setItem(localStoreRunningGameKey, runningGameAsJson);
+  } catch (e) {
+    console.warn("Could not save the running game to local storage", e);
+  }
+});
+
+app.ports.clearRunningGame.subscribe(function() {
+  try {
+    localStorage.removeItem(localStoreRunningGameKey);
+  } catch (e) {
+    console.warn("Could not clear the running game in local storage", e);
   }
 });
 
