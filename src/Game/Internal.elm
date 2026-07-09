@@ -366,6 +366,133 @@ runningGameChecksum browserSalt payload =
     djb2Hash (staticChecksumSalt ++ browserSalt ++ payload)
 
 
+{-| Seed for the obfuscation keystream, derived from both salts and normalized
+into the MINSTD state range 1..2147483646.
+-}
+obfuscationSeed : String -> Int
+obfuscationSeed browserSalt =
+    djb2Hash (staticChecksumSalt ++ browserSalt)
+        |> modBy 2147483646
+        |> (+) 1
+
+
+{-| MINSTD linear congruential generator. With state < 2^31 the product
+48271 \* state stays below 2^47 and therefore within the exactly representable
+Int range.
+-}
+nextKeystreamState : Int -> Int
+nextKeystreamState state =
+    modBy 2147483647 (48271 * state)
+
+
+{-| Obfuscates the running game envelope so that the stored value cannot be
+read in the browser's dev tools - pausing a game and simply looking up the
+mine positions in localStorage would otherwise be a trivial cheat. Every
+character is xor'd with a salt-derived keystream byte and written as two hex
+digits. This is deliberately obfuscation, not cryptography: salt and algorithm
+necessarily live on the client.
+
+    Precondition: the payload contains only ASCII characters (code < 256),
+    which holds for the compact JSON produced by encodeRunningGame.
+
+-}
+obfuscateRunningGame : String -> String -> String
+obfuscateRunningGame browserSalt payload =
+    String.foldl
+        (\char ( state, hexPairs ) ->
+            let
+                nextState =
+                    nextKeystreamState state
+            in
+            ( nextState
+            , byteToHex (Bitwise.xor (Char.toCode char) (Bitwise.and 0xFF nextState)) :: hexPairs
+            )
+        )
+        ( obfuscationSeed browserSalt, [] )
+        payload
+        |> Tuple.second
+        |> List.reverse
+        |> String.concat
+
+
+{-| Inverse of obfuscateRunningGame. Any non-hex character or an odd number of
+hex digits rejects the whole blob.
+-}
+deobfuscateRunningGame : String -> String -> Maybe String
+deobfuscateRunningGame browserSalt blob =
+    String.foldl
+        (\char acc ->
+            acc
+                |> Maybe.andThen
+                    (\( state, pendingHighNibble, decodedChars ) ->
+                        hexDigitToInt char
+                            |> Maybe.map
+                                (\nibble ->
+                                    case pendingHighNibble of
+                                        Nothing ->
+                                            ( state, Just nibble, decodedChars )
+
+                                        Just highNibble ->
+                                            let
+                                                nextState =
+                                                    nextKeystreamState state
+                                            in
+                                            ( nextState
+                                            , Nothing
+                                            , Char.fromCode (Bitwise.xor (highNibble * 16 + nibble) (Bitwise.and 0xFF nextState)) :: decodedChars
+                                            )
+                                )
+                    )
+        )
+        (Just ( obfuscationSeed browserSalt, Nothing, [] ))
+        blob
+        |> Maybe.andThen
+            (\( _, pendingHighNibble, decodedChars ) ->
+                case pendingHighNibble of
+                    Just _ ->
+                        Nothing
+
+                    Nothing ->
+                        Just (decodedChars |> List.reverse |> String.fromList)
+            )
+
+
+byteToHex : Int -> String
+byteToHex byte =
+    String.fromList [ hexDigit (byte // 16), hexDigit (modBy 16 byte) ]
+
+
+hexDigit : Int -> Char
+hexDigit value =
+    if value < 10 then
+        Char.fromCode (Char.toCode '0' + value)
+
+    else
+        Char.fromCode (Char.toCode 'a' + value - 10)
+
+
+hexDigitToInt : Char -> Maybe Int
+hexDigitToInt char =
+    let
+        code =
+            Char.toCode (Char.toLower char)
+
+        zero =
+            Char.toCode '0'
+
+        lowerA =
+            Char.toCode 'a'
+    in
+    if code >= zero && code <= zero + 9 then
+        Just (code - zero)
+
+    else if code >= lowerA && code <= lowerA + 5 then
+        Just (code - lowerA + 10)
+
+    else
+        Nothing
+
+
 runningGameValue : PlayGameGrid -> GameModel -> Encode.Value
 runningGameValue grid gameModel =
     Encode.object
@@ -417,7 +544,7 @@ encodeRunningGame browserSalt gameModel =
 saveRunningGame : String -> GameModel -> Cmd msg
 saveRunningGame browserSalt gameModel =
     encodeRunningGame browserSalt gameModel
-        |> Maybe.map Ports.storeRunningGame
+        |> Maybe.map (obfuscateRunningGame browserSalt >> Ports.storeRunningGame)
         |> Maybe.withDefault Cmd.none
 
 

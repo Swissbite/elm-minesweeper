@@ -66,8 +66,18 @@ decodeStoredFinishedGameHistory string =
 
 decodeStoredRunningGame : String -> String -> Maybe GameModel
 decodeStoredRunningGame browserSalt string =
-    Decode.decodeString (decodeRunningGameEnvelope browserSalt) string
-        |> Result.toMaybe
+    if String.startsWith "{" string then
+        -- Legacy plain JSON save, written before the stored value was obfuscated.
+        Decode.decodeString (decodeRunningGameEnvelope browserSalt) string
+            |> Result.toMaybe
+
+    else
+        deobfuscateRunningGame browserSalt string
+            |> Maybe.andThen
+                (\envelope ->
+                    Decode.decodeString (decodeRunningGameEnvelope browserSalt) envelope
+                        |> Result.toMaybe
+                )
 
 
 {-| Resumes a paused running game by opening a fresh time segment. The Resumed
