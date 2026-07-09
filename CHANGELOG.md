@@ -5,7 +5,10 @@
 - **Resume Tile**: An interrupted game is offered as a full-width "Resume game" tile above the difficulty tiles on the selection view (mobile first). A restored game starts paused and continues exactly where it left off.
 - **Cheat Protection**: The stored game is guarded by a salted checksum (static application salt combined with a random per-browser salt) against manual edits, and the whole payload is obfuscated with a salt-derived XOR keystream and hex encoding so mine positions cannot be read out of the browser's dev tools. Deliberately obfuscation, not cryptography - documented in SPEC.md.
 - **Persistence Schema**: New versioned `runningGame` entry in `localStorage`; invalid, tampered, or foreign saves are discarded and cleaned up automatically. The save is removed when a game finishes, is given up, or a new game is created.
-- **Fixes**: The finished-game history is now only written when a game actually finishes instead of on every cell click.
+- **Game Selection View**: The difficulty selection is now its own view with clearer explanatory text, instead of a state of the game screen. The game state was refactored to an optional game model, and opening `/game` without an active game redirects to the selection view.
+- **UI Fixes**: The reveal/flag mode toggle no longer jumps on mode change, and its label no longer clips. The finished-game history is now only written when a game actually finishes instead of on every cell click.
+- **Tooling**: Node.js v20 → v24, Elm dependency and elm-tooling updates, leaner CI workflow configuration.
+- **Documentation**: README, SPEC and AGENTS files reworked to match the current architecture.
 
 ## v1.1.0 - Theming & Mobile Support (May 2026)
 - **Theming**: Added a new dynamic dark/light theme switch.
