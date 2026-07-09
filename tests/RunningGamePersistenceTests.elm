@@ -77,7 +77,17 @@ checksumTests =
 roundTripTests : Test
 roundTripTests =
     describe "Encode and decode a running game"
-        [ test "a running game round-trips and is restored as paused" <|
+        [ test "an obfuscated running game round-trips and is restored as paused" <|
+            \_ ->
+                case runningGameModel of
+                    Nothing ->
+                        Expect.fail "Testdata seems to be invalid"
+
+                    Just gameModel ->
+                        storedBlob
+                            |> Maybe.andThen (Game.decodeStoredRunningGame testSalt)
+                            |> Expect.equal (Just { gameModel | gamePauseResumeState = Paused })
+        , test "a legacy plain text save from before obfuscation still decodes" <|
             \_ ->
                 case runningGameModel of
                     Nothing ->
@@ -87,6 +97,78 @@ roundTripTests =
                         GameInternal.encodeRunningGame testSalt gameModel
                             |> Maybe.andThen (Game.decodeStoredRunningGame testSalt)
                             |> Expect.equal (Just { gameModel | gamePauseResumeState = Paused })
+        ]
+
+
+{-| The running game exactly as it would be written to localStorage: encoded
+and obfuscated.
+-}
+storedBlob : Maybe String
+storedBlob =
+    runningGameModel
+        |> Maybe.andThen (GameInternal.encodeRunningGame testSalt)
+        |> Maybe.map (GameInternal.obfuscateRunningGame testSalt)
+
+
+printableAsciiFuzzer : Fuzz.Fuzzer String
+printableAsciiFuzzer =
+    Fuzz.intRange 32 126
+        |> Fuzz.map Char.fromCode
+        |> Fuzz.list
+        |> Fuzz.map String.fromList
+
+
+obfuscationTests : Test
+obfuscationTests =
+    describe "Obfuscation of the stored running game"
+        [ fuzz printableAsciiFuzzer "obfuscate and deobfuscate round-trip any ASCII payload" <|
+            \payload ->
+                GameInternal.obfuscateRunningGame testSalt payload
+                    |> GameInternal.deobfuscateRunningGame testSalt
+                    |> Expect.equal (Just payload)
+        , test "the stored blob does not leak mine positions in plain text" <|
+            \_ ->
+                case storedBlob of
+                    Nothing ->
+                        Expect.fail "Testdata seems to be invalid"
+
+                    Just blob ->
+                        [ "mineCell", "cellType", "cellStatus", "checksum" ]
+                            |> List.filter (\needle -> String.contains needle blob)
+                            |> Expect.equal []
+        , test "a blob is rejected under a different browser salt" <|
+            \_ ->
+                storedBlob
+                    |> Maybe.map (Game.decodeStoredRunningGame "another-salt")
+                    |> Expect.equal (Just Nothing)
+        , test "a blob with an odd number of hex digits is rejected" <|
+            \_ ->
+                storedBlob
+                    |> Maybe.map (String.dropRight 1 >> Game.decodeStoredRunningGame testSalt)
+                    |> Expect.equal (Just Nothing)
+        , test "a blob containing a non-hex character is rejected" <|
+            \_ ->
+                storedBlob
+                    |> Maybe.map (\blob -> "zz" ++ String.dropLeft 2 blob)
+                    |> Maybe.map (Game.decodeStoredRunningGame testSalt)
+                    |> Expect.equal (Just Nothing)
+        , test "a blob with a flipped hex digit is rejected" <|
+            \_ ->
+                case storedBlob of
+                    Nothing ->
+                        Expect.fail "Testdata seems to be invalid"
+
+                    Just blob ->
+                        let
+                            flippedFirstDigit =
+                                if String.startsWith "0" blob then
+                                    "1" ++ String.dropLeft 1 blob
+
+                                else
+                                    "0" ++ String.dropLeft 1 blob
+                        in
+                        Game.decodeStoredRunningGame testSalt flippedFirstDigit
+                            |> Expect.equal Nothing
         ]
 
 
