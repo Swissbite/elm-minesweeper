@@ -15,10 +15,16 @@
 -}
 
 
-port module Ports exposing (storeFinishedGameHistory, storeTheme)
+port module Ports exposing (clearRunningGame, storeFinishedGameHistory, storeRunningGame, storeTheme)
 
 
 port storeFinishedGameHistory : String -> Cmd msg
+
+
+port storeRunningGame : String -> Cmd msg
+
+
+port clearRunningGame : () -> Cmd msg
 
 
 port storeTheme : String -> Cmd msg

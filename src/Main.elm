@@ -108,35 +108,65 @@ update msg model =
                             Game.initModel definition
 
                         newModel =
-                            { model | currentView = Game, game = Just newGameModel }
+                            { model | currentView = Game, game = Just newGameModel, savedGame = Nothing }
                     in
                     ( newModel
-                    , if model.currentView /= Game then
-                        Navigation.pushUrl newModel.key
-                            (if newModel.containsGithubPrefixInPath then
-                                "/" ++ githubPagePathPrefix ++ "/game"
+                    , Cmd.batch
+                        [ if model.currentView /= Game then
+                            Navigation.pushUrl newModel.key
+                                (if newModel.containsGithubPrefixInPath then
+                                    "/" ++ githubPagePathPrefix ++ "/game"
 
-                             else
-                                "/game"
+                                 else
+                                    "/game"
+                                )
+
+                          else
+                            Cmd.none
+                        , Ports.clearRunningGame ()
+                        ]
+                    )
+
+                ResumeSavedGame ->
+                    case model.savedGame of
+                        Just savedGame ->
+                            let
+                                newModel =
+                                    { model | currentView = Game, game = Just (Game.resumeGame savedGame), savedGame = Nothing }
+                            in
+                            ( newModel
+                            , if model.currentView /= Game then
+                                Navigation.pushUrl newModel.key
+                                    (if newModel.containsGithubPrefixInPath then
+                                        "/" ++ githubPagePathPrefix ++ "/game"
+
+                                     else
+                                        "/game"
+                                    )
+
+                              else
+                                Cmd.none
                             )
 
-                      else
-                        Cmd.none
-                    )
+                        Nothing ->
+                            ( model, Cmd.none )
 
                 GoToStartPage ->
                     let
                         newModel =
-                            { model | currentView = GameSelection, game = Nothing }
+                            { model | currentView = GameSelection, game = Nothing, savedGame = Nothing }
                     in
                     ( newModel
-                    , Navigation.pushUrl newModel.key
-                        (if newModel.containsGithubPrefixInPath then
-                            "/" ++ githubPagePathPrefix ++ "/"
+                    , Cmd.batch
+                        [ Navigation.pushUrl newModel.key
+                            (if newModel.containsGithubPrefixInPath then
+                                "/" ++ githubPagePathPrefix ++ "/"
 
-                         else
-                            "/"
-                        )
+                             else
+                                "/"
+                            )
+                        , Ports.clearRunningGame ()
+                        ]
                     )
 
                 _ ->
@@ -254,6 +284,10 @@ navigationHandling request model =
 init : Flags -> Url -> Key -> ( Model, Cmd Msg )
 init flags url key =
     let
+        savedGame : Maybe GameModel
+        savedGame =
+            Game.decodeStoredRunningGame flags.runningGameSalt flags.runningGame
+
         basicInitModel : Model
         basicInitModel =
             { key = key
@@ -264,6 +298,7 @@ init flags url key =
                     }
             , currentView = GameSelection
             , game = Nothing
+            , savedGame = savedGame
             , containsGithubPrefixInPath = flags.initPath |> hasGithubPathPrefix
             , playedGameHistory = Game.decodeStoredFinishedGameHistory flags.history
             , theme =
@@ -272,13 +307,25 @@ init flags url key =
 
                 else
                     Dark
+            , runningGameSalt = flags.runningGameSalt
             }
 
         navigationMsg : Msg
         navigationMsg =
             Navigation (Internal url)
+
+        ( initializedModel, initCmd ) =
+            update navigationMsg basicInitModel
+
+        staleSaveCleanup : Cmd Msg
+        staleSaveCleanup =
+            if flags.runningGame /= "" && savedGame == Nothing then
+                Ports.clearRunningGame ()
+
+            else
+                Cmd.none
     in
-    update navigationMsg basicInitModel
+    ( initializedModel, Cmd.batch [ initCmd, staleSaveCleanup ] )
 
 
 hasGithubPathPrefix : String -> Bool

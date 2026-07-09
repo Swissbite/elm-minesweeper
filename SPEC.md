@@ -43,13 +43,19 @@ The goal of this project is to provide a fully functional, visually polished Min
 - **Theming:** Dynamic dark/light theme switch support.
 - **Game History:** A dedicated view to browse past games, filterable by result (Won/Lost) and sortable by duration, date, or difficulty.
 - **Visual Feedback:** Interactive feedback for cell hovering, clicking, and state changes (Reveal vs. Flag mode).
+- **Resume:** An interrupted running game survives reloads and navigation. It is offered as a resume tile at the top of the selection view; until resumed the game counts as paused.
 
 ## 5. Persistence Schema
-Data is persisted as a JSON string in `localStorage` under the key `finishedGameHistory`.
+Data is persisted as JSON strings in `localStorage` under two keys: `finishedGameHistory` (completed games) and `runningGame` (the in-progress game, saved on every clock tick).
 
-### Versioning
+### Finished Game History (`finishedGameHistory`)
 - **Version 1 (Current):** Includes `grid`, `result` ("won"/"lost"), `duration` (ms), and `posix` (timestamp).
 - **Migration:** The application includes decoders to transparently upgrade Version 0 (legacy) data to the current schema.
+
+### Running Game (`runningGame`)
+- **Version 1 (Current):** Envelope `{ "version": 1, "checksum": <int>, "game": { "grid": [...], "runningTimes": [{"start": <ms>, "end": <ms>}, ...], "lastClockTick": <ms>, "interactionMode": "reveal"|"flag" } }`.
+- **Integrity:** `checksum` is a salted djb2 (32-bit) hash over the compact JSON encoding of `game`, covering the board and the elapsed time segments. The salt combines a static application salt with a random per-browser salt (`runningGameSalt` key, generated on first start), so a valid checksum cannot be derived from the source code alone and saves are not portable between browsers. This protects against casual manual editing of `localStorage`, not against determined tampering — without a server, cryptographic integrity is out of reach by design. On load the game is decoded, canonically re-encoded and re-hashed; any mismatch, unknown version, or decode failure discards the save and removes the key.
+- **Lifecycle:** Written on game start, every clock tick, cell interactions, and pause transitions; removed when the game finishes, is given up, or a new game is created. A restored game always starts paused; the player resumes it from the selection view. With multiple open tabs the last writer wins.
 
 ## 6. File Map
 
@@ -71,3 +77,4 @@ Data is persisted as a JSON string in `localStorage` under the key `finishedGame
 - `src/Ports.elm`: Elm-to-JS communication for persistence.
 - `public/`: Static assets (index.html, manifest, icons, background images).
 - `tests/GameTests.elm`: Test suite for grid logic and decoders.
+- `tests/RunningGamePersistenceTests.elm`: Test suite for the running game snapshot codec and checksum.

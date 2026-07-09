@@ -29,6 +29,7 @@ module Game.Internal exposing (..)
 
 -}
 
+import Bitwise
 import Grid exposing (Grid)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
@@ -326,6 +327,216 @@ saveFinishedGameHistory : List FinishedGameHistoryEntry -> Cmd msg
 saveFinishedGameHistory finishedGameHistory =
     encodeFinishedGameHistory finishedGameHistory
         |> Ports.storeFinishedGameHistory
+
+
+staticChecksumSalt : String
+staticChecksumSalt =
+    "elm-minesweeper-running-game-v1"
+
+
+{-| djb2 hash (xor variant) over the Unicode code points of a string.
+
+    The accumulator is normalized to [0, 2^32) via shiftRightZfBy 0 after every
+    step, so the intermediate product hash * 33 stays below 2^38 and therefore
+    within the exactly representable Int range. Bitwise.xor truncates the
+    product to 32 bits before the unsigned normalization; the xor'd code point
+    stays below 2^21 (max 0x10FFFF) and cannot widen the result.
+
+-}
+djb2Hash : String -> Int
+djb2Hash =
+    String.foldl
+        (\char hash ->
+            (hash * 33)
+                |> Bitwise.xor (Char.toCode char)
+                |> Bitwise.shiftRightZfBy 0
+        )
+        5381
+
+
+{-| Salted checksum over the compact JSON encoding of a running game. Guards the
+stored game (board and elapsed time segments alike) against casual manual edits
+in localStorage - determined tampering is out of scope for a pure SPA. The
+browser salt is generated randomly on first app start and kept in localStorage,
+so a valid checksum cannot be derived from the source code alone and saves are
+not portable between browsers.
+-}
+runningGameChecksum : String -> String -> Int
+runningGameChecksum browserSalt payload =
+    djb2Hash (staticChecksumSalt ++ browserSalt ++ payload)
+
+
+runningGameValue : PlayGameGrid -> GameModel -> Encode.Value
+runningGameValue grid gameModel =
+    Encode.object
+        [ ( "grid", Grid.rows grid |> Encode.array (Encode.array gameCellEncoder) )
+        , ( "runningTimes"
+          , Encode.list
+                (\( start, end ) ->
+                    Encode.object
+                        [ ( "start", Encode.int (Time.posixToMillis start) )
+                        , ( "end", Encode.int (Time.posixToMillis end) )
+                        ]
+                )
+                gameModel.gameRunningTimes
+          )
+        , ( "lastClockTick", Encode.int (Time.posixToMillis gameModel.lastClockTick) )
+        , ( "interactionMode"
+          , Encode.string
+                (case gameModel.gameInteractionMode of
+                    Reveal ->
+                        "reveal"
+
+                    Flag ->
+                        "flag"
+                )
+          )
+        ]
+
+
+encodeRunningGame : String -> GameModel -> Maybe String
+encodeRunningGame browserSalt gameModel =
+    case gameModel.gameBoardStatus of
+        RunningGame grid ->
+            let
+                gameValue =
+                    runningGameValue grid gameModel
+            in
+            Encode.object
+                [ ( "version", Encode.int 1 )
+                , ( "checksum", Encode.int (runningGameChecksum browserSalt (Encode.encode 0 gameValue)) )
+                , ( "game", gameValue )
+                ]
+                |> Encode.encode 0
+                |> Just
+
+        _ ->
+            Nothing
+
+
+saveRunningGame : String -> GameModel -> Cmd msg
+saveRunningGame browserSalt gameModel =
+    encodeRunningGame browserSalt gameModel
+        |> Maybe.map Ports.storeRunningGame
+        |> Maybe.withDefault Cmd.none
+
+
+clearRunningGame : Cmd msg
+clearRunningGame =
+    Ports.clearRunningGame ()
+
+
+{-| Decodes the versioned envelope around a stored running game. The game is
+decoded first, canonically re-encoded and re-hashed; any checksum mismatch,
+unknown version or malformed payload rejects the whole save.
+-}
+decodeRunningGameEnvelope : String -> Decoder GameModel
+decodeRunningGameEnvelope browserSalt =
+    Decode.map2 Tuple.pair
+        (Decode.field "version" Decode.int
+            |> Decode.andThen
+                (\v ->
+                    if v == 1 then
+                        Decode.succeed v
+
+                    else
+                        Decode.fail "Unsupported running game version"
+                )
+        )
+        (Decode.field "checksum" Decode.int)
+        |> Decode.andThen
+            (\( _, expectedChecksum ) ->
+                Decode.field "game" runningGameSnapshotDecoder
+                    |> Decode.andThen
+                        (\gameModel ->
+                            case gameModel.gameBoardStatus of
+                                RunningGame grid ->
+                                    if runningGameChecksum browserSalt (Encode.encode 0 (runningGameValue grid gameModel)) == expectedChecksum then
+                                        Decode.succeed gameModel
+
+                                    else
+                                        Decode.fail "Running game checksum mismatch"
+
+                                _ ->
+                                    Decode.fail "Stored game is not a running game"
+                        )
+            )
+
+
+{-| A restored game is always paused - the player resumes it explicitly from the
+selection view, which keeps the pause/segment invariant of updateTimePlayGame
+intact.
+-}
+runningGameSnapshotDecoder : Decoder GameModel
+runningGameSnapshotDecoder =
+    Decode.map4
+        (\grid times tick mode ->
+            { gameBoardStatus = RunningGame grid
+            , gameInteractionMode = mode
+            , gameRunningTimes = times
+            , gamePauseResumeState = Paused
+            , lastClockTick = Time.millisToPosix tick
+            }
+        )
+        (Decode.field "grid" decodeGrid)
+        (Decode.field "runningTimes" (Decode.list decodeTimeSegment))
+        (Decode.field "lastClockTick" Decode.int)
+        (Decode.field "interactionMode" decodeInteractionMode)
+
+
+decodeTimeSegment : Decoder ( Time.Posix, Time.Posix )
+decodeTimeSegment =
+    Decode.map2 Tuple.pair
+        (Decode.field "start" Decode.int)
+        (Decode.field "end" Decode.int)
+        |> Decode.andThen
+            (\( start, end ) ->
+                if start > end then
+                    Decode.fail "Time segment must not end before it starts"
+
+                else
+                    Decode.succeed ( Time.millisToPosix start, Time.millisToPosix end )
+            )
+
+
+decodeInteractionMode : Decoder CellClickMode
+decodeInteractionMode =
+    Decode.string
+        |> Decode.andThen
+            (\modeAsString ->
+                case modeAsString of
+                    "reveal" ->
+                        Decode.succeed Reveal
+
+                    "flag" ->
+                        Decode.succeed Flag
+
+                    _ ->
+                        Decode.fail "Invalid interaction mode"
+            )
+
+
+calculateElapsedTimeMillis : List ( Time.Posix, Time.Posix ) -> Int
+calculateElapsedTimeMillis =
+    List.foldl (\( from, to ) summedUp -> (Time.posixToMillis to - Time.posixToMillis from) + summedUp) 0
+
+
+playGameGridToPlaygroundDefinition : PlayGameGrid -> PlayGroundDefinition
+playGameGridToPlaygroundDefinition grid =
+    let
+        foldLFn : GameCell -> Int -> Int
+        foldLFn cell count =
+            case cell of
+                GameCell MineCell _ ->
+                    count + 1
+
+                _ ->
+                    count
+    in
+    { cols = Grid.width grid
+    , rows = Grid.height grid
+    , mines = Grid.foldl foldLFn 0 grid
+    }
 
 
 millisToString : Int -> String
