@@ -334,12 +334,13 @@ staticChecksumSalt =
     "elm-minesweeper-running-game-v1"
 
 
-{-| djb2 hash (xor variant) over the UTF-16 code units of a string.
+{-| djb2 hash (xor variant) over the Unicode code points of a string.
 
     The accumulator is normalized to [0, 2^32) via shiftRightZfBy 0 after every
     step, so the intermediate product hash * 33 stays below 2^38 and therefore
     within the exactly representable Int range. Bitwise.xor truncates the
-    product to 32 bits before the unsigned normalization.
+    product to 32 bits before the unsigned normalization; the xor'd code point
+    stays below 2^21 (max 0x10FFFF) and cannot widen the result.
 
 -}
 djb2Hash : String -> Int
@@ -485,9 +486,17 @@ runningGameSnapshotDecoder =
 
 decodeTimeSegment : Decoder ( Time.Posix, Time.Posix )
 decodeTimeSegment =
-    Decode.map2 (\start end -> ( Time.millisToPosix start, Time.millisToPosix end ))
+    Decode.map2 Tuple.pair
         (Decode.field "start" Decode.int)
         (Decode.field "end" Decode.int)
+        |> Decode.andThen
+            (\( start, end ) ->
+                if start > end then
+                    Decode.fail "Time segment must not end before it starts"
+
+                else
+                    Decode.succeed ( Time.millisToPosix start, Time.millisToPosix end )
+            )
 
 
 decodeInteractionMode : Decoder CellClickMode

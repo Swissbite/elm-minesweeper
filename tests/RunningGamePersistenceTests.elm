@@ -122,6 +122,17 @@ tamperTests =
                     Just encoded ->
                         Game.decodeStoredRunningGame "another-salt" encoded
                             |> Expect.equal Nothing
+        , test "a time segment ending before it starts is rejected despite a valid checksum" <|
+            \_ ->
+                case runningGameModel of
+                    Nothing ->
+                        Expect.fail "Testdata seems to be invalid"
+
+                    Just gameModel ->
+                        { gameModel | gameRunningTimes = [ ( Time.millisToPosix 5000, Time.millisToPosix 1000 ) ] }
+                            |> GameInternal.encodeRunningGame testSalt
+                            |> Maybe.andThen (Game.decodeStoredRunningGame testSalt)
+                            |> Expect.equal Nothing
         , test "a wrong checksum is rejected" <|
             \_ ->
                 envelopeWith 1 0
