@@ -136,6 +136,17 @@ obfuscationTests =
                         [ "mineCell", "cellType", "cellStatus", "checksum" ]
                             |> List.filter (\needle -> String.contains needle blob)
                             |> Expect.equal []
+        , test "an uppercased blob still decodes" <|
+            \_ ->
+                case runningGameModel of
+                    Nothing ->
+                        Expect.fail "Testdata seems to be invalid"
+
+                    Just gameModel ->
+                        storedBlob
+                            |> Maybe.map String.toUpper
+                            |> Maybe.andThen (Game.decodeStoredRunningGame testSalt)
+                            |> Expect.equal (Just { gameModel | gamePauseResumeState = Paused })
         , test "a blob is rejected under a different browser salt" <|
             \_ ->
                 storedBlob

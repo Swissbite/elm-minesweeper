@@ -475,7 +475,7 @@ hexDigitToInt : Char -> Maybe Int
 hexDigitToInt char =
     let
         code =
-            Char.toCode char
+            Char.toCode (Char.toLower char)
 
         zero =
             Char.toCode '0'
