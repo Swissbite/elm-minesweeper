@@ -848,7 +848,7 @@ confettiOverlay =
             , HA.style "pointer-events" "none"
             ]
         <|
-            List.map confettiParticle (List.range 0 39)
+            List.map confettiParticle (List.range 0 (confettiParticleCount - 1))
 
 
 {-| Convert a count of deciseconds (tenths of a second) to a CSS time string,
@@ -878,6 +878,11 @@ confettiColors =
 
 {-| Constants controlling how confetti particles are distributed and animated.
 -}
+confettiParticleCount : Int
+confettiParticleCount =
+    40
+
+
 confettiMaxLeftPct : Int
 confettiMaxLeftPct =
     -- Capped at 94 so particles near the right edge remain fully visible
@@ -917,6 +922,18 @@ confettiDurationModulus =
 confettiDurationMultiplier : Int
 confettiDurationMultiplier =
     -- Spread 40 particles across the 10-slot modulus with minimal clustering
+    3
+
+
+confettiBaseDurationSeconds : Int
+confettiBaseDurationSeconds =
+    -- Base fall duration; variation adds up to 0.9 s on top of this
+    2
+
+
+confettiShapeCount : Int
+confettiShapeCount =
+    -- Three shape variants: circle (0), rounded rect (1), sharp square (2)
     3
 
 
@@ -960,7 +977,10 @@ confettiParticle index =
             decisecondsToCssTime (modBy confettiMaxDelayDeciseconds (index * confettiDelayMultiplier))
 
         durationSec =
-            "2." ++ String.fromInt (modBy confettiDurationModulus (index * confettiDurationMultiplier)) ++ "s"
+            String.fromInt confettiBaseDurationSeconds
+                ++ "."
+                ++ String.fromInt (modBy confettiDurationModulus (index * confettiDurationMultiplier))
+                ++ "s"
 
         sizePx =
             modBy confettiMaxSizeVariation index + confettiMinSizePx
@@ -969,7 +989,7 @@ confettiParticle index =
             sizePx + modBy confettiHeightVariation (index * confettiHeightMultiplier)
 
         borderRadius =
-            case modBy 3 index of
+            case modBy confettiShapeCount index of
                 0 ->
                     "50%"
 
