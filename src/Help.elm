@@ -228,10 +228,10 @@ controlsTable theme =
             , Element.el (Element.width (Element.fillPortion 3) :: headerStyle) <| Element.text "Reveal cell"
             , Element.el (Element.width (Element.fillPortion 3) :: headerStyle) <| Element.text "Flag / unflag"
             ]
-        , row "Mouse" "Left-click" "Right-click"
-        , row "Touchscreen" "Tap" "Long-press (1 second)"
+        , row "Mouse" "Left-click (Reveal mode)" "Left-click (Flag mode)"
+        , row "Touchscreen" "Tap (Reveal mode)" "Tap (Flag mode)"
         , Element.paragraph [ Font.color (Colors.textDim theme), Font.size 14, Element.paddingXY 0 8 ]
-            [ Element.text "On touchscreens you can also switch between Reveal and Flag modes using the toggle button displayed during the game, then use a regular tap for either action." ]
+            [ Element.text "Switch between Reveal and Flag with the in-game toggle selector (shortcut: T), then click/tap normally." ]
         ]
 
 
