@@ -32,6 +32,7 @@ import ErrorPage404
 import Game.Game as Game
 import Game.History as GameHistory
 import Game.Selection as GameSelection
+import Help
 import Html.Attributes as HA
 import Ports
 import Theme exposing (Theme(..))
@@ -221,6 +222,8 @@ viewRouteParser =
         , UP.map Game (UP.s githubPagePathPrefix </> UP.s "game")
         , UP.map gameHistoryQueryToView (UP.s "history" <?> GameHistory.queryParser)
         , UP.map gameHistoryQueryToView (UP.s githubPagePathPrefix </> UP.s "history" <?> GameHistory.queryParser)
+        , UP.map Help (UP.s "help")
+        , UP.map Help (UP.s githubPagePathPrefix </> UP.s "help")
         ]
 
 
@@ -414,6 +417,7 @@ navigationView model =
                 }
             , Element.link [ Font.color (Colors.textMain model.theme), Element.padding 12 ] { url = gameLinkPath, label = Element.text "Game" }
             , Element.link [ Font.color (Colors.textMain model.theme), Element.padding 12 ] { url = pathWithTrailingSlash ++ "history", label = Element.text "History" }
+            , Element.link [ Font.color (Colors.textMain model.theme), Element.padding 12 ] { url = pathWithTrailingSlash ++ "help", label = Element.text "Help" }
             ]
         ]
 
@@ -484,6 +488,9 @@ selectBoardView model =
 
         Error404 ->
             ErrorPage404.view model
+
+        Help ->
+            Help.view model
 
         History _ _ _ ->
             GameHistory.view model
