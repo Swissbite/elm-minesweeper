@@ -876,6 +876,72 @@ confettiColors =
     ]
 
 
+{-| Constants controlling how confetti particles are distributed and animated.
+-}
+confettiMaxLeftPct : Int
+confettiMaxLeftPct =
+    -- Capped at 94 so particles near the right edge remain fully visible
+    94
+
+
+confettiLeftMultiplier : Int
+confettiLeftMultiplier =
+    -- Prime-like value to spread indices across the 0-94 range with low repetition
+    37
+
+
+confettiLeftOffset : Int
+confettiLeftOffset =
+    -- Shifts the first particle away from the very left edge
+    5
+
+
+confettiMaxDelayDeciseconds : Int
+confettiMaxDelayDeciseconds =
+    -- Delays span 0–1.9 s (20 × 0.1 s) so the burst feels gradual, not simultaneous
+    20
+
+
+confettiDelayMultiplier : Int
+confettiDelayMultiplier =
+    -- Spread 40 particles across the 20-slot delay range with minimal clustering
+    7
+
+
+confettiDurationModulus : Int
+confettiDurationModulus =
+    -- 10 distinct tenths of a second give durations 2.0–2.9 s
+    10
+
+
+confettiDurationMultiplier : Int
+confettiDurationMultiplier =
+    -- Spread 40 particles across the 10-slot modulus with minimal clustering
+    3
+
+
+confettiMinSizePx : Int
+confettiMinSizePx =
+    6
+
+
+confettiMaxSizeVariation : Int
+confettiMaxSizeVariation =
+    -- Particle widths range from minSizePx to minSizePx + maxSizeVariation − 1
+    6
+
+
+confettiHeightVariation : Int
+confettiHeightVariation =
+    -- Extra height makes some particles look like strips rather than squares
+    5
+
+
+confettiHeightMultiplier : Int
+confettiHeightMultiplier =
+    7
+
+
 confettiParticle : Int -> Html.Html msg
 confettiParticle index =
     let
@@ -888,19 +954,19 @@ confettiParticle index =
                 |> Maybe.withDefault "#ff6b6b"
 
         leftPct =
-            String.fromInt (modBy 94 (index * 37 + 5)) ++ "%"
+            String.fromInt (modBy confettiMaxLeftPct (index * confettiLeftMultiplier + confettiLeftOffset)) ++ "%"
 
         delaySec =
-            decisecondsToCssTime (modBy 20 (index * 7))
+            decisecondsToCssTime (modBy confettiMaxDelayDeciseconds (index * confettiDelayMultiplier))
 
         durationSec =
-            "2." ++ String.fromInt (modBy 10 (index * 3)) ++ "s"
+            "2." ++ String.fromInt (modBy confettiDurationModulus (index * confettiDurationMultiplier)) ++ "s"
 
         sizePx =
-            modBy 6 index + 6
+            modBy confettiMaxSizeVariation index + confettiMinSizePx
 
         heightPx =
-            sizePx + modBy 5 (index * 7)
+            sizePx + modBy confettiHeightVariation (index * confettiHeightMultiplier)
 
         borderRadius =
             case modBy 3 index of
