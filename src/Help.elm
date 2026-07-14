@@ -27,6 +27,7 @@ import Element exposing (Element)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Routing exposing (githubPagePathPrefix)
 import Styles
 import Theme exposing (Theme)
 import Types exposing (Model)
@@ -45,7 +46,7 @@ view model =
 
         homeUrl =
             if model.containsGithubPrefixInPath then
-                "/elm-minesweeper/"
+                "/" ++ githubPagePathPrefix ++ "/"
 
             else
                 "/"

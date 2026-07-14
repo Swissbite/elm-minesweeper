@@ -35,16 +35,12 @@ import Game.Selection as GameSelection
 import Help
 import Html.Attributes as HA
 import Ports
+import Routing exposing (githubPagePathPrefix)
 import Theme exposing (Theme(..))
 import Tuple
 import Types exposing (..)
 import Url exposing (Url)
 import Url.Parser as UP exposing ((</>), (<?>))
-
-
-githubPagePathPrefix : String
-githubPagePathPrefix =
-    "elm-minesweeper"
 
 
 compactVerticalPadding : Int
