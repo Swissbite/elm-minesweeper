@@ -851,6 +851,18 @@ confettiOverlay =
             List.map confettiParticle (List.range 0 39)
 
 
+{-| Convert a count of deciseconds (tenths of a second) to a CSS time string,
+e.g. 14 → "1.4s". Used for staggering confetti animation delays.
+-}
+decisecondsToCssTime : Int -> String
+decisecondsToCssTime ds =
+    String.fromInt (ds // 10) ++ "." ++ String.fromInt (modBy 10 ds) ++ "s"
+
+
+{-| Confetti colors – a vivid rainbow palette kept separate from the game's
+main color palette in Colors.elm because they are purely decorative and
+animation-specific.
+-}
 confettiColors : List String
 confettiColors =
     [ "#ff6b6b"
@@ -878,14 +890,8 @@ confettiParticle index =
         leftPct =
             String.fromInt (modBy 94 (index * 37 + 5)) ++ "%"
 
-        delayDeciseconds =
-            modBy 20 (index * 7)
-
         delaySec =
-            String.fromInt (delayDeciseconds // 10)
-                ++ "."
-                ++ String.fromInt (modBy 10 delayDeciseconds)
-                ++ "s"
+            decisecondsToCssTime (modBy 20 (index * 7))
 
         durationSec =
             "2." ++ String.fromInt (modBy 10 (index * 3)) ++ "s"
