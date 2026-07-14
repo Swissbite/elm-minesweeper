@@ -977,10 +977,11 @@ confettiParticle index =
             decisecondsToCssTime (modBy confettiMaxDelayDeciseconds (index * confettiDelayMultiplier))
 
         durationSec =
-            String.fromInt confettiBaseDurationSeconds
-                ++ "."
-                ++ String.fromInt (modBy confettiDurationModulus (index * confettiDurationMultiplier))
-                ++ "s"
+            decisecondsToCssTime
+                (confettiBaseDurationSeconds
+                    * 10
+                    + modBy confettiDurationModulus (index * confettiDurationMultiplier)
+                )
 
         sizePx =
             modBy confettiMaxSizeVariation index + confettiMinSizePx
