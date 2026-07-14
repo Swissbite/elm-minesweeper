@@ -51,3 +51,80 @@ img {
   margin: 0;
   max-width: 100%;
 }
+
+/* ===== Game Animations ===== */
+
+/* Win: Confetti particle falling and fading */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-10px) rotate(0deg);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(500px) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Lose: Board shake effect */
+@keyframes board-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-6px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(6px);
+  }
+}
+
+.board-shake {
+  animation: board-shake 0.6s ease-out both;
+}
+
+/* Pause: Hourglass icon flipping back and forth */
+@keyframes hourglass-flip {
+  0%,
+  15% {
+    transform: rotate(0deg);
+  }
+  40%,
+  60% {
+    transform: rotate(180deg);
+  }
+  85%,
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.hourglass-spin {
+  display: inline-block;
+  animation: hourglass-flip 2s ease-in-out infinite;
+}
+
+/* Pause overlay smooth fade-in */
+@keyframes pause-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.pause-overlay {
+  animation: pause-fade-in 0.3s ease-in both;
+}

@@ -33,6 +33,7 @@ import Element.Input as Input
 import Element.Lazy as Lazy
 import Game.Internal exposing (..)
 import Grid
+import Html
 import Html.Attributes as HA
 import Json.Decode as Decode
 import List
@@ -719,22 +720,41 @@ pausedGameView boardConfig playGameGrid =
             Element.el
                 [ Element.width Element.fill
                 , Element.height Element.fill
-                , Background.color <| Element.rgba255 255 0 0 0.5
+                , Background.color <| Element.rgba255 20 20 40 0.82
+                , Element.htmlAttribute <| HA.class "pause-overlay"
                 ]
             <|
-                Element.el
+                Element.column
                     [ Element.centerX
                     , Element.centerY
-                    , Font.extraBold
-                    , Font.size <|
-                        if boardConfig.isMobile then
-                            mobilePauseOverlayFontSize
-
-                        else
-                            desktopPauseOverlayFontSize
+                    , Element.spacing 16
                     ]
-                <|
-                    Element.text "Paused"
+                    [ Element.el
+                        [ Element.centerX
+                        , Font.size <|
+                            if boardConfig.isMobile then
+                                mobilePauseOverlayFontSize
+
+                            else
+                                desktopPauseOverlayFontSize
+                        , Element.htmlAttribute <| HA.class "hourglass-spin"
+                        ]
+                      <|
+                        Element.text "⏳"
+                    , Element.el
+                        [ Element.centerX
+                        , Font.extraBold
+                        , Font.size <|
+                            if boardConfig.isMobile then
+                                mobilePauseOverlayFontSize // 2
+
+                            else
+                                desktopPauseOverlayFontSize // 2
+                        , Font.color Colors.white
+                        ]
+                      <|
+                        Element.text "Paused"
+                    ]
         ]
     <|
         gameView playGameGrid <|
@@ -761,10 +781,25 @@ runningGameCellToElement theme cellSize x y cell =
 
 
 finishedGameView : BoardViewConfig -> PlayGameGrid -> GameResult -> Element GameMsg
-finishedGameView boardConfig playGameGrid _ =
-    Element.column [ Element.alignTop ]
-        [ finishedGridToView boardConfig playGameGrid
-        ]
+finishedGameView boardConfig playGameGrid result =
+    let
+        grid =
+            finishedGridToView boardConfig playGameGrid
+    in
+    case result of
+        Won ->
+            Element.el
+                [ Element.alignTop
+                , Element.inFront confettiOverlay
+                ]
+                grid
+
+        Lost ->
+            Element.el
+                [ Element.alignTop
+                , Element.htmlAttribute <| HA.class "board-shake"
+                ]
+                grid
 
 
 finishedGridToView : BoardViewConfig -> PlayGameGrid -> Element GameMsg
@@ -798,6 +833,92 @@ finishedGameCellToElement theme cellSize cell =
 
         _ ->
             Element.el (Styles.untouchedCellStyle theme cellSize) Element.none
+
+
+confettiOverlay : Element msg
+confettiOverlay =
+    Element.html <|
+        Html.div
+            [ HA.style "position" "absolute"
+            , HA.style "top" "0"
+            , HA.style "left" "0"
+            , HA.style "right" "0"
+            , HA.style "bottom" "0"
+            , HA.style "overflow" "hidden"
+            , HA.style "pointer-events" "none"
+            ]
+        <|
+            List.map confettiParticle (List.range 0 39)
+
+
+confettiColors : List String
+confettiColors =
+    [ "#ff6b6b"
+    , "#ffd93d"
+    , "#6bcb77"
+    , "#4d96ff"
+    , "#c77dff"
+    , "#ff9a3c"
+    , "#ff6bca"
+    , "#00c9a7"
+    ]
+
+
+confettiParticle : Int -> Html.Html msg
+confettiParticle index =
+    let
+        colorCount =
+            List.length confettiColors
+
+        color =
+            List.drop (modBy colorCount index) confettiColors
+                |> List.head
+                |> Maybe.withDefault "#ff6b6b"
+
+        leftPct =
+            String.fromInt (modBy 94 (index * 37 + 5)) ++ "%"
+
+        delayDeciseconds =
+            modBy 20 (index * 7)
+
+        delaySec =
+            String.fromInt (delayDeciseconds // 10)
+                ++ "."
+                ++ String.fromInt (modBy 10 delayDeciseconds)
+                ++ "s"
+
+        durationSec =
+            "2." ++ String.fromInt (modBy 10 (index * 3)) ++ "s"
+
+        sizePx =
+            modBy 6 index + 6
+
+        heightPx =
+            sizePx + modBy 5 (index * 7)
+
+        borderRadius =
+            case modBy 3 index of
+                0 ->
+                    "50%"
+
+                1 ->
+                    "2px"
+
+                _ ->
+                    "0"
+    in
+    Html.div
+        [ HA.style "position" "absolute"
+        , HA.style "width" (String.fromInt sizePx ++ "px")
+        , HA.style "height" (String.fromInt heightPx ++ "px")
+        , HA.style "background-color" color
+        , HA.style "left" leftPct
+        , HA.style "top" "0"
+        , HA.style "border-radius" borderRadius
+        , HA.style "will-change" "transform, opacity"
+        , HA.style "animation" ("confetti-fall " ++ durationSec ++ " ease-in " ++ delaySec ++ " both")
+        ]
+        []
 
 
 
