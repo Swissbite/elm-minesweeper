@@ -33,6 +33,8 @@ import Theme exposing (Theme)
 import Types exposing (Model)
 
 
+{-| Size in pixels for the visual example cells shown on the help page.
+-}
 exampleCellSize : Int
 exampleCellSize =
     40
@@ -169,7 +171,7 @@ cellTypesTable theme =
                 [ Element.el [ Element.alignTop ] cellEl
                 , Element.column [ Element.spacing 4, Element.width Element.fill, Element.alignTop ]
                     [ Element.el [ Font.bold ] <| Element.text label
-                    , Element.paragraph [ Element.width Element.fill, Font.alignLeft, Font.color (Colors.textDim theme), Font.size 14 ] [ Element.text description ]
+                    , Element.paragraph [ Element.width Element.fill, Font.color (Colors.textDim theme), Font.size 14 ] [ Element.text description ]
                     ]
                 ]
     in
@@ -204,22 +206,22 @@ determined by the active mode.
 controlsTable : Theme -> Element msg
 controlsTable theme =
     Element.column [ Element.width Element.fill, Element.spacing 12 ]
-        [ Element.paragraph [ Element.width Element.fill, Font.alignLeft ]
+        [ Element.paragraph [ Element.width Element.fill ]
             [ Element.text "Use a normal click or tap on a cell. The active "
             , Element.el [ Font.bold ] <| Element.text "mode"
             , Element.text " decides what that click does:"
             ]
         , Element.column [ Element.width Element.fill, Element.spacing 8 ]
-            [ Element.paragraph [ Element.width Element.fill, Font.alignLeft ]
+            [ Element.paragraph [ Element.width Element.fill ]
                 [ Element.el [ Font.bold ] <| Element.text "Reveal mode:"
                 , Element.text " click or tap uncovers the cell."
                 ]
-            , Element.paragraph [ Element.width Element.fill, Font.alignLeft ]
+            , Element.paragraph [ Element.width Element.fill ]
                 [ Element.el [ Font.bold ] <| Element.text "Flag mode:"
                 , Element.text " click or tap places or removes a flag."
                 ]
             ]
-        , Element.paragraph [ Element.width Element.fill, Font.alignLeft, Font.color (Colors.textDim theme), Font.size 14 ]
+        , Element.paragraph [ Element.width Element.fill, Font.color (Colors.textDim theme), Font.size 14 ]
             [ Element.text "Switch modes with the in-game toggle button or press "
             , Element.el [ Font.bold, Font.color (Colors.primary theme) ] <| Element.text "T"
             , Element.text "."
