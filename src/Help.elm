@@ -214,8 +214,7 @@ controlsTable theme =
     Element.column [ Element.width Element.fill, Element.spacing 12 ]
         [ Element.paragraph []
             [ Element.text "Click (mouse) or tap (touchscreen) a cell. What happens depends on the active "
-            , Element.el [ Font.bold ] <| Element.text "mode"
-            , Element.text ":"
+            , Element.el [ Font.bold ] <| Element.text "mode:"
             ]
         , Element.column [ Element.spacing 8, Element.paddingXY 16 0 ]
             [ modeRow "Reveal mode" "uncovers the cell."
