@@ -115,6 +115,7 @@ view model =
                         [ "Start with corners and edges — they have fewer neighbours, making them easier to reason about."
                         , "A cell showing \"1\" that is surrounded by exactly one hidden cell means that hidden cell is a mine. Flag it!"
                         , "When a numbered cell already has as many flags around it as its number, all remaining hidden neighbours are safe to reveal."
+                        , "Shortcut: once a numbered cell has exactly the right number of flags around it, clicking on that number automatically reveals all its remaining hidden neighbours at once — works in both Reveal and Flag mode."
                         , "If you are stuck, look for patterns: two overlapping \"1\" cells often let you eliminate possibilities."
                         , "On hard boards a guess is sometimes unavoidable. Pick the cell with the lowest chance of being a mine."
                         ]
