@@ -46,6 +46,9 @@ view model =
         theme =
             model.theme
 
+        isPhone =
+            model.device.class == Element.Phone
+
         homeUrl =
             if model.containsGithubPrefixInPath then
                 "/" ++ githubPagePathPrefix ++ "/"
@@ -61,20 +64,51 @@ view model =
         [ Element.column
             [ Element.width (Element.maximum 720 Element.fill)
             , Element.centerX
-            , Element.padding 24
-            , Element.spacing 40
+            , Element.paddingXY
+                (if isPhone then
+                    16
+
+                 else
+                    24
+                )
+                (if isPhone then
+                    20
+
+                 else
+                    32
+                )
+            , Element.spacing
+                (if isPhone then
+                    20
+
+                 else
+                    28
+                )
             ]
             [ -- Page title
               Element.column [ Element.spacing 8, Element.width Element.fill ]
-                [ Element.el [ Font.bold, Font.size 32 ] <| Element.text "How to Play Minesweeper"
-                , Element.paragraph [ Font.color (Colors.textDim theme) ]
+                [ Element.paragraph
+                    [ Font.bold
+                    , Font.alignLeft
+                    , Font.size
+                        (if isPhone then
+                            26
+
+                         else
+                            34
+                        )
+                    ]
+                    [ Element.text "How to Play Minesweeper" ]
+                , Element.paragraph [ Font.alignLeft, Font.color (Colors.textDim theme) ]
                     [ Element.text "A complete guide for new and returning players." ]
                 ]
 
             -- Section: Objective
             , section theme
-                "🎯 Objective"
-                [ Element.paragraph []
+                isPhone
+                "🎯"
+                "Objective"
+                [ paragraph
                     [ Element.text "The goal is to reveal every cell on the board that does "
                     , Element.el [ Font.bold ] <| Element.text "not"
                     , Element.text " contain a mine — without clicking on a mine. Use the numbers revealed on cells to deduce where the mines are hiding."
@@ -83,37 +117,38 @@ view model =
 
             -- Section: The board
             , section theme
-                "🗺️ The Board"
-                [ Element.paragraph []
-                    [ Element.text "The board is a grid of hidden cells. Each cell is one of five kinds:" ]
+                isPhone
+                "🗺️"
+                "The Board"
+                [ paragraph [ Element.text "The board is a grid of hidden cells. Each cell is one of five kinds:" ]
                 , cellTypesTable theme
                 ]
 
             -- Section: Controls
             , section theme
-                "🖱️ Controls"
-                [ controlsTable theme ]
+                isPhone
+                "🖱️"
+                "Controls"
+                [ controlsSection theme ]
 
             -- Section: How to win
             , section theme
-                "🏆 How to Win"
-                [ Element.paragraph []
+                isPhone
+                "🏆"
+                "How to Win"
+                [ paragraph
                     [ Element.text "Reveal every safe cell. You do not need to flag all mines — simply uncover all non-mine cells and the game is won." ]
-                , Element.paragraph [ Font.color (Colors.textDim theme) ]
+                , noteBox theme
                     [ Element.text "Tip: your very first click is always safe. The board is generated after your first click so that you can never lose immediately." ]
                 ]
 
             -- Section: Strategy tips
             , section theme
-                "💡 Strategy Tips"
-                [ Element.column [ Element.spacing 12, Element.width Element.fill ]
-                    (List.map
-                        (\tip ->
-                            Element.row [ Element.width Element.fill, Element.spacing 12 ]
-                                [ Element.el [ Element.alignTop, Font.color (Colors.primary theme), Font.bold ] <| Element.text "•"
-                                , Element.paragraph [ Element.width Element.fill ] [ Element.text tip ]
-                                ]
-                        )
+                isPhone
+                "💡"
+                "Strategy Tips"
+                [ Element.column [ Element.spacing 14, Element.width Element.fill ]
+                    (List.map (tipRow theme)
                         [ "Start with corners and edges — they have fewer neighbours, making deduction easier."
                         , "When a numbered cell has exactly as many flags around it as its number, click it to automatically reveal all remaining hidden neighbours."
                         , "A \"1\" touching only one hidden cell? That cell is a mine — flag it and move on."
@@ -123,38 +158,132 @@ view model =
                 ]
 
             -- Start playing button
-            , Element.el [ Element.centerX, Element.paddingXY 0 8 ] <|
+            , Element.el
+                [ if isPhone then
+                    Element.width Element.fill
+
+                  else
+                    Element.centerX
+                , Element.paddingXY 0 8
+                ]
+              <|
                 Element.link
-                    [ Element.padding 16
+                    [ Element.paddingXY 28 16
+                    , if isPhone then
+                        Element.width Element.fill
+
+                      else
+                        Element.width Element.shrink
                     , Background.color (Colors.primary theme)
                     , Border.rounded 12
+                    , Border.shadow
+                        { offset = ( 0, 4 )
+                        , size = 0
+                        , blur = 14
+                        , color = Element.rgba 0.29 0.69 0.31 0.35
+                        }
                     , Font.color Colors.white
                     , Font.bold
+                    , Font.center
                     , Font.size 18
                     ]
                     { url = homeUrl
-                    , label = Element.text "▶ Start Playing"
+                    , label = Element.text "▶  Start Playing"
                     }
             ]
         ]
 
 
-{-| Renders a titled card section.
+{-| Left-aligned body paragraph. The global stylesheet centres text by default,
+so every body paragraph explicitly opts back into left alignment for
+readability.
 -}
-section : Theme -> String -> List (Element msg) -> Element msg
-section theme title content =
+paragraph : List (Element msg) -> Element msg
+paragraph content =
+    Element.paragraph [ Element.width Element.fill, Font.alignLeft ] content
+
+
+{-| Renders a titled card section with an emoji chip, a hairline divider and its
+content.
+-}
+section : Theme -> Bool -> String -> String -> List (Element msg) -> Element msg
+section theme isPhone emoji title content =
     Element.column
         [ Element.width Element.fill
         , Element.spacing 16
-        , Element.padding 20
+        , Element.padding
+            (if isPhone then
+                16
+
+             else
+                24
+            )
         , Background.color (Colors.surface theme)
-        , Border.rounded 12
+        , Border.rounded 14
         , Border.color (Colors.cellBorderColor theme)
         , Border.width 1
+        , Border.shadow
+            { offset = ( 0, 2 )
+            , size = 0
+            , blur = 12
+            , color = Element.rgba 0 0 0 0.12
+            }
         ]
-        (Element.el [ Font.bold, Font.size 20 ] (Element.text title)
+        (sectionHeader theme emoji title
+            :: divider theme
             :: content
         )
+
+
+sectionHeader : Theme -> String -> String -> Element msg
+sectionHeader theme emoji title =
+    Element.row [ Element.width Element.fill, Element.spacing 12 ]
+        [ Element.el
+            [ Element.width (Element.px 36)
+            , Element.height (Element.px 36)
+            , Background.color (Colors.background theme)
+            , Border.rounded 9
+            , Border.color (Colors.cellBorderColor theme)
+            , Border.width 1
+            , Font.size 18
+            ]
+          <|
+            Element.el [ Element.centerX, Element.centerY ] <|
+                Element.text emoji
+        , Element.el [ Element.centerY, Font.bold, Font.size 22 ] <| Element.text title
+        ]
+
+
+divider : Theme -> Element msg
+divider theme =
+    Element.el
+        [ Element.width Element.fill
+        , Element.height (Element.px 1)
+        , Background.color (Colors.cellBorderColor theme)
+        ]
+        Element.none
+
+
+{-| A subtle inset box used for tips and secondary notes.
+-}
+noteBox : Theme -> List (Element msg) -> Element msg
+noteBox theme content =
+    Element.el
+        [ Element.width Element.fill
+        , Element.padding 14
+        , Background.color (Colors.background theme)
+        , Border.rounded 10
+        ]
+    <|
+        Element.paragraph [ Element.width Element.fill, Font.alignLeft, Font.size 14, Font.color (Colors.textDim theme) ] content
+
+
+tipRow : Theme -> String -> Element msg
+tipRow theme tip =
+    Element.row [ Element.width Element.fill, Element.spacing 12 ]
+        [ Element.el [ Element.alignTop, Font.color (Colors.primary theme), Font.bold ] <| Element.text "▸"
+        , Element.paragraph [ Element.width Element.fill, Font.alignLeft ] [ Element.text tip ]
+        ]
 
 
 {-| Table that shows each cell type with a visual example and a description.
@@ -171,7 +300,7 @@ cellTypesTable theme =
                 [ Element.el [ Element.alignTop ] cellEl
                 , Element.column [ Element.spacing 4, Element.width Element.fill, Element.alignTop ]
                     [ Element.el [ Font.bold ] <| Element.text label
-                    , Element.paragraph [ Element.width Element.fill, Font.color (Colors.textDim theme), Font.size 14 ] [ Element.text description ]
+                    , Element.paragraph [ Element.width Element.fill, Font.alignLeft, Font.color (Colors.textDim theme), Font.size 14 ] [ Element.text description ]
                     ]
                 ]
     in
@@ -203,30 +332,61 @@ cellTypesTable theme =
 left/right-click table. The game uses a single click/tap whose effect is
 determined by the active mode.
 -}
-controlsTable : Theme -> Element msg
-controlsTable theme =
+controlsSection : Theme -> Element msg
+controlsSection theme =
     Element.column [ Element.width Element.fill, Element.spacing 12 ]
-        [ Element.paragraph [ Element.width Element.fill ]
+        [ paragraph
             [ Element.text "Use a normal click or tap on a cell. The active "
             , Element.el [ Font.bold ] <| Element.text "mode"
             , Element.text " decides what that click does:"
             ]
-        , Element.column [ Element.width Element.fill, Element.spacing 8 ]
-            [ Element.paragraph [ Element.width Element.fill ]
-                [ Element.el [ Font.bold ] <| Element.text "Reveal mode:"
-                , Element.text " click or tap uncovers the cell."
-                ]
-            , Element.paragraph [ Element.width Element.fill ]
-                [ Element.el [ Font.bold ] <| Element.text "Flag mode:"
-                , Element.text " click or tap places or removes a flag."
-                ]
+        , Element.column [ Element.width Element.fill, Element.spacing 10 ]
+            [ modeRow theme "Reveal mode" "Click or tap uncovers the cell."
+            , modeRow theme "Flag mode" "Click or tap places or removes a flag."
             ]
-        , Element.paragraph [ Element.width Element.fill, Font.color (Colors.textDim theme), Font.size 14 ]
-            [ Element.text "Switch modes with the in-game toggle button or press "
-            , Element.el [ Font.bold, Font.color (Colors.primary theme) ] <| Element.text "T"
-            , Element.text "."
+        , Element.row [ Element.width Element.fill, Element.spacing 8 ]
+            [ Element.paragraph [ Element.width Element.fill, Font.alignLeft, Font.color (Colors.textDim theme), Font.size 14 ]
+                [ Element.text "Switch modes with the in-game toggle button — or press "
+                , keycap theme "T"
+                , Element.text "."
+                ]
             ]
         ]
+
+
+{-| A single control mode presented as an inset row with a bold label.
+-}
+modeRow : Theme -> String -> String -> Element msg
+modeRow theme label description =
+    Element.row
+        [ Element.width Element.fill
+        , Element.spacing 12
+        , Element.padding 12
+        , Background.color (Colors.background theme)
+        , Border.rounded 10
+        ]
+        [ Element.el [ Element.alignTop, Font.bold, Font.color (Colors.primary theme) ] <| Element.text label
+        , Element.paragraph [ Element.width Element.fill, Font.alignLeft ] [ Element.text description ]
+        ]
+
+
+{-| A small keyboard-key styled label, e.g. for the "T" shortcut.
+-}
+keycap : Theme -> String -> Element msg
+keycap theme label =
+    Element.el
+        [ Background.color (Colors.surface theme)
+        , Border.color (Colors.cellBorderColor theme)
+        , Border.width 1
+        , Border.rounded 5
+        , Element.paddingXY 7 2
+        , Font.size 13
+        , Font.bold
+        , Font.color (Colors.textMain theme)
+        , Font.family [ Font.monospace ]
+        ]
+    <|
+        Element.text label
 
 
 
