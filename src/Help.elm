@@ -112,12 +112,10 @@ view model =
                                 , Element.paragraph [] [ Element.text tip ]
                                 ]
                         )
-                        [ "Start with corners and edges — they have fewer neighbours, making them easier to reason about."
-                        , "A cell showing \"1\" that is surrounded by exactly one hidden cell means that hidden cell is a mine. Flag it!"
-                        , "When a numbered cell already has as many flags around it as its number, all remaining hidden neighbours are safe to reveal."
-                        , "Shortcut: once a numbered cell has exactly the right number of flags around it, clicking on that number automatically reveals all its remaining hidden neighbours at once — works in both Reveal and Flag mode."
-                        , "If you are stuck, look for patterns: two overlapping \"1\" cells often let you eliminate possibilities."
-                        , "On hard boards a guess is sometimes unavoidable. Pick the cell with the lowest chance of being a mine."
+                        [ "Start with corners and edges — they have fewer neighbours, making deduction easier."
+                        , "When a numbered cell has exactly as many flags around it as its number, click it to automatically reveal all remaining hidden neighbours."
+                        , "A \"1\" touching only one hidden cell? That cell is a mine — flag it and move on."
+                        , "On hard boards a guess is sometimes unavoidable — pick the cell least likely to be a mine."
                         ]
                     )
                 ]
@@ -199,40 +197,35 @@ cellTypesTable theme =
         ]
 
 
-{-| Table that explains controls for each input method.
+{-| Explains controls using a mode-based description instead of a misleading
+left/right-click table. The game uses a single click/tap whose effect is
+determined by the active mode.
 -}
 controlsTable : Theme -> Element msg
 controlsTable theme =
     let
-        headerStyle =
-            [ Font.bold, Font.size 14, Font.color (Colors.textDim theme) ]
-
-        row : String -> String -> String -> Element msg
-        row input revealAction flagAction =
-            Element.row
-                [ Element.width Element.fill
-                , Element.spacing 8
-                , Element.paddingXY 0 8
-                , Border.widthEach { bottom = 1, top = 0, left = 0, right = 0 }
-                , Border.color (Colors.cellBorderColor theme)
-                ]
-                [ Element.el [ Element.width (Element.fillPortion 2), Font.bold ] <| Element.text input
-                , Element.el [ Element.width (Element.fillPortion 3) ] <| Element.text revealAction
-                , Element.el [ Element.width (Element.fillPortion 3) ] <| Element.text flagAction
+        modeRow : String -> String -> Element msg
+        modeRow label description =
+            Element.row [ Element.spacing 8 ]
+                [ Element.el [ Font.bold, Element.width (Element.px 110) ] <| Element.text label
+                , Element.paragraph [] [ Element.text description ]
                 ]
     in
-    Element.column [ Element.width Element.fill, Element.spacing 0 ]
-        [ -- Header row
-          Element.row
-            [ Element.width Element.fill, Element.spacing 8, Element.paddingXY 0 8 ]
-            [ Element.el (Element.width (Element.fillPortion 2) :: headerStyle) <| Element.text "Input"
-            , Element.el (Element.width (Element.fillPortion 3) :: headerStyle) <| Element.text "Reveal cell"
-            , Element.el (Element.width (Element.fillPortion 3) :: headerStyle) <| Element.text "Flag / unflag"
+    Element.column [ Element.width Element.fill, Element.spacing 12 ]
+        [ Element.paragraph []
+            [ Element.text "Click (mouse) or tap (touchscreen) a cell. What happens depends on the active "
+            , Element.el [ Font.bold ] <| Element.text "mode"
+            , Element.text ":"
             ]
-        , row "Mouse" "Left-click (Reveal mode)" "Left-click (Flag mode)"
-        , row "Touchscreen" "Tap (Reveal mode)" "Tap (Flag mode)"
-        , Element.paragraph [ Font.color (Colors.textDim theme), Font.size 14, Element.paddingXY 0 8 ]
-            [ Element.text "Switch between Reveal and Flag with the in-game toggle selector (shortcut: T), then click/tap normally." ]
+        , Element.column [ Element.spacing 8, Element.paddingXY 16 0 ]
+            [ modeRow "Reveal mode" "uncovers the cell."
+            , modeRow "Flag mode" "places or removes a flag on the cell."
+            ]
+        , Element.paragraph [ Font.color (Colors.textDim theme), Font.size 14 ]
+            [ Element.text "Switch modes with the in-game toggle button or press "
+            , Element.el [ Font.bold, Font.color (Colors.primary theme) ] <| Element.text "T"
+            , Element.text "."
+            ]
         ]
 
 
