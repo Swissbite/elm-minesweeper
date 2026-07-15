@@ -107,9 +107,9 @@ view model =
                 [ Element.column [ Element.spacing 12, Element.width Element.fill ]
                     (List.map
                         (\tip ->
-                            Element.row [ Element.spacing 12 ]
-                                [ Element.el [ Font.color (Colors.primary theme), Font.bold ] <| Element.text "•"
-                                , Element.paragraph [] [ Element.text tip ]
+                            Element.row [ Element.width Element.fill, Element.spacing 12 ]
+                                [ Element.el [ Element.alignTop, Font.color (Colors.primary theme), Font.bold ] <| Element.text "•"
+                                , Element.paragraph [ Element.width Element.fill ] [ Element.text tip ]
                                 ]
                         )
                         [ "Start with corners and edges — they have fewer neighbours, making deduction easier."
@@ -166,10 +166,10 @@ cellTypesTable theme =
         row : Element msg -> String -> String -> Element msg
         row cellEl label description =
             Element.row [ Element.spacing 16, Element.width Element.fill ]
-                [ cellEl
-                , Element.column [ Element.spacing 4, Element.width Element.fill ]
+                [ Element.el [ Element.alignTop ] cellEl
+                , Element.column [ Element.spacing 4, Element.width Element.fill, Element.alignTop ]
                     [ Element.el [ Font.bold ] <| Element.text label
-                    , Element.paragraph [ Font.color (Colors.textDim theme), Font.size 14 ] [ Element.text description ]
+                    , Element.paragraph [ Element.width Element.fill, Font.alignLeft, Font.color (Colors.textDim theme), Font.size 14 ] [ Element.text description ]
                     ]
                 ]
     in
@@ -203,24 +203,23 @@ determined by the active mode.
 -}
 controlsTable : Theme -> Element msg
 controlsTable theme =
-    let
-        modeRow : String -> String -> Element msg
-        modeRow label description =
-            Element.row [ Element.spacing 8 ]
-                [ Element.el [ Font.bold, Element.width (Element.px 110) ] <| Element.text label
-                , Element.paragraph [] [ Element.text description ]
-                ]
-    in
     Element.column [ Element.width Element.fill, Element.spacing 12 ]
-        [ Element.paragraph []
-            [ Element.text "Click (mouse) or tap (touchscreen) a cell. What happens depends on the active "
-            , Element.el [ Font.bold ] <| Element.text "mode:"
+        [ Element.paragraph [ Element.width Element.fill, Font.alignLeft ]
+            [ Element.text "Use a normal click or tap on a cell. The active "
+            , Element.el [ Font.bold ] <| Element.text "mode"
+            , Element.text " decides what that click does:"
             ]
-        , Element.column [ Element.spacing 8, Element.paddingXY 16 0 ]
-            [ modeRow "Reveal mode" "uncovers the cell."
-            , modeRow "Flag mode" "places or removes a flag on the cell."
+        , Element.column [ Element.width Element.fill, Element.spacing 8 ]
+            [ Element.paragraph [ Element.width Element.fill, Font.alignLeft ]
+                [ Element.el [ Font.bold ] <| Element.text "Reveal mode:"
+                , Element.text " click or tap uncovers the cell."
+                ]
+            , Element.paragraph [ Element.width Element.fill, Font.alignLeft ]
+                [ Element.el [ Font.bold ] <| Element.text "Flag mode:"
+                , Element.text " click or tap places or removes a flag."
+                ]
             ]
-        , Element.paragraph [ Font.color (Colors.textDim theme), Font.size 14 ]
+        , Element.paragraph [ Element.width Element.fill, Font.alignLeft, Font.color (Colors.textDim theme), Font.size 14 ]
             [ Element.text "Switch modes with the in-game toggle button or press "
             , Element.el [ Font.bold, Font.color (Colors.primary theme) ] <| Element.text "T"
             , Element.text "."
