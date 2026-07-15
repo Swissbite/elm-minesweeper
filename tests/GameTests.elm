@@ -311,3 +311,43 @@ gameLogicTests =
                 Expect.equal (Just Untouched)
                     (Grid.get ( 0, 0 ) updatedGrid |> Maybe.map (\(GameCell _ status) -> status))
         ]
+
+
+animationTests : Test
+animationTests =
+    describe "decisecondsToCssTime"
+        [ test "zero deciseconds → 0.0s" <|
+            \_ ->
+                GameInternal.decisecondsToCssTime 0 |> Expect.equal "0.0s"
+        , test "single digit deciseconds → 0.Xs" <|
+            \_ ->
+                GameInternal.decisecondsToCssTime 5 |> Expect.equal "0.5s"
+        , test "exactly one second (10 ds) → 1.0s" <|
+            \_ ->
+                GameInternal.decisecondsToCssTime 10 |> Expect.equal "1.0s"
+        , test "docstring example: 14 ds → 1.4s" <|
+            \_ ->
+                GameInternal.decisecondsToCssTime 14 |> Expect.equal "1.4s"
+        , test "25 ds → 2.5s" <|
+            \_ ->
+                GameInternal.decisecondsToCssTime 25 |> Expect.equal "2.5s"
+        , test "100 ds → 10.0s" <|
+            \_ ->
+                GameInternal.decisecondsToCssTime 100 |> Expect.equal "10.0s"
+        , fuzz (intRange 0 999) "output always ends with 's' and contains exactly one '.'" <|
+            \ds ->
+                let
+                    result =
+                        GameInternal.decisecondsToCssTime ds
+                in
+                Expect.all
+                    [ \s -> Expect.equal True (String.endsWith "s" s)
+                    , \s ->
+                        s
+                            |> String.toList
+                            |> List.filter (\c -> c == '.')
+                            |> List.length
+                            |> Expect.equal 1
+                    ]
+                    result
+        ]

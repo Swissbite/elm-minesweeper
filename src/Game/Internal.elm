@@ -856,3 +856,11 @@ areAllNoMineFieldsRevealed =
 coordinateToPair : Coordinate -> ( Int, Int )
 coordinateToPair coords =
     ( coords.x, coords.y )
+
+
+{-| Convert a count of deciseconds (tenths of a second) to a CSS time string,
+e.g. 14 → "1.4s". Used for staggering confetti animation delays.
+-}
+decisecondsToCssTime : Int -> String
+decisecondsToCssTime ds =
+    String.fromInt (ds // 10) ++ "." ++ String.fromInt (modBy 10 ds) ++ "s"
