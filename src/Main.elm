@@ -125,7 +125,7 @@ update msg model =
                     )
 
                 ResumeSavedGame ->
-                    case model.savedGame of
+                    case Game.resumableGame model.game model.savedGame of
                         Just savedGame ->
                             let
                                 newModel =

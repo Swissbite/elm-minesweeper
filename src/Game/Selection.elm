@@ -20,6 +20,7 @@ module Game.Selection exposing (view)
 import Colors
 import Element exposing (Element)
 import Element.Font as Font
+import Game.Game as Game
 import Game.Internal as GameInternal
 import Styles
 import Types exposing (..)
@@ -108,12 +109,18 @@ view model =
         )
 
 
-{-| Offers to resume a stored, interrupted game. Rendered above the difficulty
-tiles as the first tappable element, or not at all when no saved game exists.
+{-| Offers to resume an interrupted game. Rendered above the difficulty tiles as
+the first tappable element, or not at all when no resumable game exists.
+
+The game may still be live in `model.game` (the player left it via the nav bar
+or the help page without giving it up) or only restored from local storage into
+`model.savedGame` after a reload. `GameInternal.resumableGame` reconciles both so
+the tile appears live in either case.
+
 -}
 resumeSection : Model -> List (Element GameMsg)
 resumeSection model =
-    case model.savedGame of
+    case Game.resumableGame model.game model.savedGame of
         Just savedGame ->
             case savedGame.gameBoardStatus of
                 RunningGame grid ->
