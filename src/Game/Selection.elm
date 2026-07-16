@@ -114,8 +114,8 @@ the first tappable element, or not at all when no resumable game exists.
 
 The game may still be live in `model.game` (the player left it via the nav bar
 or the help page without giving it up) or only restored from local storage into
-`model.savedGame` after a reload. `GameInternal.resumableGame` reconciles both so
-the tile appears live in either case.
+`model.savedGame` after a reload. `Game.resumableGame` reconciles both so the
+tile appears live in either case.
 
 -}
 resumeSection : Model -> List (Element GameMsg)

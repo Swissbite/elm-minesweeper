@@ -32,7 +32,7 @@ import ErrorPage404
 import Game.Game as Game
 import Game.History as GameHistory
 import Game.Selection as GameSelection
-import Help
+import Help as HelpPage
 import Html.Attributes as HA
 import Ports
 import Routing exposing (githubPagePathPrefix)
@@ -486,7 +486,7 @@ selectBoardView model =
             ErrorPage404.view model
 
         Help ->
-            Help.view model
+            HelpPage.view model
 
         History _ _ _ ->
             GameHistory.view model
