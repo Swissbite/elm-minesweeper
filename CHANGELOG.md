@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+- **Help Page**: A new "How to Play Minesweeper" page, reachable from the "Help" nav link, explaining the objective, the five cell types (illustrated with the game's real cell styles), the reveal/flag control modes and the `T` shortcut, how to win, and a handful of strategy tips. A "Start Playing" button links back to the board selection. The page is left-aligned for readability and responsive down to phone widths.
+- **Resume Fix**: The "Resume game" tile now appears on the selection view for a game that is still in progress in memory - for example after leaving it via the nav bar or the help page - instead of only after a hard reload.
+
 ## v1.2.0 - Resume Interrupted Games (July 2026)
 - **Game Persistence**: A running game is saved to `localStorage` on every clock tick, so a reload or navigation no longer loses the board or the elapsed play time.
 - **Resume Tile**: An interrupted game is offered as a full-width "Resume game" tile above the difficulty tiles on the selection view (mobile first). A restored game starts paused and continues exactly where it left off.
