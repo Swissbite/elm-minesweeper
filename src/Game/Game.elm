@@ -15,7 +15,7 @@
 -}
 
 
-module Game.Game exposing (decodeStoredFinishedGameHistory, decodeStoredRunningGame, initModel, resumeGame, subscriptions, update, view)
+module Game.Game exposing (decodeStoredFinishedGameHistory, decodeStoredRunningGame, initModel, resumableGame, resumeGame, subscriptions, update, view)
 
 {-| Game module for rendering the complete game, as long as the currentView in the model is set to Game.
 Exposes the basic update / view / subscription functions, so that Main.elm can use them.
@@ -92,6 +92,44 @@ resumeGame gameModel =
 
         _ ->
             gameModel
+
+
+{-| The running game the start page should offer to resume, if any.
+
+Both the live in-memory game and the game restored from local storage are
+considered so the resume tile shows up immediately, without a page reload. The
+live game (`model.game`) takes precedence: while the player browses the start
+page, history or help view the running game stays in `model.game` and is not
+copied back into `model.savedGame`, which is only populated once on startup.
+
+Only a `RunningGame` is resumable — a game still waiting on the first click or an
+already finished game is ignored (these are never persisted either, see the
+encoder).
+
+-}
+resumableGame : Maybe GameModel -> Maybe GameModel -> Maybe GameModel
+resumableGame activeGame savedGame =
+    case onlyRunningGame activeGame of
+        Just gameModel ->
+            Just gameModel
+
+        Nothing ->
+            onlyRunningGame savedGame
+
+
+onlyRunningGame : Maybe GameModel -> Maybe GameModel
+onlyRunningGame maybeGameModel =
+    case maybeGameModel of
+        Just gameModel ->
+            case gameModel.gameBoardStatus of
+                RunningGame _ ->
+                    Just gameModel
+
+                _ ->
+                    Nothing
+
+        Nothing ->
+            Nothing
 
 
 subscriptions : Model -> GameModel -> Sub GameMsg

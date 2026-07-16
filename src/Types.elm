@@ -115,6 +115,7 @@ type View
     = GameSelection
     | Game
     | History GameHistoryDisplayMode GameHistoryOrderBy OrderDirection
+    | Help
     | Error404
 
 
