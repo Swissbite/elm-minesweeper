@@ -54,6 +54,8 @@ On Microsoft Windows, you may consider to use the dev environments on Docker for
 1. `nvm use`
 2. `npm install`
 
+Note: this project currently uses Elm `0.19.2` with a Parcel transformer that still declares an older Elm peer range. If `npm install` fails with a peer-dependency conflict, run `npm install --legacy-peer-deps` once to work around the upstream metadata mismatch until the Parcel package metadata is updated.
+
 ### Local development
 
 - Run `npm run start` to start a local development server with auto-reload and all other features

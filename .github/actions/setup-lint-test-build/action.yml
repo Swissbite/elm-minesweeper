@@ -19,8 +19,10 @@ runs:
   - name: Install node dependencies
     shell: bash
     run: |
-      NO_ELM_TOOLING_INSTALL=true 
-      npm ci --prefer-offline
+      # Parcel's Elm transformer still declares the older Elm peer range, so we
+      # use legacy peer resolution only in CI until the upstream metadata catches up.
+      export NO_ELM_TOOLING_INSTALL=true
+      npm ci --prefer-offline --legacy-peer-deps
       npx --no-install elm-tooling install
 
   - name: Making sure the installation worked
