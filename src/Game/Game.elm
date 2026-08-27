@@ -33,6 +33,7 @@ import Element.Input as Input
 import Element.Lazy as Lazy
 import Game.Internal exposing (..)
 import Grid
+import Html
 import Html.Attributes as HA
 import Json.Decode as Decode
 import List
@@ -757,22 +758,41 @@ pausedGameView boardConfig playGameGrid =
             Element.el
                 [ Element.width Element.fill
                 , Element.height Element.fill
-                , Background.color <| Element.rgba255 255 0 0 0.5
+                , Background.color <| Element.rgba255 20 20 40 0.82
+                , Element.htmlAttribute <| HA.class "pause-overlay"
                 ]
             <|
-                Element.el
+                Element.column
                     [ Element.centerX
                     , Element.centerY
-                    , Font.extraBold
-                    , Font.size <|
-                        if boardConfig.isMobile then
-                            mobilePauseOverlayFontSize
-
-                        else
-                            desktopPauseOverlayFontSize
+                    , Element.spacing 16
                     ]
-                <|
-                    Element.text "Paused"
+                    [ Element.el
+                        [ Element.centerX
+                        , Font.size <|
+                            if boardConfig.isMobile then
+                                mobilePauseOverlayFontSize
+
+                            else
+                                desktopPauseOverlayFontSize
+                        , Element.htmlAttribute <| HA.class "hourglass-spin"
+                        ]
+                      <|
+                        Element.text "⏳"
+                    , Element.el
+                        [ Element.centerX
+                        , Font.extraBold
+                        , Font.size <|
+                            if boardConfig.isMobile then
+                                mobilePauseOverlayFontSize // 2
+
+                            else
+                                desktopPauseOverlayFontSize // 2
+                        , Font.color Colors.white
+                        ]
+                      <|
+                        Element.text "Paused"
+                    ]
         ]
     <|
         gameView playGameGrid <|
@@ -799,10 +819,25 @@ runningGameCellToElement theme cellSize x y cell =
 
 
 finishedGameView : BoardViewConfig -> PlayGameGrid -> GameResult -> Element GameMsg
-finishedGameView boardConfig playGameGrid _ =
-    Element.column [ Element.alignTop ]
-        [ finishedGridToView boardConfig playGameGrid
-        ]
+finishedGameView boardConfig playGameGrid result =
+    let
+        grid =
+            finishedGridToView boardConfig playGameGrid
+    in
+    case result of
+        Won ->
+            Element.el
+                [ Element.alignTop
+                , Element.inFront confettiOverlay
+                ]
+                grid
+
+        Lost ->
+            Element.el
+                [ Element.alignTop
+                , Element.htmlAttribute <| HA.class "board-shake"
+                ]
+                grid
 
 
 finishedGridToView : BoardViewConfig -> PlayGameGrid -> Element GameMsg
@@ -836,6 +871,177 @@ finishedGameCellToElement theme cellSize cell =
 
         _ ->
             Element.el (Styles.untouchedCellStyle theme cellSize) Element.none
+
+
+confettiOverlay : Element msg
+confettiOverlay =
+    Element.html <|
+        Html.div
+            [ HA.style "position" "absolute"
+            , HA.style "top" "0"
+            , HA.style "left" "0"
+            , HA.style "right" "0"
+            , HA.style "bottom" "0"
+            , HA.style "overflow" "hidden"
+            , HA.style "pointer-events" "none"
+            ]
+        <|
+            List.map confettiParticle (List.range 0 (confettiParticleCount - 1))
+
+
+{-| Confetti colors – a vivid rainbow palette kept separate from the game's
+main color palette in Colors.elm because they are purely decorative and
+animation-specific.
+-}
+confettiColors : List String
+confettiColors =
+    [ "#ff6b6b"
+    , "#ffd93d"
+    , "#6bcb77"
+    , "#4d96ff"
+    , "#c77dff"
+    , "#ff9a3c"
+    , "#ff6bca"
+    , "#00c9a7"
+    ]
+
+
+{-| Constants controlling how confetti particles are distributed and animated.
+-}
+confettiParticleCount : Int
+confettiParticleCount =
+    40
+
+
+confettiMaxLeftPct : Int
+confettiMaxLeftPct =
+    -- Capped at 94 so particles near the right edge remain fully visible
+    94
+
+
+confettiLeftMultiplier : Int
+confettiLeftMultiplier =
+    -- Prime-like value to spread indices across the 0-94 range with low repetition
+    37
+
+
+confettiLeftOffset : Int
+confettiLeftOffset =
+    -- Shifts the first particle away from the very left edge
+    5
+
+
+confettiMaxDelayDeciseconds : Int
+confettiMaxDelayDeciseconds =
+    -- Delays span 0–1.9 s (20 × 0.1 s) so the burst feels gradual, not simultaneous
+    20
+
+
+confettiDelayMultiplier : Int
+confettiDelayMultiplier =
+    -- Spread 40 particles across the 20-slot delay range with minimal clustering
+    7
+
+
+confettiDurationModulus : Int
+confettiDurationModulus =
+    -- 10 distinct tenths of a second give durations 2.0–2.9 s
+    10
+
+
+confettiDurationMultiplier : Int
+confettiDurationMultiplier =
+    -- Spread 40 particles across the 10-slot modulus with minimal clustering
+    3
+
+
+confettiBaseDurationSeconds : Int
+confettiBaseDurationSeconds =
+    -- Base fall duration; variation adds up to 0.9 s on top of this
+    2
+
+
+confettiShapeCount : Int
+confettiShapeCount =
+    -- Three shape variants: circle (0), rounded rect (1), sharp square (2)
+    3
+
+
+confettiMinSizePx : Int
+confettiMinSizePx =
+    6
+
+
+confettiMaxSizeVariation : Int
+confettiMaxSizeVariation =
+    -- Particle widths range from minSizePx to minSizePx + maxSizeVariation − 1
+    6
+
+
+confettiHeightVariation : Int
+confettiHeightVariation =
+    -- Extra height makes some particles look like strips rather than squares
+    5
+
+
+confettiHeightMultiplier : Int
+confettiHeightMultiplier =
+    7
+
+
+confettiParticle : Int -> Html.Html msg
+confettiParticle index =
+    let
+        colorCount =
+            List.length confettiColors
+
+        color =
+            List.drop (modBy colorCount index) confettiColors
+                |> List.head
+                |> Maybe.withDefault "#ff6b6b"
+
+        leftPct =
+            String.fromInt (modBy confettiMaxLeftPct (index * confettiLeftMultiplier + confettiLeftOffset)) ++ "%"
+
+        delaySec =
+            decisecondsToCssTime (modBy confettiMaxDelayDeciseconds (index * confettiDelayMultiplier))
+
+        durationSec =
+            decisecondsToCssTime
+                (confettiBaseDurationSeconds
+                    * 10
+                    + modBy confettiDurationModulus (index * confettiDurationMultiplier)
+                )
+
+        sizePx =
+            modBy confettiMaxSizeVariation index + confettiMinSizePx
+
+        heightPx =
+            sizePx + modBy confettiHeightVariation (index * confettiHeightMultiplier)
+
+        borderRadius =
+            case modBy confettiShapeCount index of
+                0 ->
+                    "50%"
+
+                1 ->
+                    "2px"
+
+                _ ->
+                    "0"
+    in
+    Html.div
+        [ HA.style "position" "absolute"
+        , HA.style "width" (String.fromInt sizePx ++ "px")
+        , HA.style "height" (String.fromInt heightPx ++ "px")
+        , HA.style "background-color" color
+        , HA.style "left" leftPct
+        , HA.style "top" "0"
+        , HA.style "border-radius" borderRadius
+        , HA.style "will-change" "transform, opacity"
+        , HA.style "animation" ("confetti-fall " ++ durationSec ++ " ease-in " ++ delaySec ++ " both")
+        ]
+        []
 
 
 
